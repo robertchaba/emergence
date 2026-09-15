@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 async function expectTheme(page, theme) {
@@ -39,7 +40,7 @@ async function expectLayout(page) {
   expect(layout).toEqual({ outside: [], overflow: false, separated: true, titleFits: true });
 }
 
-test('landing loads, both themes render, and the layout fits', async ({ page }) => {
+test('landing loads, both themes render, and the layout fits', async ({ page, request }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
@@ -52,6 +53,10 @@ test('landing loads, both themes render, and the layout fits', async ({ page }) 
   await expect(page.getByRole('group', { name: 'Language', exact: true }).getByRole('button', { name: 'PL' })).toBeDisabled();
   await expect(page.getByRole('link', { name: 'robert.chaba@gmail.com' })).toHaveAttribute('href', 'mailto:robert.chaba@gmail.com');
   await expect(page.getByRole('link', { name: 'Emergence on GitHub' })).toHaveAttribute('href', 'https://github.com/robertchaba/emergence');
+  const licenceLink = page.getByRole('link', { name: 'BSD-3-Clause licence' });
+  const licence = await request.get(new URL(await licenceLink.getAttribute('href'), page.url()).href);
+  expect(licence.ok()).toBeTruthy();
+  expect(await licence.text()).toBe(readFileSync(new URL('../LICENSE', import.meta.url), 'utf8'));
 
   const backgrounds = [];
   for (const theme of ['light', 'dark']) {

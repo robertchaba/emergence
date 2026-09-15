@@ -219,3 +219,39 @@ Validation: `npm run build` and all 10 Playwright checks passed. The loading che
 now also covers the disabled language placeholder and footer link destinations.
 Both themes were reviewed in screenshots at 1440px and phone widths, including
 320px; layout checks found no horizontal overflow. `git diff --check` passed.
+
+## 009 — Readability, microscope light, and BSD licence — 2026-09-15
+
+**Supersedes the availability wording and deferred licence decision in 007–008,
+and the Start availability note in 005.** The user's follow-up requests a BSD
+licence now. The project adopts the recommended BSD-3-Clause licence with
+copyright © 2026 Robert Chaba, using the
+[canonical text](https://spdx.org/licenses/BSD-3-Clause.html).
+
+The root `LICENSE` is authoritative, package metadata declares `BSD-3-Clause`,
+and a small Vite build hook emits the same text as `dist/LICENSE`. The footer
+uses a relative link that works in development and static deployments, including
+subdirectories. This keeps the licence available with the distributed page
+without duplicating a maintained source file. Repository visibility is unchanged.
+
+The language control is simply EN / PL with PL disabled. Availability notes,
+release-status qualifiers, and the Start note are removed from the landing page.
+The Start control is still disabled; this remains the static foundation.
+
+The full type scale remains theme-token driven. Labels rise from 11px to 14px;
+captions and footer text from 13px to 16px; body text to 18px, with introductory
+copy at 20px in light mode and 19px in dark mode. Smaller headings also increase.
+The main title and subtitle retain their existing sizes. Tracking is slightly
+tighter on the enlarged monospace labels so they wrap comfortably on phones.
+
+The dark logo circle has a brighter, soft green centre and a lightly illuminated
+edge, suggesting a microscope's field of light. Both colours are theme tokens;
+the no-JavaScript dark fallback uses the same values. Light mode retains its
+existing paper-toned halo.
+
+Validation: `npm run build` and all 10 Playwright checks passed. The smoke test
+follows the footer licence URL and compares the served text with the complete
+root `LICENSE`. The development licence URL also returned the correct file.
+Both themes were checked at 1440px, 390px, and 320px with no horizontal overflow;
+screenshots confirmed the type hierarchy and illumination. `git diff --check`
+passed.
