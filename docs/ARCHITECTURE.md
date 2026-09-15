@@ -897,3 +897,44 @@ bounds through 320 px. Visually inspected light/dark atlas views at 1440 and
 button keeps the lichen fill on hover and has a solid keyboard-focus outline.
 `git diff --check` passed. Existing decision 018 work was preserved. Validation
 is limited to Chromium and the existing physical atlas.
+
+## 020 — Curved channels and hex-rim selection — 2026-09-16
+
+**Supersedes 019's straight river presentation and refines 010's selection
+outline.** The user's close-up reference calls for gently bending channels and
+rounded turns. Rivers now use cubic curves between shared presentation nodes.
+Small, fixed offsets derived from hex IDs move land nodes away from exact cell
+centres; water endpoints stay centred. Tangents follow the strongest incoming
+tributary and outgoing channel, with cell ID breaking equal-flow ties. Short
+handles soften turns and terminal tangents give even one-link streams a slight
+bend. Springs move with their channel's source node.
+
+All tributaries share their receiving node. Wrapped edges use the nearest
+longitude and clipped copies at both sides. Equal-level lake interiors remain
+unmarked. Flow-dependent widths and frozen-channel colours continue from 019;
+a faint token-defined bank is drawn beneath the water, with all banks painted
+first to keep junctions continuous. Shape depends on physical snapshot fields
+and fixed renderer geometry, never theme, season, camera, browser time, or random
+state. This is cosmetic curvature, not erosion, new drainage, or simulated
+meandering. Actual channel connectivity and world generation remain unchanged.
+
+Pinned hexes now have a fine two-tone rim close to the cell boundary and a faint
+translucent fill. Dark uses pale lichen; light retains warm paper/ink. Stroke and
+inset sizes adapt to zoom, keeping small cells visible without the old heavy
+fixed-width outline. Hover uses a lighter outline without tint, and a hovered
+pin is painted only once. Terrain and rivers remain visible through selection.
+New bank and selection-fill colours are root tokens with matching explicit-dark
+and system-dark definitions. No UI commands, engine state, dependencies, artwork,
+localization, or usage instructions change.
+
+Validation: `npm run build` passed; `npm test` passed 27 headless/renderer checks
+and 37 Chromium checks, with the existing desktop touch-test duplicate skipped.
+Focused renderer checks cover frozen snapshots, short wrapped curves, shared
+tributary endpoints, continuous main-channel tangents, sampled curve containment
+within linked fixture cells, season/camera stability, and single-painted pin tint.
+Existing browser checks cover keyboard selection, layers, playback, theme and
+language changes, assets, focus, disabled controls, and responsive bounds through
+320 px. Visually inspected both themes at desktop and phone sizes, including
+close-up rivers and selection over a channel. `git diff --check` passed and dark
+fallback tokens match. Validation covers Chromium and representative geometry;
+these curves do not establish geological realism or future ecological behavior.

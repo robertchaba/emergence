@@ -8,8 +8,8 @@ const CORNERS = Array.from({ length: 6 }, (_, index) => {
 
 export const MAP_TOKEN_NAMES = Object.freeze([
   'ground', 'sea-deep', 'sea-shallow', 'lake', 'land-low', 'land-high',
-  'relief-shadow', 'relief-light', 'ice', 'frost', 'river', 'spring',
-  'spring-ring', 'grid', 'pin', 'pin-outline', 'temperature-cold',
+  'relief-shadow', 'relief-light', 'ice', 'frost', 'river', 'river-bank', 'spring',
+  'spring-ring', 'grid', 'pin', 'pin-outline', 'pin-fill', 'temperature-cold',
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
@@ -239,6 +239,78 @@ export function createMapRenderer(canvas, { tokens }) {
     context.setLineDash([]);
   }
 
+  // Cosmetic geometry stays in hex units, so seasons, theme, and zoom cannot
+  // move a channel. Shared nodes keep tributaries joined; water ends stay centered.
+  function riverGeometry(world) {
+    const circumference = world.width * ROOT_THREE;
+    const nodes = world.hexes.map((hex) => {
+      const point = center(hex);
+      if (hex.waterType === 'none') {
+        point.x += Math.sin(hex.id * 2.399963) * 0.10;
+        point.y += Math.cos(hex.id * 1.618034) * 0.10;
+      }
+      return point;
+    });
+    const near = (point, reference) => {
+      const offset = point.x - reference.x;
+      return { x: point.x + (offset > circumference / 2 ? -circumference : offset < -circumference / 2 ? circumference : 0), y: point.y };
+    };
+    const links = world.hexes.filter((hex) => {
+      const outlet = world.hexes[hex.downstream];
+      return hex.runoff > 0 && outlet && hex.waterType !== 'sea'
+        && !(hex.waterType === 'lake' && outlet.waterType === 'lake' && hex.waterLevel === outlet.waterLevel);
+    });
+    const incoming = new Map();
+    const outgoing = new Map(links.map((hex) => [hex.id, hex.downstream]));
+    for (const hex of links) {
+      const previous = incoming.get(hex.downstream);
+      if (!previous || hex.runoff > previous.runoff || (hex.runoff === previous.runoff && hex.id < previous.id)) {
+        incoming.set(hex.downstream, hex);
+      }
+    }
+    const tangents = nodes.map((point, id) => {
+      const upstream = incoming.get(id);
+      const downstream = outgoing.get(id);
+      const before = upstream ? near(nodes[upstream.id], point) : point;
+      const after = downstream !== undefined ? near(nodes[downstream], point) : point;
+      let dx = after.x - before.x;
+      let dy = after.y - before.y;
+      // Slightly turn terminal tangents as well, giving one-link streams a bend.
+      if (!upstream || downstream === undefined) {
+        const turn = Math.sin(id * 2.399963) * 0.24;
+        [dx, dy] = [dx * Math.cos(turn) - dy * Math.sin(turn), dx * Math.sin(turn) + dy * Math.cos(turn)];
+      }
+      const length = Math.hypot(dx, dy) || 1;
+      return { x: dx / length, y: dy / length };
+    });
+    const segments = links.map((hex) => {
+      const from = nodes[hex.id];
+      const to = near(nodes[hex.downstream], from);
+      // Short handles stay close to the linked cells even at tight turns.
+      const handle = Math.min(0.46, Math.hypot(to.x - from.x, to.y - from.y) * 0.28);
+      const a = tangents[hex.id];
+      const b = tangents[hex.downstream];
+      return { hex, from, to,
+        first: { x: from.x + a.x * handle, y: from.y + a.y * handle },
+        second: { x: to.x - b.x * handle, y: to.y - b.y * handle },
+      };
+    });
+    return { nodes, segments };
+  }
+
+  function riverCurve(segment, world, view) {
+    const { from, first, second, to } = segment;
+    const circumference = world.width * ROOT_THREE;
+    for (const shift of [-circumference, 0, circumference]) {
+      const x = (point) => view.x + (point.x + shift) * view.scale;
+      const y = (point) => view.y + point.y * view.scale;
+      context.beginPath();
+      context.moveTo(x(from), y(from));
+      context.bezierCurveTo(x(first), y(first), x(second), y(second), x(to), y(to));
+      context.stroke();
+    }
+  }
+
   function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null } = {}) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     // Clear old frames before applying a potentially transparent theme ground.
@@ -291,19 +363,22 @@ export function createMapRenderer(canvas, { tokens }) {
 
     context.lineCap = 'round';
     if (layer === 'terrain' || layer === 'elevation') {
-      for (const hex of world.hexes) {
-        if (hex.runoff > 0 && hex.downstream !== null && hex.waterType !== 'sea') {
-          const outlet = world.hexes[hex.downstream];
-          if (hex.waterType === 'lake' && outlet.waterType === 'lake' && hex.waterLevel === outlet.waterLevel) continue;
-          // Fine channels retain flow hierarchy without dominating the relief.
+      const rivers = riverGeometry(world);
+      // Paint banks first so confluences have one continuous water surface.
+      for (const bank of [true, false]) {
+        for (const segment of rivers.segments) {
+          const { hex } = segment;
           const riverWidth = clamp((0.045 + Math.sqrt(hex.runoff) * 0.025) * view.scale, 0.45, 2.5);
-          const riverColor = layer === 'terrain' && hex.temperature < 0 ? palette.ice : palette.river;
-          connection(world, hex.id, hex.downstream, view, riverColor, riverWidth);
+          context.strokeStyle = bank ? palette['river-bank']
+            : layer === 'terrain' && hex.temperature < 0 ? palette.ice : palette.river;
+          context.lineWidth = riverWidth + (bank ? Math.min(view.scale * 0.035, 1.2) : 0);
+          riverCurve(segment, world, view);
         }
       }
       for (const hex of world.hexes) {
         if (!(hex.springDischarge > 0)) continue;
-        const position = cellCenter(world, hex.id, camera);
+        const node = rivers.nodes[hex.id];
+        const position = { x: view.x + node.x * view.scale, y: view.y + node.y * view.scale };
         const radius = clamp(view.scale * 0.12, 0.8, 2.5);
         context.beginPath();
         context.arc(position.x, position.y, radius, 0, Math.PI * 2);
@@ -344,15 +419,23 @@ export function createMapRenderer(canvas, { tokens }) {
       }
     }
 
-    for (const id of [hoveredId, pinnedId]) {
+    context.lineJoin = 'round';
+    for (const id of new Set([hoveredId, pinnedId])) {
       if (id === null || !world.hexes[id]) continue;
+      const pinned = id === pinnedId;
       const position = cellCenter(world, id, camera);
-      polygon(context, position.x, position.y, view.scale * 0.88);
+      const outline = clamp(view.scale * 0.10, 1.6, pinned ? 3.6 : 2.4);
+      const radius = Math.max(view.scale * 0.6, view.scale - outline / ROOT_THREE - 0.6);
+      polygon(context, position.x, position.y, radius);
+      if (pinned) {
+        context.fillStyle = palette['pin-fill'];
+        context.fill();
+      }
       context.strokeStyle = palette['pin-outline'];
-      context.lineWidth = id === pinnedId ? 5 : 3;
+      context.lineWidth = outline;
       context.stroke();
       context.strokeStyle = palette.pin;
-      context.lineWidth = id === pinnedId ? 2.5 : 1.3;
+      context.lineWidth = outline * (pinned ? 0.45 : 0.3);
       context.stroke();
     }
     context.restore();

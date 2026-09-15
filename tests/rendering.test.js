@@ -116,12 +116,13 @@ test('all layers draw frozen snapshots and seam flow uses short edge segments', 
   // A segment crossing the wrap must be one neighbor spacing, not the whole map.
   calls.length = 0;
   map.draw(world, { camera: map.fit(world), layer: 'terrain' });
-  const connections = calls.filter((call, index) => call[0] === 'moveTo' && calls[index + 1]?.[0] === 'lineTo' && calls[index + 2]?.[0] === 'stroke');
-  assert.equal(connections.length, 3);
+  const connections = calls.filter((call, index) => call[0] === 'moveTo' && calls[index + 1]?.[0] === 'bezierCurveTo' && calls[index + 2]?.[0] === 'stroke');
+  assert.equal(connections.length, 6); // bank and water, each with seam copies
   const spacing = map.cellCenter(world, 7, map.fit(world)).x - map.cellCenter(world, 6, map.fit(world)).x;
   for (const move of connections) {
     const line = calls[calls.indexOf(move) + 1];
-    assert.ok(Math.abs(Math.abs(line[1] - move[1]) - spacing) < 1e-8);
+    assert.ok(Math.abs(line[5] - move[1]) < spacing * 1.2);
+    for (const x of [line[1], line[3]]) assert.ok(Math.abs(x - move[1]) < spacing * 1.5);
   }
 });
 
@@ -159,4 +160,65 @@ test('frost remains white over relief while ice and diagnostic layers stay disti
     map.draw(warm, { layer: 'elevation' });
     assert.deepEqual(fills.slice(0, world.hexes.length), elevation);
   }
+});
+
+
+test('curved tributaries join, stay in their linked hexes, and remain stable across seasons and camera changes', () => {
+  const { map, calls } = renderer();
+  const base = fixture();
+  const hexes = base.hexes.map(hex => ({ ...hex, runoff: 0, springDischarge: 0, downstream: null }));
+  for (const [id, downstream, runoff] of [[8, 9, 3], [13, 14, 2], [14, 8, 3], [19, 14, 1]]) {
+    Object.assign(hexes[id], { downstream, runoff });
+  }
+  hexes[9].waterType = 'sea';
+  const world = { ...base, hexes };
+  const capture = (snapshot, camera) => {
+    calls.length = 0;
+    map.draw(snapshot, { camera });
+    return calls.flatMap((call, index) => call[0] === 'bezierCurveTo'
+      ? [[calls[index - 1].slice(1), call.slice(1)]] : []);
+  };
+  const camera = map.fit();
+  const curves = capture(world, camera);
+  // Central copies of the four bank paths; water follows the identical geometry.
+  const main = [1, 4, 7, 10].map(index => curves[index]);
+  assert.deepEqual(main[1][1].slice(4), main[2][0]);
+  assert.deepEqual(main[3][1].slice(4), main[2][0]);
+  assert.deepEqual(main[2][1].slice(4), main[0][0]);
+  const incoming = main[1][1], outgoing = main[2][1];
+  const ax = incoming[4] - incoming[2], ay = incoming[5] - incoming[3];
+  const bx = outgoing[0] - incoming[4], by = outgoing[1] - incoming[5];
+  assert.ok(Math.abs(ax * by - ay * bx) < 1e-7, 'main channel has a continuous tangent at its junction');
+  assert.ok(ax * bx + ay * by > 0);
+  for (const [index, ids] of [[0, [8, 9]], [1, [13, 14]], [2, [14, 8]], [3, [19, 14]]]) {
+    const [start, c] = main[index];
+    for (let step = 0; step <= 40; step += 1) {
+      const t = step / 40, u = 1 - t;
+      const point = [0, 1].map(axis => u ** 3 * start[axis] + 3 * u ** 2 * t * c[axis]
+        + 3 * u * t ** 2 * c[axis + 2] + t ** 3 * c[axis + 4]);
+      assert.ok(ids.includes(map.hitTest(world, camera, ...point)), 'curve stays within the physical channel cells');
+    }
+  }
+  assert.deepEqual(capture({ ...world, hexes: hexes.map(hex => ({ ...hex, temperature: -15 })) }, camera), curves);
+  const zoomedCamera = { zoom: 3, x: 41, y: -24 };
+  const zoomed = capture(world, zoomedCamera);
+  const anchor = map.cellCenter(world, 0, camera);
+  const zoomedAnchor = map.cellCenter(world, 0, zoomedCamera);
+  for (let i = 0; i < curves.length; i += 1) {
+    for (let part = 0; part < 2; part += 1) {
+      curves[i][part].forEach((value, index) => {
+        const axis = index % 2 ? 'y' : 'x';
+        assert.ok(Math.abs((zoomed[i][part][index] - zoomedAnchor[axis]) / 3 - (value - anchor[axis])) < 1e-8);
+      });
+    }
+  }
+});
+
+test('pin tint is drawn once when hovered and preserves terrain beneath it', () => {
+  const { map, fills } = renderer();
+  map.draw(fixture(), { pinnedId: 11, hoveredId: 11 });
+  assert.equal(fills.filter(fill => fill === tokens['--map-pin-fill']).length, 1);
+  fills.length = 0;
+  map.draw(fixture(), { hoveredId: 11 });
+  assert.equal(fills.includes(tokens['--map-pin-fill']), false);
 });
