@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Emergence is an open-ended evolution sandbox. Seed life in one hex and watch resources, inheritance, mutation, and seasons shape what follows." />
+    <title>Emergence — an evolution sandbox</title>
+    <link rel="icon" type="image/webp" href="/resources/logo-light.webp" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/webp" href="/resources/logo-dark.webp" media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" href="/src/ui/styles/tokens.css" />
+    <link rel="stylesheet" href="/src/ui/styles/landing.css" />
+    <script type="module" src="/src/ui/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="wordmark" href="./" aria-label="Emergence home">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          Emergence
+        </a>
+        <fieldset class="theme-switcher" hidden>
+          <legend class="visually-hidden">Colour theme</legend>
+          <label><input type="radio" name="theme" value="system" checked /><span>System</span></label>
+          <label><input type="radio" name="theme" value="light" /><span>Light</span></label>
+          <label><input type="radio" name="theme" value="dark" /><span>Dark</span></label>
+        </fieldset>
+      </header>
+
+      <main id="main">
+        <section class="hero" aria-labelledby="project-title">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>An open-ended evolution sandbox</p>
+            <h1 id="project-title">Emergence</h1>
+            <p class="tagline">A small beginning.<br />An unwritten world.</p>
+            <p class="introduction">Generate a world. Seed life in a single hex. Watch resources, inheritance, mutation, and seasons shape the generations that follow.</p>
+            <div class="start-block">
+              <button class="start-button" type="button" disabled aria-describedby="start-note">Start a world <span aria-hidden="true">↗</span></button>
+              <p id="start-note" class="fine-print">The sandbox is taking shape. Explore soon.</p>
+            </div>
+          </div>
+
+          <figure class="specimen" aria-label="Emergence emblem">
+            <div class="plate-heading" aria-hidden="true"><span>THE LIVING WORLD</span><span>PLATE 001</span></div>
+            <div class="specimen-art">
+              <img class="logo logo-light" src="/resources/logo-light.webp" width="1280" height="1280" alt="An engraved hexagonal cell with a curling, delicate appendage." fetchpriority="high" />
+              <img class="logo logo-dark" src="/resources/logo-dark.webp" width="1280" height="1280" alt="A luminous green hexagonal cell with a curling, delicate appendage." fetchpriority="high" />
+            </div>
+            <figcaption><span>From one beginning, many possibilities.</span><span class="plate-symbol" aria-hidden="true">✳</span></figcaption>
+          </figure>
+        </section>
+
+        <section class="premise" aria-labelledby="premise-title">
+          <div class="section-heading">
+            <p class="eyebrow">THE IDEA</p>
+            <h2 id="premise-title">Conditions are given. Life finds its way.</h2>
+          </div>
+          <div class="principles">
+            <article>
+              <span class="readout" aria-hidden="true">01 / WORLD</span>
+              <h3>Geography sets the stage.</h3>
+              <p>The world supplies terrain and physical conditions. Resources and changing seasons shape the possibilities for life.</p>
+            </article>
+            <article>
+              <span class="readout" aria-hidden="true">02 / INHERITANCE</span>
+              <h3>Every lineage has a beginning.</h3>
+              <p>Descendants inherit from those before them. Mutation introduces variation; local conditions shape what persists.</p>
+            </article>
+            <article>
+              <span class="readout" aria-hidden="true">03 / EMERGENCE</span>
+              <h3>The outcome stays open.</h3>
+              <p>No predefined species. No scripted outcomes. Ecology emerges from life, one generation at a time.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <p>Emergence <span aria-hidden="true">/</span> A world worth observing.</p>
+        <p class="readout">ONE HEX. AN OPEN POSSIBILITY.</p>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -6,7 +6,7 @@ I want to build a browser-based emergent evolution sandbox. A player generates a
 
 ## Inputs already in the repository
 
-- `/documents` — my research notes and design documentation. Read it before proposing anything.
+- `/docs` — my research notes and design documentation. Read it before proposing anything.
 - `/resources` — logos and a UI mockup. Use the logos for identity and the mockup as the reference for the visual language. `logo-dark` is the anchor for the dark theme: pull its palette, weight, and line quality into the interface so the branding and the UI read as one system.
 
 ## What I want from this task
