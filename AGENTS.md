@@ -9,10 +9,10 @@ Applies to human contributors and coding agents throughout this repository.
   location is `docs/`. Preserve the original notes and `resources/` artwork.
 - Follow the user's current step and explicit instructions. `docs/prompts.md`
   contains future steps, not permission to implement them now.
-- This foundation contains a static landing page only. Do not add simulation,
-  world generation, map rendering, placeholder grids, or speculative engine APIs
-  until a later task requests them. Simulation and rendering folders contain
-  only their boundary rules.
+- The current application includes the landing page, world setup, a Canvas atlas,
+  deterministic physical generation, drainage, climate, and geographic regions.
+  Do not add biological simulation, organisms, life seeding, or speculative
+  engine APIs until a later task requests them.
 - Geography supplies physical conditions; ecology emerges from life. Do not
   introduce predefined species, assigned ecological biomes, scripted evolution,
   or guaranteed outcomes.
@@ -31,8 +31,7 @@ Applies to human contributors and coding agents throughout this repository.
 - No application runtime package dependencies. Vite is the development server
   and static bundler; Playwright is the real-browser development check.
 - Node 22.12+ is for tooling only. Keep dependencies and the npm lockfile aligned.
-- Later: Canvas 2D for the map, SVG for illustrations and charts. Do not implement
-  either renderer during the foundation step.
+- Canvas 2D for the map; SVG for future illustrations and charts.
 
 ## Layer boundaries
 

@@ -1,6 +1,41 @@
 # Simulation boundary
 
-Reserved for the headless, deterministic engine. There is no implementation yet.
+This layer generates physical geography and derives seasonal climate. It has no
+organisms, ecological labels, movement rules or simulation clock.
+
+```js
+import { generateWorld, setDay } from './world.js';
+
+const world = generateWorld({
+  seed: 'emergence', size: 'medium', geography: 0.5, landFraction: 0.38,
+});
+const summer = setDay(world, 90);
+```
+
+Sizes are `small` (24 × 16), `medium` (60 × 40) and `large` (120 × 80).
+Geography is 0–1; land fraction is 0.35–0.40. The requested fraction counts the
+non-marine footprint before freshwater lakes; `nonMarineLandFraction` and
+`dryLandFraction` expose both measurements. `setDay` takes a non-negative integer
+and returns a new snapshot without changing geography, hydrology or region IDs.
+
+Snapshots contain serializable plain data. Consumers treat them as read-only.
+Generation records its version, normalized seed, candidate index and stateless
+integer hash inputs. There is no evolving random stream yet; a later organism
+engine must select and serialize its own complete PRNG state.
+
+The cylindrical odd-row grid wraps longitude only. Periodic five-octave noise
+provides synthetic geography; it is not a tectonic model. Stable priority flood
+derives drainage and spill surfaces. Springs supply fixed reference discharge;
+fed depressions fill their entire basin. Basin depths of at most five metres
+are sediment-filled. This established-flow approximation has no erosion,
+evaporation, infiltration, rainfall discharge or progressive filling.
+
+The generator tries at most twelve deterministic candidates for connected land,
+a river, multiple meaningful regions and a costly pass. Exhaustion throws a
+visible error rather than silently weakening those requirements. Regions and
+passes are physical diagnostics, never organism movement rules or species IDs.
+
+Run focused headless checks with `node --test tests/headless/*.test.js`.
 
 No UI/rendering imports, DOM, `window`, `document`, Canvas, browser storage,
 `Math.random()`, or wall-clock reads (`Date`, `performance.now()`). Future random

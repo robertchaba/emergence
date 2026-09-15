@@ -1,0 +1,349 @@
+/* Read-only Canvas 2D presentation. UI supplies resolved CSS tokens, the camera,
+   and snapshots. No browser style access, events, or simulation imports here. */
+const ROOT_THREE = Math.sqrt(3);
+const CORNERS = Array.from({ length: 6 }, (_, index) => {
+  const angle = (index * 60 - 30) * Math.PI / 180;
+  return { x: Math.cos(angle), y: Math.sin(angle) };
+});
+
+export const MAP_TOKEN_NAMES = Object.freeze([
+  'ground', 'sea-deep', 'sea-shallow', 'lake', 'land-low', 'land-high',
+  'relief-shadow', 'relief-light', 'ice', 'frost', 'river', 'spring',
+  'spring-ring', 'grid', 'edge', 'pin', 'pin-outline', 'temperature-cold',
+  'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
+  'region-barrier', 'region-boundary', 'pass', 'pass-outline',
+  ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
+].map((name) => `--map-${name}`));
+
+const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
+const modulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
+
+// All numeric channels come from supplied tokens; interpolation introduces no
+// second palette. Both hex and computed rgb() CSS serializations are accepted.
+function rgb(color) {
+  if (color.startsWith('#')) {
+    const value = color.slice(1);
+    const full = value.length === 3 ? [...value].map((char) => char + char).join('') : value;
+    return [0, 2, 4].map((offset) => parseInt(full.slice(offset, offset + 2), 16));
+  }
+  const channels = color.match(/[\d.]+/g);
+  if (!channels || channels.length < 3) throw new Error(`Unsupported map token: ${color}`);
+  return channels.slice(0, 3).map(Number);
+}
+
+function blend(a, b, fraction) {
+  const amount = clamp(fraction);
+  return a.map((channel, index) => channel + (b[index] - channel) * amount);
+}
+
+function cssRgb(channels) {
+  return `rgb(${channels.map((channel) => Math.round(channel)).join(' ')})`;
+}
+
+function hsl(channels) {
+  const [r, g, b] = channels.map((channel) => channel / 255);
+  const maximum = Math.max(r, g, b);
+  const minimum = Math.min(r, g, b);
+  const difference = maximum - minimum;
+  const lightness = (maximum + minimum) / 2;
+  if (!difference) return [0, 0, lightness];
+  const hue = maximum === r ? ((g - b) / difference) % 6
+    : maximum === g ? (b - r) / difference + 2 : (r - g) / difference + 4;
+  return [modulo(hue * 60, 360), difference / (1 - Math.abs(2 * lightness - 1)), lightness];
+}
+
+function center(hex) {
+  return { x: ROOT_THREE * (hex.col + (hex.row % 2) / 2 + 0.5), y: 1 + hex.row * 1.5 };
+}
+
+function polygon(context, x, y, radius) {
+  context.beginPath();
+  for (let index = 0; index < CORNERS.length; index += 1) {
+    const corner = CORNERS[index];
+    const method = index === 0 ? 'moveTo' : 'lineTo';
+    context[method](x + corner.x * radius, y + corner.y * radius);
+  }
+  context.closePath();
+}
+
+function insideHex(x, y) {
+  const dx = Math.abs(x);
+  const dy = Math.abs(y);
+  return dx <= ROOT_THREE / 2 + 1e-9 && dy <= 1 + 1e-9 && dy + dx / ROOT_THREE <= 1 + 1e-9;
+}
+
+export function createMapRenderer(canvas, { tokens }) {
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D is required to display the map.');
+  let width = 1;
+  let height = 1;
+  let pixelRatio = 1;
+  let palette;
+  let channels;
+  let temperatureRamp;
+  let colorCache = new WeakMap();
+
+  function setTokens(nextTokens) {
+    palette = {};
+    channels = {};
+    for (const name of MAP_TOKEN_NAMES) {
+      const value = nextTokens[name]?.trim();
+      if (!value) throw new Error(`Missing map token ${name}`);
+      const key = name.slice('--map-'.length);
+      palette[key] = value;
+      if (!['grid', 'region-boundary'].includes(key)) channels[key] = rgb(value);
+    }
+    temperatureRamp = [hsl(channels['temperature-cold']), hsl(channels['temperature-hot'])];
+    colorCache = new WeakMap();
+  }
+
+  function resize(nextWidth, nextHeight, dpr = 1) {
+    width = Math.max(1, nextWidth);
+    height = Math.max(1, nextHeight);
+    pixelRatio = Math.max(1, dpr);
+    const backingWidth = Math.round(width * pixelRatio);
+    const backingHeight = Math.round(height * pixelRatio);
+    if (canvas.width !== backingWidth) canvas.width = backingWidth;
+    if (canvas.height !== backingHeight) canvas.height = backingHeight;
+  }
+
+  function dimensions(world) {
+    return { width: world.width * ROOT_THREE, height: world.height * 1.5 + 0.5 };
+  }
+
+  function transform(world, camera) {
+    const size = dimensions(world);
+    const margin = Math.min(24, width * 0.04, height * 0.04);
+    const scale = Math.min((width - margin * 2) / size.width, (height - margin * 2) / size.height) * camera.zoom;
+    return {
+      scale,
+      x: (width - size.width * scale) / 2 + camera.x,
+      y: (height - size.height * scale) / 2 + camera.y,
+      mapWidth: size.width * scale,
+      mapHeight: size.height * scale,
+    };
+  }
+
+  function fit() {
+    return { zoom: 1, x: 0, y: 0 };
+  }
+
+  function cellCenter(world, id, camera = fit()) {
+    const hex = world.hexes[id];
+    if (!hex) return null;
+    const position = center(hex);
+    const view = transform(world, camera);
+    return { x: view.x + position.x * view.scale, y: view.y + position.y * view.scale };
+  }
+
+  function hitTest(world, camera, screenX, screenY) {
+    const view = transform(world, camera);
+    const x = (screenX - view.x) / view.scale;
+    const y = (screenY - view.y) / view.scale;
+    const size = dimensions(world);
+    if (x < 0 || x > size.width || y < 0 || y > size.height) return null;
+    const nearestRow = Math.round((y - 1) / 1.5);
+    for (let row = nearestRow - 1; row <= nearestRow + 1; row += 1) {
+      if (row < 0 || row >= world.height) continue;
+      const nearestCol = Math.round(x / ROOT_THREE - (row % 2) / 2 - 0.5);
+      for (let col = nearestCol - 1; col <= nearestCol + 1; col += 1) {
+        const localCenter = ROOT_THREE * (col + (row % 2) / 2 + 0.5);
+        if (insideHex(x - localCenter, y - (1 + row * 1.5))) {
+          return row * world.width + modulo(col, world.width);
+        }
+      }
+    }
+    return null;
+  }
+
+  function terrainChannels(hex) {
+    if (hex.waterType === 'sea') {
+      return blend(channels['sea-shallow'], channels['sea-deep'], Math.sqrt(clamp(-hex.bedElevation / 6000)));
+    }
+    if (hex.waterType === 'lake') return channels.lake;
+    return blend(channels['land-low'], channels['land-high'], Math.sqrt(clamp(hex.bedElevation / 5000)));
+  }
+
+  function relief(hex, world) {
+    let gradient = 0;
+    for (const neighborId of hex.neighbors) {
+      const neighbor = world.hexes[neighborId];
+      const offset = neighbor.col - hex.col;
+      const dx = offset > world.width / 2 ? offset - world.width : offset < -world.width / 2 ? offset + world.width : offset;
+      // Light comes from the northwest. Only display height drives shading.
+      gradient += (neighbor.bedElevation - hex.bedElevation) * (-dx - (neighbor.row - hex.row));
+    }
+    return clamp(gradient / 9000, -0.3, 0.3);
+  }
+
+  function fillColor(hex, world, layer) {
+    if (layer === 'temperature') {
+      const t = clamp((hex.temperature + 40) / 80);
+      const [cold, hot] = temperatureRamp;
+      const mixed = blend(cold, hot, t);
+      return `hsl(${mixed[0]} ${mixed[1] * 100}% ${mixed[2] * 100}%)`;
+    }
+    if (layer === 'humidity') {
+      if (hex.humidity === null || hex.waterType !== 'none') return palette['humidity-water'];
+      return cssRgb(blend(channels['humidity-dry'], channels['humidity-wet'], hex.humidity));
+    }
+    if (layer === 'regions') {
+      if (hex.regionId === null || hex.regionId < 0 || hex.permanentIce || world.regions?.[hex.regionId]?.hardBarrier) return palette['region-barrier'];
+      return cssRgb(blend(channels[`region-${modulo(hex.regionId, 8)}`], channels['relief-shadow'], hex.traversalDifficulty * 0.18));
+    }
+    let value = terrainChannels(hex);
+    if (layer === 'terrain' && hex.temperature < 0) {
+      if (hex.waterType !== 'none') return palette.ice;
+      value = blend(value, channels.frost, 0.55);
+    }
+    if (layer === 'terrain' && hex.waterType === 'none') {
+      const shade = relief(hex, world);
+      value = blend(value, shade < 0 ? channels['relief-light'] : channels['relief-shadow'], Math.abs(shade));
+    }
+    return cssRgb(value);
+  }
+
+  function colors(world, layer) {
+    let cached = colorCache.get(world);
+    if (!cached) {
+      cached = new Map();
+      colorCache.set(world, cached);
+    }
+    if (!cached.has(layer)) cached.set(layer, world.hexes.map((hex) => fillColor(hex, world, layer)));
+    return cached.get(layer);
+  }
+
+  // A cylindrical edge is not a long straight line across the map: unwrap to
+  // the nearest longitude and draw a second clipped segment on the other edge.
+  function connection(world, fromId, toId, view, stroke, lineWidth, dash = []) {
+    const fromHex = world.hexes[fromId];
+    const toHex = world.hexes[toId];
+    if (!fromHex || !toHex) return;
+    const from = center(fromHex);
+    const to = center(toHex);
+    const circumference = world.width * ROOT_THREE;
+    if (to.x - from.x > circumference / 2) to.x -= circumference;
+    if (to.x - from.x < -circumference / 2) to.x += circumference;
+    context.strokeStyle = stroke;
+    context.lineWidth = lineWidth;
+    context.setLineDash(dash);
+    for (const shift of [-circumference, 0, circumference]) {
+      context.beginPath();
+      context.moveTo(view.x + (from.x + shift) * view.scale, view.y + from.y * view.scale);
+      context.lineTo(view.x + (to.x + shift) * view.scale, view.y + to.y * view.scale);
+      context.stroke();
+    }
+    context.setLineDash([]);
+  }
+
+  function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null } = {}) {
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    context.fillStyle = palette.ground;
+    context.fillRect(0, 0, width, height);
+    if (!world?.hexes?.length) return;
+    const view = transform(world, camera);
+    const fills = colors(world, layer);
+    const circumference = world.width * ROOT_THREE;
+    context.save();
+    context.beginPath();
+    context.rect(view.x, view.y, view.mapWidth, view.mapHeight);
+    context.clip();
+
+    for (const hex of world.hexes) {
+      const position = center(hex);
+      const y = view.y + position.y * view.scale;
+      if (y + view.scale < 0 || y - view.scale > height) continue;
+      const shifts = hex.col === world.width - 1 && hex.row % 2 ? [-circumference, 0] : [0];
+      for (const shift of shifts) {
+        const x = view.x + (position.x + shift) * view.scale;
+        if (x + view.scale < 0 || x - view.scale > width) continue;
+        polygon(context, x, y, view.scale + 0.35);
+        context.fillStyle = fills[hex.id];
+        context.fill();
+        if (view.scale >= 5) {
+          polygon(context, x, y, view.scale);
+          context.strokeStyle = palette.grid;
+          context.lineWidth = Math.min(0.8, view.scale * 0.025);
+          context.stroke();
+        }
+      }
+    }
+
+    context.lineCap = 'round';
+    if (layer === 'terrain' || layer === 'elevation') {
+      for (const hex of world.hexes) {
+        if (hex.runoff > 0 && hex.downstream !== null && hex.waterType !== 'sea') {
+          const outlet = world.hexes[hex.downstream];
+          if (hex.waterType === 'lake' && outlet.waterType === 'lake' && hex.waterLevel === outlet.waterLevel) continue;
+          const riverWidth = clamp((0.12 + Math.sqrt(hex.runoff) * 0.06) * view.scale, 0.7, 7);
+          const riverColor = layer === 'terrain' && hex.temperature < 0 ? palette.ice : palette.river;
+          connection(world, hex.id, hex.downstream, view, riverColor, riverWidth);
+        }
+      }
+      for (const hex of world.hexes) {
+        if (!(hex.springDischarge > 0)) continue;
+        const position = cellCenter(world, hex.id, camera);
+        const radius = clamp(view.scale * 0.22, 1.5, 5);
+        for (const shift of [-view.mapWidth, 0, view.mapWidth]) {
+          context.beginPath();
+          context.arc(position.x + shift, position.y, radius, 0, Math.PI * 2);
+          context.fillStyle = palette.spring;
+          context.fill();
+          context.strokeStyle = palette['spring-ring'];
+          context.lineWidth = 1;
+          context.stroke();
+        }
+      }
+    }
+    if (layer === 'regions') {
+      for (const hex of world.hexes) {
+        const a = center(hex);
+        for (const id of hex.neighbors) {
+          if (id < hex.id || world.hexes[id].regionId === hex.regionId) continue;
+          const b = center(world.hexes[id]);
+          if (b.x - a.x > circumference / 2) b.x -= circumference;
+          if (b.x - a.x < -circumference / 2) b.x += circumference;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const length = Math.hypot(dx, dy);
+          const mx = (a.x + b.x) / 2;
+          const my = (a.y + b.y) / 2;
+          for (const shift of [-circumference, 0, circumference]) {
+            context.beginPath();
+            context.moveTo(view.x + (mx - dy / length * 0.5 + shift) * view.scale, view.y + (my + dx / length * 0.5) * view.scale);
+            context.lineTo(view.x + (mx + dy / length * 0.5 + shift) * view.scale, view.y + (my - dx / length * 0.5) * view.scale);
+            context.strokeStyle = palette['region-boundary'];
+            context.lineWidth = clamp(view.scale * 0.08, 0.7, 2);
+            context.stroke();
+          }
+        }
+      }
+      for (const pass of world.passes ?? []) {
+        const lineWidth = clamp(view.scale * 0.28, 2, 7);
+        connection(world, pass.fromHex, pass.toHex, view, palette['pass-outline'], lineWidth + 2);
+        connection(world, pass.fromHex, pass.toHex, view, palette.pass, lineWidth, [3, 2]);
+      }
+    }
+
+    for (const id of [hoveredId, pinnedId]) {
+      if (id === null || !world.hexes[id]) continue;
+      const position = cellCenter(world, id, camera);
+      for (const shift of [-view.mapWidth, 0, view.mapWidth]) {
+        polygon(context, position.x + shift, position.y, view.scale * 0.88);
+        context.strokeStyle = palette['pin-outline'];
+        context.lineWidth = id === pinnedId ? 5 : 3;
+        context.stroke();
+        context.strokeStyle = palette.pin;
+        context.lineWidth = id === pinnedId ? 2.5 : 1.3;
+        context.stroke();
+      }
+    }
+    context.restore();
+    context.strokeStyle = palette.edge;
+    context.lineWidth = 1;
+    context.strokeRect(view.x, view.y, view.mapWidth, view.mapHeight);
+  }
+
+  setTokens(tokens);
+  return { resize, setTokens, fit, draw, hitTest, cellCenter };
+}

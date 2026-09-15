@@ -9,6 +9,7 @@
     <link rel="icon" type="image/webp" href="/resources/logo-dark.webp" media="(prefers-color-scheme: dark)" />
     <link rel="stylesheet" href="/src/ui/styles/tokens.css" />
     <link rel="stylesheet" href="/src/ui/styles/landing.css" />
+    <link rel="stylesheet" href="/src/ui/styles/workspace.css" />
     <script type="module" src="/src/ui/main.js"></script>
   </head>
   <body>
@@ -36,7 +37,7 @@
             <p class="tagline">A small beginning.<br />An unwritten world.</p>
             <p class="introduction">Generate a world. Seed life in a single hex. Watch resources, inheritance, mutation, and seasons shape the generations that follow.</p>
             <div class="start-block">
-              <button class="start-button" type="button" disabled>Start a world <span aria-hidden="true">↗</span></button>
+              <a class="start-button" href="#world-setup">Create a world <span aria-hidden="true">↓</span></a>
             </div>
           </div>
 
@@ -47,6 +48,38 @@
             </div>
             <figcaption>From one beginning, many possibilities.</figcaption>
           </figure>
+        </section>
+
+        <section id="world-setup" class="world-setup" aria-labelledby="setup-title">
+          <div class="section-heading">
+            <p class="eyebrow">01 / Field atlas</p>
+            <h2 id="setup-title">World setup</h2>
+          </div>
+          <div class="setup-layout">
+            <form id="world-form" class="world-form">
+              <label for="seed">Seed</label>
+              <input id="seed" name="seed" type="text" value="emergence" required maxlength="100" spellcheck="false" />
+              <label for="world-size">World size</label>
+              <select id="world-size" name="size">
+                <option value="small">Small · 24 × 16 · 384 hexes</option>
+                <option value="medium" selected>Medium · 60 × 40 · 2,400 hexes</option>
+                <option value="large">Large · 120 × 80 · 9,600 hexes</option>
+              </select>
+              <label for="geography">Geography <output id="geography-value" for="geography">50%</output></label>
+              <input id="geography" name="geography" type="range" min="0" max="100" step="1" value="50" />
+              <div class="range-labels"><span>Continents</span><span>Archipelago</span></div>
+              <label for="land-fraction">Land fraction <output id="land-value" for="land-fraction">38%</output></label>
+              <input id="land-fraction" name="landFraction" type="range" min="35" max="40" step="0.1" value="38" />
+              <p class="field-note">The land budget is measured before freshwater lakes fill.</p>
+              <button id="generate-world" class="action-button" type="submit" disabled>Generate world</button>
+              <p id="generation-status" class="field-note" role="status">Enable JavaScript to generate a world.</p>
+            </form>
+            <div class="preview-panel">
+              <div class="panel-label"><span class="readout">Map preview</span><span class="readout">Cylindrical · east ↔ west</span></div>
+              <div class="preview-surface"><canvas id="world-preview" role="img" aria-label="Generated world preview">A generated world preview appears here when JavaScript is enabled.</canvas></div>
+              <div class="preview-footer"><p id="world-summary" class="field-note">A seed defines the physical world.</p><button id="start-workspace" class="action-button primary" type="button" disabled>Start <span aria-hidden="true">↗</span></button></div>
+            </div>
+          </div>
         </section>
 
         <section class="premise" aria-labelledby="premise-title">
@@ -85,5 +118,37 @@
         </div>
       </footer>
     </div>
+    <section id="workspace" class="workspace" aria-label="Simulation workspace" hidden>
+      <header class="workspace-header">
+        <div class="workspace-brand"><span class="workspace-title">Emergence</span><span class="readout">Field atlas</span></div>
+        <details id="application-menu" class="application-menu">
+          <summary>Application menu</summary>
+          <div class="menu-actions"><button id="fit-world" type="button">Fit world</button><button id="return-setup" type="button">Return to World setup</button></div>
+        </details>
+        <div id="workspace-preferences"></div>
+      </header>
+      <div class="workspace-body">
+        <div class="map-column">
+          <fieldset class="map-layers"><legend class="visually-hidden">Map layer</legend>
+            <label><input type="radio" name="layer" value="terrain" checked /><span>Terrain</span></label>
+            <label><input type="radio" name="layer" value="elevation" /><span>Elevation</span></label>
+            <label><input type="radio" name="layer" value="temperature" /><span>Temperature</span></label>
+            <label><input type="radio" name="layer" value="humidity" /><span>Humidity</span></label>
+            <label><input type="radio" name="layer" value="regions" /><span>Regions</span></label>
+          </fieldset>
+          <div class="map-surface"><canvas id="world-map" tabindex="0" role="application" aria-label="World map" aria-describedby="map-help map-status">Use the keyboard to inspect the world. Hex details appear in the notebook.</canvas>
+            <div class="zoom-controls" role="group" aria-label="Map zoom"><button id="zoom-out" type="button" aria-label="Zoom out">−</button><output id="zoom-level" aria-label="Zoom level">1×</output><button id="zoom-in" type="button" aria-label="Zoom in">+</button></div>
+          </div>
+          <div class="map-caption"><p id="layer-legend">Depth-graded seas · teal lakes · spring-fed rivers</p><p id="map-status" role="status">No hex pinned.</p></div>
+        </div>
+        <aside class="notebook" aria-label="Field notebook">
+          <div class="notebook-heading"><p class="eyebrow">Field notebook</p><p id="world-readout" class="readout"></p></div>
+          <div class="season-controls"><label for="world-day">Day</label><input id="world-day" type="number" min="0" step="1" value="0" /><button id="advance-season" type="button">+90 days</button><p id="season-readout" class="field-note">Northern spring equinox</p></div>
+          <div class="notebook-tabs" role="tablist" aria-label="Notebook sections"><button id="hex-tab" type="button" role="tab" aria-selected="true" aria-controls="hex-panel" tabindex="0">Hex</button></div>
+          <section id="hex-panel" role="tabpanel" aria-labelledby="hex-tab" tabindex="0"><div id="hex-details"><h2>A world to inspect.</h2><p>Pin a hex to read its terrain, water, climate, and geographic connections.</p></div></section>
+          <p id="map-help" class="map-help">Drag to pan. Scroll or pinch to zoom. Click to pin. With the map focused, use arrow keys to inspect, + / − to zoom, and Escape to clear.</p>
+        </aside>
+      </div>
+    </section>
   </body>
 </html>

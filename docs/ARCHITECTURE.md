@@ -2,8 +2,13 @@
 
 ## Status
 
-**Foundation accepted for implementation — 2026-09-15.** This repository currently
-contains one static landing page with theme controls. There is no engine,
+**Current: physical world atlas — 2026-09-15.** Decisions 010–013 implement the
+requested interface, generator, seasonal climate, and geographic diagnostics.
+There are no organisms, biological rules, or simulation time loop.
+
+**Historical foundation status, superseded by 010–012:**
+**Foundation accepted for implementation — 2026-09-15.** This repository initially
+contained one static landing page with theme controls. There was no engine,
 generator, renderer, world setup screen, or working Start action.
 
 Extend this document in every subsequent task. Add a dated entry recording the
@@ -255,3 +260,242 @@ root `LICENSE`. The development licence URL also returned the correct file.
 Both themes were checked at 1440px, 390px, and 320px with no horizontal overflow;
 screenshots confirmed the type hierarchy and illumination. `git diff --check`
 passed.
+
+## 010 — World setup and interactive atlas — 2026-09-15
+
+**Supersedes the foundation-only implementation restrictions in 001–005 and the
+disabled Start behavior in 009.** The current request explicitly includes the
+interface skeleton and prompts 3 and 4. The final interface therefore uses real
+generated snapshots instead of retaining the intermediate placeholder grid.
+The original landing, artwork, theme behavior, contact links, and licence remain.
+
+World setup is a section of the normal page. Seed, size, geography, and land
+fraction are native form controls. A default world is generated on load; changing
+settings marks the preview stale and disables Start until Generate succeeds.
+Input values are read together and passed directly to `generateWorld`. Generation
+failure is visible and leaves Start disabled. The preview explicitly distinguishes
+the non-marine land budget from remaining dry land after lakes fill.
+
+Start opens a full-viewport workspace. The map and notebook sit side by side on
+desktop; the notebook scrolls below the map on phones. Its day controls follow
+the Hex inspector visually on phones so a newly pinned hex is immediately visible.
+The application menu provides Fit world and Return to World setup. Returning
+restores the previous page scroll and focuses Start. The same native theme radio
+group moves between screens, preserving one preference/controller and System's
+live behavior. The disabled PL placeholder remains on the landing page.
+
+Map input belongs to `src/ui/world-ui.js`: wheel and two-pointer pinch zoom around
+the pointer/centroid, drag pans, and a click pins. Zoom is 1–32 times the fitted
+world. Focused-map arrows inspect adjacent cells (east/west wraps, poles clamp),
+`+` / `−` zoom, and Escape clears. Keyboard inspection pans a hidden cell back
+into view. The Hex tab uses native focus with arrow, Home, and End navigation;
+its facts are semantic text and definition lists. A short live status announces
+the pin without reading the entire notebook on each interaction.
+
+### Layer boundaries and palette
+
+```text
+index.html → ui/main.js → theme.js
+                       → world-ui.js → simulation/world.js, climate.js
+                                     → rendering/map.js
+```
+
+The UI owns events, `ResizeObserver`, animation-frame scheduling, browser styles,
+and number formatting. It calls generation/day commands and replaces its snapshot
+reference; it never edits hex state. Renderer methods receive a read-only world,
+resolved `--map-*` tokens, a camera, layer, and selection. Renderer-local geometry
+supports fitting, picking, and cell centers, avoiding an engine dependency.
+Drawings cache colors by snapshot identity and clear those caches on token changes.
+
+All map palette values, including region colors, ice/frost, selection outlines,
+and pass markings, live on `:root` in `tokens.css`. Explicit dark and no-JavaScript
+dark fallback definitions match. Canvas interpolates supplied colors and performs
+relief shading; it never reads CSS or invents a separate palette. Temperature
+interpolates hue from token-derived cold blue to warm red; humidity interpolates
+dry ochre to wet green. Terrain includes depth-graded sea, distinct lakes, shaded
+elevation, flow-width river segments, and spring markers. Connections unwrap to
+the closest longitude and draw at both clipped map edges when crossing the seam.
+
+**Limits:** Canvas has a semantic inspector and keyboard input, but this is not
+an exhaustive accessibility audit. Only Chromium is in the browser matrix.
+The camera is presentation state; no map input advances biological time. The
+workspace is viewport-filling without invoking the browser Fullscreen API.
+
+## 011 — Deterministic geography and established flow — 2026-09-15
+
+`generateWorld({ seed, size, geography, landFraction })` is the first implemented
+headless API. It returns ordinary serializable data, with no browser services,
+wall-clock reads, mutable shared random stream, or imports from UI/rendering.
+The dimensions are small 24 × 16, default medium 60 × 40, and maximum large
+120 × 80. Stable row-major IDs and sorted reciprocal neighbors represent an odd-row
+cylinder: six neighbors inside, four at either polar boundary.
+
+### Elevation and repeatability
+
+The generator version is `physical-world-1`. Seeded integer coordinate hashing
+feeds five octaves of smoothly interpolated value noise, periodic in longitude.
+At every octave, geography blends the adjacent integer frequencies around
+`(4 + 6 × geography) × 2^octave`. Weights fall by 0.36 per octave; detail beyond
+the small map's useful resolution is attenuated. A sixth-power latitude taper
+lowers the poles. This is deterministic synthetic geography, not a tectonic model.
+
+Every top and bottom row is excluded before allocating the whole-grid land budget.
+The highest `round(hexCount × landFraction)` eligible elevations become land,
+with cell ID resolving ties. Sea beds are strictly negative, including inland
+below-sea-level pockets; sea surface is zero. The synthetic vertical scale is
+approximately −6,000 to +5,000 metres. The target fraction defaults to 0.38 and is
+validated within 0.35–0.40. `nonMarineLandFraction` counts the selected footprint;
+`dryLandFraction` excludes freshwater lakes.
+
+A bounded sequence of at most 12 deterministic candidates checks for coherent
+land (largest component at least 12% of non-marine cells and at least six cells),
+a spring-fed river, multiple non-hard regions with at least three cells, and a
+real costly pass. Exhaustion throws a visible error rather than weakening the
+criteria. The snapshot records the normalized seed, settings, version, selected
+candidate, and integer hash inputs in `randomState`. Hashing is stateless, so
+there is no unfinished random stream to resume. This does **not** choose the
+future biological PRNG or promise cross-browser floating-point identity.
+
+### Drainage and basins
+
+A stable priority flood starts from all sea hexes. Surface elevation and then
+cell ID order the heap. Each dry cell gets a spill/routing elevation and a
+downstream neighbor leading to an earlier-settled outlet. Depressions group at
+their connected spill level, including side pockets linked through zero-depth
+saddles. Such saddles remain dry land. The basin routes toward one deterministic
+overflow; equal-height routing never depends on iteration accidents.
+
+Basins at most five metres deep are sediment-filled in their entirety. About
+2.5% of exposed eligible land above 300 m receives seeded springs (at least one
+when eligible land exists), each discharging one reference flow unit. Topological
+accumulation sums tributaries, detects cycles, and carries water through basin
+outlets to sea. A basin becomes a lake only when positive flow enters it; every
+submerged pocket fills to its spill level. Nested basins can overflow into one
+another; flow entering a lower basin does not backfill an unfed upper basin.
+
+Each hex separates bed elevation, actual water level, spill elevation, downstream
+ID, spring discharge, accumulated runoff, lake inflow, basin ID, and shortest
+hex distance to water. Sea and lake water surfaces are distinct from beds; river
+land uses its bed as a reference water level because cross-sections are not
+modeled. Any dry-land hex with positive runoff is a channel. Multi-source distance
+search includes sea, lakes, and channels, using the same wrapped adjacency.
+
+**Limits:** This is an established-flow approximation computed once at generation.
+There is no erosion, evaporation, infiltration, rainfall-driven discharge,
+progressive filling, or seasonal rerouting. Coherence and candidate checks are
+engineering acceptance criteria, not calibrated geological statistics. Generation
+runs synchronously after yielding a browser frame for its busy state; no worker
+or long-term persistence interface is introduced.
+
+## 012 — Seasons and diagnostic geographic barriers — 2026-09-15
+
+The current task leaves climate coefficients and barrier thresholds open. The
+research's section 4 provides a concrete starting climate model, adopted here as
+**provisional geography defaults**. No ecological coefficients, species labels,
+organism movement rules, or survival decisions are introduced.
+
+`setDay(world, day)` requires a non-negative safe integer, recursively copies the
+entire snapshot, and returns new climate readings. A year is 360 days and day zero
+is northern spring equinox. With latitude `L = 90 − 180 × row / (height − 1)`:
+
+```text
+seasonalSignal = (L / 90) × sin(2π × (day % 360) / 360)
+meanTemperature = 28 − 60 × (abs(L) / 90)^2 − 0.0065 × max(0, surfaceHeight)
+temperature = clamp(meanTemperature + amplitude × seasonalSignal, −40, 40)
+amplitude = 4 on sea/lake; 12 on land
+humidity = clamp(exp(−distanceToWater / (width / 20))
+                 − max(0, bedElevation) / 10000
+                 − 0.01 × max(0, temperature − 20)
+                 − 0.10 × seasonalSignal, 0, 1)
+```
+
+Surface height uses water level for sea/lake and bed elevation for land. Humidity
+is a moisture index only on land, and null on sea/lake. River land retains its
+land climate. Seasonal ice and frost derive from negative temperature in the
+renderer; hydrology remains fixed. Annual maximum temperature defines permanent
+ice, and annual minimum humidity is derived analytically at the warmest seasonal
+signal. These annual values make geographic regions independent of the viewed day.
+
+### Initial diagnostic thresholds
+
+| Physical condition | Provisional reference treatment |
+| --- | --- |
+| Annual maximum temperature below 0 °C | Permanent ice, difficulty 1 |
+| Land at or above 3,500 m | High ridge, difficulty 1 |
+| Sea depth at least 2,000 m and at least `max(2, round(width / 30))` hexes from dry land | Wide deep ocean, difficulty 1 |
+| Ground/shore elevation step at least 1,000 m | Blocked reference connection |
+| Narrow land or water neck | Difficulty at least 0.65 |
+| Elevated, seasonally dry, cold, river-bearing land | Continuous difficulty derived from those fields |
+
+Soft land difficulty takes the maximum of elevation / 3500, river flow
+(`min(0.5, 0.1 × log2(1 + runoff))`), dryness
+(`0.75 × clamp((0.35 − annualMinimumHumidity) / 0.35)`), cold
+(`0.75 × clamp((8 − meanTemperature) / 40)`), and a narrow-link cost. Values clamp
+to 0–1. Water starts at `0.2 + depth / 10000`, capped at 0.55 unless narrow or
+hard. A narrow link has two or three neighbors of the same surface type which
+are disconnected around its immediate ring. The easy/harsh split is 0.55.
+
+Regions flood connected cells of the same physical class, respecting cliffs and
+the cylindrical seam. Every hex exposes difficulty, physical reasons, and a
+region ID. IDs follow deterministic cell order, never random colors or rectangles.
+The graph records the least-cost actual boundary edge between each region pair,
+with stable endpoint tie-breaking. `regionConnections` retains blocked edges;
+`passes` contains crossable diagnostic connections. Region view colors the zones,
+uses a neutral token for hard barriers, and marks passes. Tiny isolated cliff
+zones remain visible; the generation quality gate counts larger meaningful zones
+separately rather than pretending all colored fragments are major regions.
+
+**Limits:** Geographic difficulty is a reference diagnostic, not universal
+organism passability. A region boundary itself is never a prohibition, a habitat
+label, or a mechanism for creating species. These thresholds and local bottleneck
+heuristics need later balancing against actual movement capabilities. Season
+controls inspect climate only; there is no organism simulation or run/pause loop.
+
+## 013 — Validation for the physical atlas — 2026-09-15
+
+`npm test` now runs Node's built-in test runner before building and launching
+the production page for Playwright. Browser tests explicitly match `*.spec.js`
+so headless tests do not run inside Playwright. No dependency was added; package
+versions and the lockfile remain aligned.
+
+The headless suite covers all three sizes, both geography endpoints and midpoint,
+land budgets, reserved poles, serializable deterministic snapshots, periodic
+noise and continuity, reciprocal seam adjacency, water distance, acyclic monotone
+sea drainage, conserved spring flow, basin side pockets, dry saddles, whole-basin
+sedimentation, unfed depressions, and multi-level overflow. Tiny-world seeds are
+checked explicitly for coherent land, rivers, and useful regions. Climate checks
+cover hemispheric symmetry, lapse rate, water amplitude, humidity bounds, complete
+snapshot-copy purity, annual barriers, connected regions, and stable real passes.
+Renderer checks cover picking after camera changes, both seam halves, frozen
+snapshot drawing, short seam connections, and complete theme tokens.
+
+Playwright extends the landing checks with real setup inputs and generation,
+screen navigation/focus restoration, wheel zoom, drag, click pin, keyboard seam
+and pole inspection, 32× bounds, Fit world, notebook keys, every map layer,
+season changes, theme/layout bounds, and a Chromium touch pinch on the phone
+project. Screenshots support inspection of light/dark desktop and phone layouts,
+including 320px.
+
+### Executed verification
+
+- `npm run build` passed; the static output includes the full BSD licence.
+- `npm test` passed 22 Node headless/renderer tests and 21 Chromium tests.
+  The phone touch-pinch check passed; its desktop duplicate is intentionally
+  skipped because the desktop project has no touch input.
+- Both themes were visually inspected for setup, workspace, pinned inspector,
+  phone scrolling, and keyboard focus. Responsive checks include 1440px, 390px,
+  and 320px widths. Temperature and region debug layers were also reviewed.
+- The Vite development page loaded and generated worlds successfully. No runtime
+  dependencies were introduced; `npm ls --omit=dev` is empty, and dependency
+  versions match the npm lockfile. Headless source scans found no forbidden
+  browser imports, unseeded randomness, or wall-clock access.
+- Independent review compared 500 generated test terrains with a separate
+  minimum-spill calculation and sampled 300 tiny worlds for coherence, rivers,
+  and meaningful regional separation. These ad-hoc checks passed; fixed
+  regressions for discovered saddle and nested-lake cases remain in the suite.
+- `git diff --check` passed. Original research notes, artwork, and licence text
+  remain unchanged. No biological model was implemented or validated.
+
+**Limits:** Browser and headless checks validate these physical-model invariants,
+not future ecology, geological realism, calibrated climate, or other browser
+engines. No cross-browser numerical equivalence is claimed.

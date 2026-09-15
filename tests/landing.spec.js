@@ -48,7 +48,8 @@ test('landing loads, both themes render, and the layout fits', async ({ page, re
   expect(response.ok()).toBeTruthy();
   await expect(page).toHaveTitle('Emergence — an evolution sandbox');
   await expect(page.getByRole('heading', { level: 1, name: 'Emergence', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Start a world' })).toBeDisabled();
+  await expect(page.getByRole('link', { name: 'Create a world' })).toHaveAttribute('href', '#world-setup');
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('group', { name: 'Language', exact: true }).getByRole('button', { name: 'PL' })).toBeDisabled();
   await expect(page.getByRole('link', { name: 'robert.chaba@gmail.com' })).toHaveAttribute('href', 'mailto:robert.chaba@gmail.com');
