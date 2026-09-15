@@ -6,7 +6,7 @@ import { partitionRegions } from './regions.js';
 
 export { WORLD_SIZES } from './grid.js';
 export { setDay } from './climate.js';
-export const GENERATOR_VERSION = 'physical-world-1';
+export const GENERATOR_VERSION = 'physical-world-2';
 const MAX_CANDIDATES = 12;
 
 function applyElevation(world, seed) {
@@ -63,11 +63,12 @@ function qualityOf(world) {
 }
 
 /** Serializable physical geography only; no ecology, organism state or time loop. */
-export function generateWorld({ seed = 'emergence', size = 'medium', geography = 0.5, landFraction = 0.38 } = {}) {
+export function generateWorld({ seed = 'emergence', size = 'medium', geography = 0.5, landFraction = 0.38, waterAbundance = 0.5 } = {}) {
   if (!Object.hasOwn(WORLD_SIZES, size)) throw new RangeError('Choose small, medium or large world size.');
   if (typeof seed !== 'string' && (typeof seed !== 'number' || !Number.isFinite(seed))) throw new TypeError('Seed must be a string or finite number.');
   if (!Number.isFinite(geography) || geography < 0 || geography > 1) throw new RangeError('Geography must be between zero and one.');
   if (!Number.isFinite(landFraction) || landFraction < 0.35 || landFraction > 0.4) throw new RangeError('Land fraction must be between 0.35 and 0.40.');
+  if (!Number.isFinite(waterAbundance) || waterAbundance < 0 || waterAbundance > 1) throw new RangeError('Water abundance must be between zero and one.');
   const dimensions = WORLD_SIZES[size];
   const seedHash = hashSeed(seed);
   let quality;
@@ -75,7 +76,7 @@ export function generateWorld({ seed = 'emergence', size = 'medium', geography =
     const candidateSeed = coordinateHash(seedHash, candidate, 0, 173);
     const world = {
       version: GENERATOR_VERSION, seed: String(seed), size, ...dimensions,
-      geography, landFraction, day: 0, candidate,
+      geography, landFraction, waterAbundance, day: 0, candidate,
       randomState: { algorithm: 'coordinate-hash-v1', seedHash, candidateSeed },
       hexes: createGrid(dimensions.width, dimensions.height),
       regions: [], passes: [],

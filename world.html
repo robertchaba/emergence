@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta data-i18n-content="description" name="description" content="Emergence is an open-ended evolution sandbox. Seed life in one hex and watch resources, inheritance, mutation, and seasons shape what follows." />
+    <title data-i18n="setupTitle">World setup — Emergence</title>
+    <link rel="icon" type="image/webp" href="/resources/logo-light.webp" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/webp" href="/resources/logo-dark.webp" media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" href="/src/ui/styles/tokens.css" />
+    <link rel="stylesheet" href="/src/ui/styles/landing.css" />
+    <link rel="stylesheet" href="/src/ui/styles/workspace.css" />
+    <script type="module" src="/src/ui/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+    <div class="page-shell">
+      <header class="page-preferences" aria-label="Page preferences" data-i18n-aria-label="preferences">
+        <details class="theme-picker" hidden>
+          <summary aria-label="Colour theme" data-i18n-aria-label="theme" title="Colour theme" data-i18n-title="theme"><svg class="control-icon theme-icon-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg><svg class="control-icon theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><svg class="control-icon theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z"/></svg></summary>
+          <fieldset class="theme-switcher">
+            <legend class="visually-hidden" data-i18n="theme">Colour theme</legend>
+            <label><input type="radio" name="theme" value="system" checked /><span><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg><span data-i18n="system">System</span></span></label>
+            <label><input type="radio" name="theme" value="light" /><span><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><span data-i18n="light">Light</span></span></label>
+            <label><input type="radio" name="theme" value="dark" /><span><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z"/></svg><span data-i18n="dark">Dark</span></span></label>
+          </fieldset>
+        </details>
+        <div class="language-switcher" role="group" aria-label="Language" data-i18n-aria-label="language">
+          <button type="button" data-locale="en" lang="en" aria-pressed="true" disabled>EN</button>
+          <span class="language-divider" aria-hidden="true">/</span>
+          <button type="button" data-locale="pl" lang="pl" aria-pressed="false" disabled>PL</button>
+        </div>
+      </header>
+
+      <main id="main">
+        <section id="world-setup" class="world-setup" aria-labelledby="setup-title">
+          <a class="back-link" href="./" data-i18n="back">← Back to Emergence</a>
+          <div class="section-heading">
+            <p class="eyebrow" data-i18n="atlasIndex">01 / Field atlas</p>
+            <h1 id="setup-title" data-i18n="setup">World setup</h1>
+          </div>
+          <div class="setup-layout">
+            <form id="world-form" class="world-form">
+              <label for="seed" data-i18n="seed">Seed</label>
+              <div class="seed-controls"><input id="seed" name="seed" type="text" required maxlength="100" spellcheck="false" /><button id="randomize-seed" class="action-button" type="button" data-i18n="randomize">Randomize</button></div>
+              <label for="world-size" data-i18n="worldSize">World size</label>
+              <select id="world-size" name="size">
+                <option value="small" data-i18n="small">Small · 24 × 16 · 384 hexes</option>
+                <option value="medium" selected data-i18n="medium">Medium · 60 × 40 · 2,400 hexes</option>
+                <option value="large" data-i18n="large">Large · 120 × 80 · 9,600 hexes</option>
+              </select>
+              <label for="geography"><span data-i18n="geography">Geography</span> <output id="geography-value" for="geography">50%</output></label>
+              <input id="geography" name="geography" type="range" min="0" max="100" step="1" value="50" />
+              <div class="range-labels"><span data-i18n="continents">Continents</span><span data-i18n="archipelago">Archipelago</span></div>
+              <label for="land-fraction"><span data-i18n="landFraction">Land fraction</span> <output id="land-value" for="land-fraction">38%</output></label>
+              <input id="land-fraction" name="landFraction" type="range" min="35" max="40" step="0.1" value="38" />
+              <p class="field-note" data-i18n="landHelp">The land budget is measured before freshwater lakes fill.</p>
+              <label for="water-abundance"><span data-i18n="waterAbundance">Lakes and rivers</span> <output id="water-value" for="water-abundance">50%</output></label>
+              <input id="water-abundance" name="waterAbundance" type="range" min="0" max="100" step="1" value="50" aria-describedby="water-help" />
+              <div class="range-labels"><span data-i18n="sparse">Sparse</span><span data-i18n="abundant">Abundant</span></div>
+              <p id="water-help" class="field-note" data-i18n="waterHelp">More springs feed more waterways. Lakes form where the terrain holds water.</p>
+              <p id="generation-status" class="field-note" role="status" data-i18n="enableJS">Enable JavaScript to generate a world.</p>
+            </form>
+            <div class="preview-panel">
+              <div class="panel-label"><span class="readout" data-i18n="preview">Map preview</span><span class="readout" data-i18n="cylinder">Cylindrical · east ↔ west</span></div>
+              <div class="preview-surface"><canvas id="world-preview" role="img" aria-label="Generated world preview" data-i18n-aria-label="previewLabel" data-i18n="previewFallback">A generated world preview appears here when JavaScript is enabled.</canvas></div>
+              <div class="preview-footer"><p id="world-summary" class="field-note" data-i18n="seedHelp">A seed defines the physical world.</p><button id="start-workspace" class="action-button primary" type="button" disabled><span data-i18n="start">Start</span> <span aria-hidden="true">↗</span></button></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class="site-footer">
+        <div class="creator-credit">
+          <p><span data-i18n="createdBy">Created by</span> <span class="creator-name">Robert Chaba</span></p>
+          <a href="mailto:robert.chaba@gmail.com">robert.chaba@gmail.com</a>
+        </div>
+        <div class="project-credit">
+          <a href="https://github.com/robertchaba/emergence"><span data-i18n="github">Emergence on GitHub</span> <span aria-hidden="true">↗</span></a>
+          <p><a href="./LICENSE" data-i18n="licence">BSD-3-Clause licence</a></p>
+        </div>
+      </footer>
+    </div>
+    <section id="workspace" class="workspace" aria-label="Simulation workspace" data-i18n-aria-label="workspace" hidden>
+      <header class="workspace-header">
+        <details id="application-menu" class="application-menu">
+          <summary aria-label="Emergence application menu" data-i18n-aria-label="menu">
+            <span class="workspace-emblem" aria-hidden="true"><img class="logo-light" src="/resources/logo-light.webp" width="1280" height="1280" alt="" /><img class="logo-dark" src="/resources/logo-dark.webp" width="1280" height="1280" alt="" /></span>
+            <span class="workspace-brand"><span class="workspace-title">Emergence</span><span class="readout" data-i18n="atlas">Field atlas</span></span>
+            <span class="menu-indicator" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="menu-actions">
+            <fieldset class="map-layers"><legend data-i18n="mapLayer">Map layer</legend>
+              <label><input type="radio" name="layer" value="terrain" checked /><span data-i18n="terrain">Terrain</span></label>
+              <label><input type="radio" name="layer" value="elevation" /><span data-i18n="elevation">Elevation</span></label>
+              <label><input type="radio" name="layer" value="temperature" /><span data-i18n="temperature">Temperature</span></label>
+              <label><input type="radio" name="layer" value="humidity" /><span data-i18n="humidity">Moisture</span></label>
+              <label><input type="radio" name="layer" value="regions" /><span data-i18n="regions">Regions</span></label>
+            </fieldset>
+            <p id="layer-legend" class="field-note" data-i18n="legendTerrain">Depth-graded seas · teal lakes · spring-fed rivers · white frost</p>
+            <p id="map-help" class="field-note" data-i18n="mapHelp">Drag to pan. Scroll or pinch to zoom. Click to pin. With the map focused, use arrow keys to inspect, + / − to zoom, and Escape to clear.</p>
+            <button id="return-setup" type="button" data-i18n="returnSetup">Return to World setup</button>
+          </div>
+        </details>
+        <div id="workspace-preferences"></div>
+      </header>
+      <div class="workspace-body">
+        <div class="map-column">
+          <div class="map-surface"><canvas id="world-map" tabindex="0" role="application" aria-label="World map" data-i18n-aria-label="map" aria-describedby="map-help" data-i18n="mapFallback">Use the keyboard to inspect the world. Hex details appear in the notebook.</canvas></div>
+          <p id="map-status" class="visually-hidden" role="status" data-i18n="noPin">No hex pinned.</p>
+        </div>
+
+      </div>
+        <aside class="notebook" aria-label="Field notebook" data-i18n-aria-label="notebook">
+          <div class="notebook-heading"><p class="eyebrow" data-i18n="notebook">Field notebook</p></div>
+          <section id="hex-panel" aria-label="Hex details" data-i18n-aria-label="hexDetails"><div id="hex-details"><h2 data-i18n="inspectHeading">A world to inspect.</h2><p data-i18n="inspectHelp">Pin a hex to read its terrain, elevation, temperature, and moisture.</p></div></section>
+        </aside>
+      <footer class="workspace-footer">
+        <div class="simulation-date"><span id="playback-state" class="readout">Paused</span><div class="day-readout"><span data-i18n="day">Day</span><output id="world-day" aria-label="Simulation day" data-i18n-aria-label="simulationDay" aria-live="off">0</output></div></div>
+        <div class="playback-controls" role="group" aria-label="Simulation playback" data-i18n-aria-label="playback">
+          <div class="playback-buttons"><button id="play-world" type="button" aria-label="Play" data-i18n-aria-label="play" aria-pressed="false"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 11 7-11 7Z"/></svg></button><button id="pause-world" type="button" aria-label="Pause" data-i18n-aria-label="pause" aria-pressed="true"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button></div>
+          <div class="speed-control">
+            <label class="visually-hidden" for="simulation-speed" data-i18n="speed">Speed</label>
+            <input id="simulation-speed" type="range" min="1" max="10" step="1" value="1" aria-describedby="target-speed actual-speed" />
+            <div class="speed-readouts">
+              <div><span class="speed-caption" data-i18n="target">Target</span><output id="target-speed" for="simulation-speed" aria-label="Target speed" data-i18n-aria-label="targetSpeed">1× · 2 days/s</output></div>
+              <div><span class="speed-caption" data-i18n="actual">Actual</span><output id="actual-speed" aria-label="Actual speed" data-i18n-aria-label="actualSpeed" aria-live="off">0× · 0 days/s</output></div>
+            </div>
+          </div>
+        </div>
+        <div class="zoom-controls" role="group" aria-label="Map zoom" data-i18n-aria-label="zoom"><button id="zoom-out" type="button" aria-label="Zoom out" data-i18n-aria-label="zoomOut"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><output id="zoom-level" aria-label="Zoom level" data-i18n-aria-label="zoomLevel">1×</output><button id="zoom-in" type="button" aria-label="Zoom in" data-i18n-aria-label="zoomIn"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7v14"/></svg></button><button id="center-world" type="button"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg><span data-i18n="center">Center</span></button><button id="fit-world" type="button"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span data-i18n="fit">Fit</span></button></div>
+      </footer>
+    </section>
+  </body>
+</html>

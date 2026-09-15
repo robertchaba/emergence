@@ -1,16 +1,14 @@
+import { t, formatNumber } from './locale.js';
 import { generateWorld } from '../simulation/world.js';
 import { setDay } from '../simulation/climate.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
 
-const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
-const integer = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
-const percent = new Intl.NumberFormat('en', { style: 'percent', maximumFractionDigits: 1 });
+const number = { format: (value) => formatNumber(value) };
+const integer = { format: (value) => formatNumber(value, 'integer') };
+const percent = { format: (value) => formatNumber(value, 'percent') };
 const legends = {
-  terrain: 'Depth-graded seas · teal lakes · spring-fed rivers',
-  elevation: 'Deep blue seabeds → pale elevated land · metres',
-  temperature: 'Blue −40 °C → red +40 °C',
-  humidity: 'Dry ochre 0% → wet green 100% · land moisture index',
-  regions: 'Geographic regions · marked connections show costly passes',
+  terrain: 'legendTerrain', elevation: 'legendElevation', temperature: 'legendTemperature',
+  humidity: 'legendHumidity', regions: 'legendRegions',
 };
 
 function readTokens() {
@@ -21,17 +19,20 @@ function readTokens() {
 /** Browser composition only: inputs become explicit engine calls; snapshots are read-only. */
 export function initWorldUI() {
   const form = document.querySelector('#world-form');
-  const generateButton = document.querySelector('#generate-world');
   const startButton = document.querySelector('#start-workspace');
   const generationStatus = document.querySelector('#generation-status');
   const previewCanvas = document.querySelector('#world-preview');
   const canvas = document.querySelector('#world-map');
   const workspace = document.querySelector('#workspace');
   const page = document.querySelector('.page-shell');
-  const themeSwitcher = document.querySelector('.theme-switcher');
-  const themeHome = themeSwitcher.parentElement;
+  const themePicker = document.querySelector('.theme-picker');
+  const languageSwitcher = document.querySelector('.language-switcher');
+  const preferencesHome = themePicker.parentElement;
   const menu = document.querySelector('#application-menu');
-  const dayInput = document.querySelector('#world-day');
+  const dayOutput = document.querySelector('#world-day');
+  const speedInput = document.querySelector('#simulation-speed');
+  const playButton = document.querySelector('#play-world');
+  const pauseButton = document.querySelector('#pause-world');
   const details = document.querySelector('#hex-details');
   const tokens = readTokens();
   const preview = createMapRenderer(previewCanvas, { tokens });
@@ -42,7 +43,17 @@ export function initWorldUI() {
   let pinnedId = null;
   let generating = false;
   let savedScroll = 0;
+  let generationTimer;
+  let revision = 0;
+  let playing = false;
+  let targetSpeed = 1;
+  let clockTimestamp = null;
+  let dayCredit = 0;
+  let measuredElapsed = 0;
+  let measuredDays = 0;
   let frame = null;
+  let statusKey = 'updating';
+  let actualDaysPerSecond = 0;
 
   function readSettings() {
     const values = new FormData(form);
@@ -51,6 +62,7 @@ export function initWorldUI() {
       size: values.get('size'),
       geography: Number(values.get('geography')) / 100,
       landFraction: Number(values.get('landFraction')) / 100,
+      waterAbundance: Number(values.get('waterAbundance')) / 100,
     };
   }
 
@@ -103,102 +115,192 @@ export function initWorldUI() {
     list.append(row);
   }
 
-  function updateInspector() {
+  function updateInspector(announce = true) {
     details.replaceChildren();
     const heading = document.createElement('h2');
-    const introduction = document.createElement('p');
-    details.append(heading, introduction);
+    details.append(heading);
     if (pinnedId === null || !world) {
-      heading.textContent = 'A world to inspect.';
-      introduction.textContent = 'Pin a hex to read its terrain, water, climate, and geographic connections.';
-      document.querySelector('#map-status').textContent = 'No hex pinned.';
+      heading.textContent = t('inspectHeading');
+      const introduction = document.createElement('p');
+      introduction.textContent = t('inspectHelp');
+      details.append(introduction);
+      document.querySelector('#map-status').textContent = t('noPin');
       return;
     }
     const hex = world.hexes[pinnedId];
-    heading.textContent = `Hex ${hex.col + 1}, ${hex.row + 1}`;
-    const surface = hex.waterType === 'sea' ? 'Sea' : hex.waterType === 'lake' ? 'Freshwater lake' : 'Land';
-    introduction.textContent = `${surface}${hex.runoff > 0 && hex.waterType === 'none' ? ' · river channel' : ''}${hex.temperature < 0 ? (hex.waterType === 'none' ? ' · frosted' : ' · ice-covered') : ''}`;
+    heading.textContent = t('hex', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1) });
+    const surface = t(hex.waterType === 'sea' ? 'sea' : hex.waterType === 'lake' ? 'lake' : 'land');
+    const terrain = [surface, hex.runoff > 0 && hex.waterType === 'none' && t('river'), hex.temperature < 0 && t(hex.waterType === 'none' ? 'frost' : 'ice')].filter(Boolean).join(' · ');
     const facts = document.createElement('dl');
     facts.className = 'hex-facts';
-    addFact(facts, 'Bed elevation', `${integer.format(hex.bedElevation)} m`);
-    addFact(facts, 'Water level', hex.waterLevel === null ? 'No surface water' : `${integer.format(hex.waterLevel)} m`);
-    addFact(facts, 'Spill elevation', `${integer.format(hex.spillElevation)} m`);
-    addFact(facts, 'Spring discharge', `${number.format(hex.springDischarge)} flow units`);
-    addFact(facts, 'Accumulated flow', `${number.format(hex.runoff)} flow units`);
-    addFact(facts, 'Lake inflow', `${number.format(hex.lakeInflow)} flow units`);
-    addFact(facts, 'Nearest water', `${integer.format(hex.distanceToWater)} hex steps`);
-    addFact(facts, 'Temperature', `${number.format(hex.temperature)} °C`);
-    addFact(facts, 'Land moisture', hex.humidity === null ? 'Not a land hex' : percent.format(hex.humidity));
-    addFact(facts, 'Region', integer.format(hex.regionId + 1));
-    addFact(facts, 'Traversal difficulty', percent.format(hex.traversalDifficulty));
-    addFact(facts, 'Permanent ice', hex.permanentIce ? 'Yes' : 'No');
-    addFact(facts, 'Drainage outlet', hex.downstream === null ? 'Sea outlet' : `Hex ${world.hexes[hex.downstream].col + 1}, ${world.hexes[hex.downstream].row + 1}`);
+    addFact(facts, t('terrain'), terrain);
+    addFact(facts, t('elevation'), `${integer.format(hex.bedElevation)} m`);
+    addFact(facts, t('temperature'), `${number.format(hex.temperature)} °C`);
+    addFact(facts, t('humidity'), hex.humidity === null ? t('waterMoisture') : percent.format(hex.humidity));
     details.append(facts);
-    const barrier = document.createElement('p');
-    const reasons = (hex.barrierReasons || []).map((reason) => reason.replaceAll('-', ' '));
-    barrier.textContent = reasons.length ? `Physical constraints: ${reasons.join(', ')}. Regions describe geography; crossing rules for life are not defined yet.` : 'This hex is part of an accessible geographic core. Regions describe geography; crossing rules for life are not defined yet.';
-    details.append(barrier);
-    document.querySelector('#map-status').textContent = `Pinned hex ${hex.col + 1}, ${hex.row + 1} · ${surface.toLowerCase()} · ${number.format(hex.temperature)} °C`;
+    if (announce) document.querySelector('#map-status').textContent = t('pinned', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1), surface: surface.toLowerCase(), temperature: number.format(hex.temperature) });
   }
 
   function updateDayReadout() {
-    dayInput.value = String(world.day);
-    const annualDay = world.day % 360;
-    const landmarks = { 0: 'Northern spring equinox', 90: 'Northern summer solstice', 180: 'Northern autumn equinox', 270: 'Northern winter solstice' };
-    document.querySelector('#season-readout').textContent = `${landmarks[annualDay] || `Day ${annualDay} of the 360-day year`}. Southern seasons are opposite.`;
+    dayOutput.value = integer.format(world.day);
+    dayOutput.dataset.day = String(world.day);
+    previewCanvas.dataset.day = String(world.day);
+  }
+
+  function showSpeed(output, values) {
+    // Keep the complete translated phrase while giving the rate its own column.
+    const [prefix, suffix] = t('speedValue', { ...values, rate: '{rate}' }).split('{rate}');
+    const multiplier = document.createElement('span');
+    multiplier.className = 'speed-multiplier';
+    multiplier.textContent = prefix;
+    const rate = document.createElement('span');
+    rate.className = 'speed-rate';
+    rate.textContent = values.rate + suffix;
+    output.replaceChildren(multiplier, rate);
+  }
+
+  function showActualSpeed(daysPerSecond = 0) {
+    const output = document.querySelector('#actual-speed');
+    actualDaysPerSecond = daysPerSecond;
+    showSpeed(output, { multiplier: number.format(daysPerSecond / 2), rate: number.format(daysPerSecond) });
+    output.dataset.daysPerSecond = String(daysPerSecond);
+  }
+
+  function resetClock() {
+    clockTimestamp = null;
+    dayCredit = 0;
+    measuredElapsed = 0;
+    measuredDays = 0;
+    showActualSpeed();
+  }
+
+  function setPlaying(next) {
+    playing = next;
+    updatePlaybackState();
+    playButton.setAttribute('aria-pressed', String(playing));
+    pauseButton.setAttribute('aria-pressed', String(!playing));
+    resetClock();
+  }
+
+  function updatePlaybackState() {
+    document.querySelector('#playback-state').textContent = t(playing ? 'running' : 'paused');
   }
 
   async function generate() {
-    if (generating || !form.reportValidity()) return;
+    const request = revision;
+    if (!form.checkValidity()) {
+      generating = false;
+      form.removeAttribute('aria-busy');
+      showGenerationStatus('enterSeed');
+      return;
+    }
     generating = true;
-    generateButton.disabled = true;
-    startButton.disabled = true;
     form.setAttribute('aria-busy', 'true');
-    generationStatus.textContent = 'Generating terrain, tracing water, and reading the climate…';
+    showGenerationStatus('generating');
     const settings = readSettings();
-    // Yield to paint the busy state. Browser timing is never passed into generation.
+    // Paint the busy state, then discard requests superseded by newer input.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (request !== revision) return;
     try {
-      const generated = generateWorld(settings);
-      world = generated;
+      world = generateWorld(settings);
       pinnedId = null;
       camera = { zoom: 1, x: 0, y: 0 };
-      const landCount = world.hexes.filter((hex) => hex.waterType !== 'sea').length;
-      const dryCount = world.hexes.filter((hex) => hex.waterType === 'none').length;
-      document.querySelector('#world-summary').textContent = `${integer.format(world.hexes.length)} hexes · ${percent.format(landCount / world.hexes.length)} non-marine footprint · ${percent.format(dryCount / world.hexes.length)} dry land · ${integer.format(world.regions.length)} regions`;
-      document.querySelector('#world-readout').textContent = `${world.width} × ${world.height} · seed ${world.seed}`;
-      previewCanvas.setAttribute('aria-label', `Generated world preview: ${world.width} by ${world.height} hexes, seed ${world.seed}`);
-      const unchanged = JSON.stringify(settings) === JSON.stringify(readSettings());
-      startButton.disabled = !unchanged;
-      generationStatus.textContent = unchanged ? 'World ready. Open the atlas to inspect terrain, seasons, and regions.' : 'Settings changed. Generate again to update the preview.';
+      updateWorldSummary();
+      previewCanvas.dataset.waterAbundance = String(world.waterAbundance);
+      startButton.disabled = false;
+      showGenerationStatus('ready');
+      resetClock();
       updateDayReadout();
       updateInspector();
       queueDraw();
-    } catch (error) {
-      generationStatus.textContent = `World generation failed: ${error.message}`;
+    } catch {
+      world = null;
+      previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      updateWorldSummary();
+      showGenerationStatus('generationFailed');
     } finally {
       generating = false;
-      generateButton.disabled = false;
       form.removeAttribute('aria-busy');
     }
   }
 
-  form.addEventListener('submit', (event) => { event.preventDefault(); generate(); });
-  form.addEventListener('input', () => {
+  function scheduleGeneration(delay = 180) {
+    revision += 1;
+    clearTimeout(generationTimer);
+    startButton.disabled = true;
+    generating = true;
+    showGenerationStatus('updating');
+    generationTimer = setTimeout(generate, delay);
+  }
+
+  function randomizeSeed() {
+    const words = crypto.getRandomValues(new Uint32Array(2));
+    form.elements.seed.value = [...words].map((word) => word.toString(16).padStart(8, '0')).join('-');
+    scheduleGeneration(0);
+  }
+
+  form.addEventListener('submit', (event) => { event.preventDefault(); scheduleGeneration(0); });
+  function updateSettingReadouts() {
     document.querySelector('#geography-value').value = percent.format(Number(form.elements.geography.value) / 100);
     document.querySelector('#land-value').value = percent.format(Number(form.elements.landFraction.value) / 100);
-    startButton.disabled = true;
-    if (!generating) generationStatus.textContent = 'Settings changed. Generate again to update the preview.';
+    document.querySelector('#water-value').value = percent.format(Number(form.elements.waterAbundance.value) / 100);
+  }
+  form.addEventListener('input', () => {
+    updateSettingReadouts();
+    scheduleGeneration();
+  });
+  document.querySelector('#randomize-seed').addEventListener('click', randomizeSeed);
+  playButton.addEventListener('click', () => setPlaying(true));
+  pauseButton.addEventListener('click', () => setPlaying(false));
+  speedInput.addEventListener('input', () => {
+    targetSpeed = Math.max(1, Math.min(10, Number(speedInput.value)));
+    updateTargetSpeed();
+    resetClock();
   });
 
+  // Browser pacing advances only the current climate model through explicit
+  // integer days. The engine never reads this clock. Hidden tabs do not catch up.
+  function animateClimate(timestamp) {
+    const active = !document.hidden && (workspace.hidden || playing);
+    if (!active || generating || startButton.disabled || !world) {
+      clockTimestamp = null;
+    } else {
+      const elapsed = clockTimestamp === null ? 0 : timestamp - clockTimestamp;
+      clockTimestamp = timestamp;
+      const daysPerSecond = workspace.hidden ? 20 : targetSpeed * 2;
+      dayCredit += Math.min(250, elapsed) * daysPerSecond / 1000;
+      measuredElapsed += elapsed;
+      const days = Math.floor(dayCredit + 1e-9);
+      if (days > 0) {
+        dayCredit = Math.max(0, dayCredit - days);
+        world = setDay(world, world.day + days);
+        measuredDays += days;
+        updateDayReadout();
+        if (!workspace.hidden && pinnedId !== null) updateInspector(false);
+        queueDraw();
+      }
+      if (!workspace.hidden && measuredElapsed >= 1000) {
+        showActualSpeed(measuredDays * 1000 / measuredElapsed);
+        measuredElapsed = 0;
+        measuredDays = 0;
+      }
+    }
+    requestAnimationFrame(animateClimate);
+  }
+  document.addEventListener('visibilitychange', resetClock);
+  requestAnimationFrame(animateClimate);
+
   startButton.addEventListener('click', () => {
-    if (!world) return;
+    if (!world || startButton.disabled) return;
+    setPlaying(false);
+    updateDayReadout();
     savedScroll = window.scrollY;
     workspace.hidden = false;
     page.hidden = true;
     document.querySelector('.skip-link').hidden = true;
     document.body.classList.add('workspace-open');
-    document.querySelector('#workspace-preferences').append(themeSwitcher);
+    themePicker.open = false;
+    document.querySelector('#workspace-preferences').append(themePicker, languageSwitcher);
     resizeRenderer(map, canvas);
     camera = map.fit(world);
     draw();
@@ -206,20 +308,28 @@ export function initWorldUI() {
   });
 
   document.querySelector('#return-setup').addEventListener('click', () => {
+    setPlaying(false);
     menu.open = false;
     workspace.hidden = true;
     page.hidden = false;
     document.querySelector('.skip-link').hidden = false;
     document.body.classList.remove('workspace-open');
-    themeHome.prepend(themeSwitcher);
+    themePicker.open = false;
+    preferencesHome.append(themePicker, languageSwitcher);
     window.scrollTo({ top: savedScroll, behavior: 'instant' });
-    startButton.focus({ preventScroll: true });
+    form.elements.seed.focus({ preventScroll: true });
+    randomizeSeed();
     queueDraw();
   });
 
   document.querySelector('#fit-world').addEventListener('click', () => {
+    resizeRenderer(map, canvas);
     camera = map.fit(world);
-    menu.open = false;
+    canvas.focus();
+    queueDraw();
+  });
+  document.querySelector('#center-world').addEventListener('click', () => {
+    camera = { ...camera, x: 0, y: 0 };
     canvas.focus();
     queueDraw();
   });
@@ -230,25 +340,9 @@ export function initWorldUI() {
 
   document.querySelector('.map-layers').addEventListener('change', (event) => {
     layer = event.target.value;
-    document.querySelector('#layer-legend').textContent = legends[layer];
+    document.querySelector('#layer-legend').textContent = t(legends[layer]);
     queueDraw();
   });
-
-  function changeDay(day) {
-    if (!Number.isSafeInteger(day) || day < 0) {
-      dayInput.setCustomValidity('Enter a non-negative whole day.');
-      dayInput.reportValidity();
-      return;
-    }
-    dayInput.setCustomValidity('');
-    world = setDay(world, day);
-    updateDayReadout();
-    updateInspector();
-    queueDraw();
-  }
-  dayInput.addEventListener('input', () => dayInput.setCustomValidity(''));
-  dayInput.addEventListener('change', () => changeDay(dayInput.value === '' ? NaN : Number(dayInput.value)));
-  document.querySelector('#advance-season').addEventListener('click', () => changeDay(world.day + 90));
 
   function zoomBy(factor, point) {
     const bounds = canvas.getBoundingClientRect();
@@ -350,19 +444,54 @@ export function initWorldUI() {
   canvas.addEventListener('pointercancel', (event) => releasePointer(event, true));
   canvas.addEventListener('lostpointercapture', (event) => { pointers.delete(event.pointerId); });
 
-  const tabs = [...document.querySelectorAll('.notebook-tabs [role="tab"]')];
-  tabs.forEach((tab, index) => tab.addEventListener('keydown', (event) => {
-    let next = index;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index + tabs.length - 1) % tabs.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    tabs[next].focus();
-    tabs[next].click();
-  }));
+  function showGenerationStatus(key = statusKey) {
+    statusKey = key;
+    generationStatus.textContent = t(key);
+  }
 
-  generateButton.disabled = false;
-  generate();
+  function updateWorldSummary() {
+    if (!world) {
+      previewCanvas.setAttribute('aria-label', t('previewUnavailable'));
+      document.querySelector('#world-summary').textContent = t('retry');
+      return;
+    }
+    const count = (type) => world.hexes.filter((hex) => hex.waterType === type).length;
+    document.querySelector('#world-summary').textContent = t('summary', {
+      hexes: integer.format(world.hexes.length),
+      land: percent.format(1 - count('sea') / world.hexes.length),
+      dry: percent.format(count('none') / world.hexes.length),
+      lakes: integer.format(count('lake')), rivers: integer.format(world.quality.riverHexes),
+    });
+    previewCanvas.setAttribute('aria-label', t('generatedPreview', {
+      width: integer.format(world.width), height: integer.format(world.height), seed: world.seed,
+    }));
+  }
+
+  function updateTargetSpeed() {
+    const values = { multiplier: number.format(targetSpeed), rate: integer.format(targetSpeed * 2) };
+    showSpeed(document.querySelector('#target-speed'), values);
+    speedInput.setAttribute('aria-valuetext', t('speedDescription', values));
+  }
+
+  // Locale only re-renders presentation: no world generation, clock reset,
+  // camera changes, layer changes, or lost selection when switching mid-run.
+  document.addEventListener('emergence:localechange', () => {
+    updateSettingReadouts();
+    showGenerationStatus();
+    updateWorldSummary();
+    updateInspector();
+    updateTargetSpeed();
+    showActualSpeed(actualDaysPerSecond);
+    updatePlaybackState();
+    document.querySelector('#layer-legend').textContent = t(legends[layer]);
+    if (world) updateDayReadout();
+    queueDraw();
+  });
+  updateSettingReadouts();
+  updateTargetSpeed();
+  showActualSpeed();
+  updatePlaybackState();
+
+  randomizeSeed();
+  window.addEventListener('pageshow', (event) => { if (event.persisted && workspace.hidden) randomizeSeed(); });
 }

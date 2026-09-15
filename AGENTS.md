@@ -80,16 +80,17 @@ headless engine.
 - Use native semantic controls, visible keyboard focus, readable contrast,
   meaningful text alternatives, and layouts that work on phones and desktops.
   Do not add fake statistics or suggest that a disabled feature is operational.
-- English is the current language; Polish is a future locale. Keep visible copy as
-  complete translatable phrases, allow longer labels to wrap, and keep locale
-  formatting in UI. Later locale changes must update the document's `lang`;
-  never translate engine IDs, commands, or saved state. The disabled PL control
-  is a placeholder, not an implemented language switch.
+- English and Polish are available on every screen, including during playback.
+  Keep visible copy as complete translatable phrases, allow longer labels to
+  wrap, and keep locale formatting in UI. Language changes update the document's
+  `lang` and preserve the current world, clock, camera, and selection. Never
+  translate engine IDs, commands, or saved state. Persist the language choice
+  when storage is available; storage failure must not break either switcher.
 - Credit Robert Chaba and preserve the supplied contact/repository links.
   BSD-3-Clause is the project licence. Preserve the full root `LICENSE` and its
   inclusion in static builds. Repository visibility is separate from licensing.
-- Keep availability messaging off the landing page: show EN / PL with PL
-  disabled, and link the actual licence without release-status qualifiers.
+- Keep availability messaging off the landing page: show EN / PL and link the
+  actual licence without release-status qualifiers.
 
 ## Before declaring work done
 

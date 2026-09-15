@@ -13,6 +13,7 @@
   --color-on-accent: #faf5e8;
   --color-rule: rgb(90 73 43 / 25%);
   --color-rule-strong: rgb(90 73 43 / 42%);
+  --color-rule-terminal: rgb(90 73 43 / 30%);
   --color-wash: rgb(169 129 64 / 8%);
   --color-clear: rgb(169 129 64 / 0%);
   --color-grain: rgb(90 66 30 / 4%);
@@ -27,8 +28,21 @@
   --color-selection: var(--color-accent);
   --color-on-selection: var(--color-on-accent);
 
+  /* Shared paper treatment for pages and the light atlas. */
+  --page-background:
+    radial-gradient(ellipse at 74% 25%, var(--color-wash), var(--color-clear) 55%),
+    linear-gradient(90deg, var(--color-page-edge), var(--color-clear) 6%, var(--color-clear) 94%, var(--color-page-edge)),
+    var(--color-ground);
+  --page-texture:
+    radial-gradient(ellipse at 23% 37%, var(--color-grain) 0.5px, var(--color-clear) 0.9px),
+    radial-gradient(ellipse at 71% 63%, var(--color-grain) 0.4px, var(--color-clear) 0.8px),
+    repeating-linear-gradient(103deg, var(--color-clear) 0 5px, var(--color-fiber) 5px 6px, var(--color-clear) 6px 11px);
+  --workspace-background: var(--page-background);
+  --workspace-texture: var(--page-texture);
+  --color-workspace-panel: var(--color-clear);
+
   /* Canvas values are resolved by the UI and passed to the renderer. */
-  --map-ground: #e4dcc7;
+  --map-ground: var(--color-clear);
   --map-sea-deep: #355e79;
   --map-sea-shallow: #8cb6be;
   --map-lake: #638e88;
@@ -37,12 +51,11 @@
   --map-relief-shadow: #5e594e;
   --map-relief-light: #f8efdb;
   --map-ice: #dfecef;
-  --map-frost: #e8e8dc;
+  --map-frost: #fffefa;
   --map-river: #2d7188;
   --map-spring: #ebf8ee;
   --map-spring-ring: #285d65;
   --map-grid: rgb(50 58 49 / 18%);
-  --map-edge: #706b58;
   --map-pin: #fff8dd;
   --map-pin-outline: #3c3b28;
   --map-temperature-cold: #477aca;
@@ -66,6 +79,10 @@
   --font-body: Georgia, 'Times New Roman', serif;
   --font-heading: Georgia, 'Times New Roman', serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --text-notebook: 0.8125rem;
+  --text-compact: 0.75rem;
+  --font-playback-status: var(--font-body);
+  --text-status: 0.6875rem;
   --text-xs: 0.875rem;
   --text-sm: 1rem;
   --text-base: 1.125rem;
@@ -81,7 +98,16 @@
   --tracking-heading: -0.055em;
   --tracking-label: 0.08em;
   --tagline-style: italic;
-  --panel-radius: 2px;
+  --panel-radius: 3px;
+  --ornament-display: block;
+  --frame-width: 4px;
+  --frame-style: double;
+  --button-corner: 10px 2px;
+  --button-inset: rgb(90 73 43 / 14%);
+  --color-button-inset-accent: rgb(250 245 232 / 24%);
+  --color-control-selected: rgb(82 98 60 / 12%);
+  --color-playback-active: var(--color-control-selected);
+  --color-playback-active-text: var(--color-accent);
 }
 
 :root[data-theme='dark'] {
@@ -95,6 +121,7 @@
   --color-on-accent: #18271e;
   --color-rule: rgb(196 219 165 / 17%);
   --color-rule-strong: rgb(196 219 165 / 32%);
+  --color-rule-terminal: rgb(196 219 165 / 23%);
   --color-wash: rgb(196 219 165 / 3%);
   --color-clear: rgb(196 219 165 / 0%);
   --color-grain: rgb(196 219 165 / 1%);
@@ -109,7 +136,7 @@
   --color-selection: var(--color-accent);
   --color-on-selection: var(--color-on-accent);
   /* Canvas palette: same physical meanings, tuned for the dark surface. */
-  --map-ground: #162821;
+  --map-ground: var(--color-ground);
   --map-sea-deep: #183e57;
   --map-sea-shallow: #5b95a4;
   --map-lake: #518c83;
@@ -118,12 +145,11 @@
   --map-relief-shadow: #343e37;
   --map-relief-light: #e6dec7;
   --map-ice: #cbdfe4;
-  --map-frost: #c8cfc3;
+  --map-frost: #f5f7f2;
   --map-river: #a2d9e1;
   --map-spring: #e0ffdb;
   --map-spring-ring: #25514c;
   --map-grid: rgb(218 233 218 / 15%);
-  --map-edge: #87a18d;
   --map-pin: #f8efba;
   --map-pin-outline: #263a29;
   --map-temperature-cold: #618fe0;
@@ -147,6 +173,7 @@
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --text-notebook: 0.8125rem;
   --text-xs: 0.875rem;
   --text-sm: 1rem;
   --text-base: 1.125rem;
@@ -162,7 +189,20 @@
   --tracking-heading: -0.065em;
   --tracking-label: 0.08em;
   --tagline-style: normal;
-  --panel-radius: 4px;
+  --panel-radius: 2px;
+  --ornament-display: none;
+  --frame-width: 1px;
+  --frame-style: solid;
+  --button-corner: 2px;
+  --button-inset: var(--color-clear);
+  --color-button-inset-accent: var(--color-clear);
+  --color-control-selected: rgb(196 219 165 / 12%);
+  --workspace-background: var(--color-ground);
+  --font-playback-status: var(--font-mono);
+  --workspace-texture: none;
+  --color-workspace-panel: var(--color-panel);
+  --color-playback-active: #b5ed80;
+  --color-playback-active-text: var(--color-on-accent);
 }
 
 /* Follow the system before JavaScript and without it.
@@ -179,6 +219,7 @@
     --color-on-accent: #18271e;
     --color-rule: rgb(196 219 165 / 17%);
     --color-rule-strong: rgb(196 219 165 / 32%);
+    --color-rule-terminal: rgb(196 219 165 / 23%);
     --color-wash: rgb(196 219 165 / 3%);
     --color-clear: rgb(196 219 165 / 0%);
     --color-grain: rgb(196 219 165 / 1%);
@@ -193,7 +234,7 @@
     --color-selection: var(--color-accent);
     --color-on-selection: var(--color-on-accent);
     /* Canvas palette: same physical meanings, tuned for the dark surface. */
-    --map-ground: #162821;
+    --map-ground: var(--color-ground);
     --map-sea-deep: #183e57;
     --map-sea-shallow: #5b95a4;
     --map-lake: #518c83;
@@ -202,12 +243,11 @@
     --map-relief-shadow: #343e37;
     --map-relief-light: #e6dec7;
     --map-ice: #cbdfe4;
-    --map-frost: #c8cfc3;
+    --map-frost: #f5f7f2;
     --map-river: #a2d9e1;
     --map-spring: #e0ffdb;
     --map-spring-ring: #25514c;
     --map-grid: rgb(218 233 218 / 15%);
-    --map-edge: #87a18d;
     --map-pin: #f8efba;
     --map-pin-outline: #263a29;
     --map-temperature-cold: #618fe0;
@@ -231,6 +271,7 @@
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+    --text-notebook: 0.8125rem;
     --text-xs: 0.875rem;
     --text-sm: 1rem;
     --text-base: 1.125rem;
@@ -246,6 +287,19 @@
     --tracking-heading: -0.065em;
     --tracking-label: 0.08em;
     --tagline-style: normal;
-    --panel-radius: 4px;
+    --panel-radius: 2px;
+    --ornament-display: none;
+    --frame-width: 1px;
+    --frame-style: solid;
+    --button-corner: 2px;
+    --button-inset: var(--color-clear);
+    --color-button-inset-accent: var(--color-clear);
+    --color-control-selected: rgb(196 219 165 / 12%);
+    --workspace-background: var(--color-ground);
+    --font-playback-status: var(--font-mono);
+    --workspace-texture: none;
+    --color-workspace-panel: var(--color-panel);
+    --color-playback-active: #b5ed80;
+    --color-playback-active-text: var(--color-on-accent);
   }
 }

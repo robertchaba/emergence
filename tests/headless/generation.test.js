@@ -236,3 +236,29 @@ test('invalid generation parameters fail explicitly', () => {
     assert.throws(() => generateWorld(options));
   }
 });
+
+
+test('water abundance is validated, reproducible, and conserves drainage at every size', () => {
+  for (const waterAbundance of [-0.1, 1.1, NaN, Infinity]) {
+    assert.throws(() => generateWorld({ waterAbundance }), /Water abundance/);
+  }
+  for (const size of Object.keys(WORLD_SIZES)) {
+    const worlds = [0, 0.5, 1].map((waterAbundance) => {
+      const settings = { seed: 'water-control', size, waterAbundance };
+      const world = generateWorld(settings);
+      assert.deepEqual(generateWorld(settings), world);
+      assert.equal(world.waterAbundance, waterAbundance);
+      checkDrainage(world);
+      return world;
+    });
+    const springs = worlds.map((world) => world.hexes.reduce((sum, hex) => sum + hex.springDischarge, 0));
+    assert.ok(springs[0] < springs[1] && springs[1] < springs[2]);
+    // For a fixed candidate, adding sources preserves all existing wet cells.
+    if (worlds.every((world) => world.candidate === worlds[0].candidate)) {
+      worlds[0].hexes.forEach((hex, id) => {
+        if (hex.waterType === 'lake') assert.equal(worlds[2].hexes[id].waterType, 'lake');
+        if (hex.runoff > 0) assert.ok(worlds[2].hexes[id].runoff >= hex.runoff);
+      });
+    }
+  }
+});

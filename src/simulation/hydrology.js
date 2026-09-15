@@ -157,7 +157,11 @@ export function deriveHydrology(world, seed, { springIds, minimumLakeDepth = 5 }
   const eligible = hexes.filter((hex) => hex.waterType === 'none'
     && hex.bedElevation > 300 && hex.bedElevation === hex.spillElevation);
   eligible.sort((a, b) => coordinateHash(seed, a.col, a.row, 97) - coordinateHash(seed, b.col, b.row, 97) || a.id - b.id);
-  const selected = springIds ?? eligible.slice(0, Math.max(1, Math.round(eligible.length * 0.025))).map((hex) => hex.id);
+  // Keep the previous 2.5% spring density at the midpoint. Sources remain
+  // nested in the same seeded order as abundance increases on a given terrain.
+  const abundance = world.waterAbundance ?? 0.5;
+  const springDensity = abundance <= 0.5 ? 0.005 + abundance * 0.04 : 0.025 + (abundance - 0.5) * 0.15;
+  const selected = springIds ?? eligible.slice(0, Math.max(1, Math.round(eligible.length * springDensity))).map((hex) => hex.id);
   for (const id of selected) {
     const hex = hexes[id];
     if (!hex || hex.waterType !== 'none' || hex.bedElevation <= 300 || hex.bedElevation !== hex.spillElevation) {

@@ -1,3 +1,4 @@
+import { chooseTheme } from './ui-helpers.js';
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
@@ -48,10 +49,10 @@ test('landing loads, both themes render, and the layout fits', async ({ page, re
   expect(response.ok()).toBeTruthy();
   await expect(page).toHaveTitle('Emergence — an evolution sandbox');
   await expect(page.getByRole('heading', { level: 1, name: 'Emergence', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Create a world' })).toHaveAttribute('href', '#world-setup');
-  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+  await expect(page.getByRole('link', { name: 'Create a world' })).toHaveAttribute('href', './world.html');
+  await expect(page.locator('#world-setup')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.getByRole('group', { name: 'Language', exact: true }).getByRole('button', { name: 'PL' })).toBeDisabled();
+  await expect(page.getByRole('group', { name: 'Language', exact: true }).getByRole('button', { name: 'PL' })).toBeEnabled();
   await expect(page.getByRole('link', { name: 'robert.chaba@gmail.com' })).toHaveAttribute('href', 'mailto:robert.chaba@gmail.com');
   await expect(page.getByRole('link', { name: 'Emergence on GitHub' })).toHaveAttribute('href', 'https://github.com/robertchaba/emergence');
   const licenceLink = page.getByRole('link', { name: 'BSD-3-Clause licence' });
@@ -61,7 +62,7 @@ test('landing loads, both themes render, and the layout fits', async ({ page, re
 
   const backgrounds = [];
   for (const theme of ['light', 'dark']) {
-    await page.getByLabel(theme === 'light' ? 'Light' : 'Dark', { exact: true }).check();
+    await chooseTheme(page, theme);
     backgrounds.push(await expectTheme(page, theme));
     await expectLayout(page);
   }
@@ -77,7 +78,7 @@ test('system changes apply until an explicit choice; reset restores system behav
   await page.emulateMedia({ colorScheme: 'light' });
   await expectTheme(page, 'light');
 
-  await page.getByLabel('Dark', { exact: true }).check();
+  await chooseTheme(page, 'dark');
   await page.reload();
   await expectTheme(page, 'dark');
   await expect(page.getByLabel('Dark', { exact: true })).toBeChecked();
@@ -85,12 +86,12 @@ test('system changes apply until an explicit choice; reset restores system behav
   await page.emulateMedia({ colorScheme: 'light' });
   await expectTheme(page, 'dark');
 
-  await page.getByLabel('Light', { exact: true }).check();
+  await chooseTheme(page, 'light');
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.reload();
   await expectTheme(page, 'light');
 
-  await page.getByLabel('System', { exact: true }).check();
+  await chooseTheme(page, 'system');
   await expectTheme(page, 'dark');
   await page.emulateMedia({ colorScheme: 'light' });
   await expectTheme(page, 'light');
@@ -106,14 +107,15 @@ test('theme controls work when storage is unavailable', async ({ page }) => {
     });
   });
   await page.goto('/');
-  await page.getByLabel('Dark', { exact: true }).check();
+  await chooseTheme(page, 'dark');
   await expectTheme(page, 'dark');
-  await page.getByLabel('Light', { exact: true }).check();
+  await chooseTheme(page, 'light');
   await expectTheme(page, 'light');
 });
 
 test('keyboard users can choose a theme and see focus', async ({ page }) => {
   await page.goto('/');
+  await page.locator('.theme-picker > summary').click();
   await page.getByLabel('System', { exact: true }).focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.getByLabel('Light', { exact: true })).toBeFocused();
@@ -138,4 +140,53 @@ test('content and system themes work without JavaScript', async ({ browser }, te
   const light = await page.locator('html').evaluate((root) => getComputedStyle(root).backgroundColor);
   expect(light).not.toBe(dark);
   await context.close();
+});
+
+test('language choice translates both pages and persists across navigation', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'PL', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
+  await expect(page).toHaveTitle('Emergence — otwarty świat ewolucji');
+  await expect(page.getByRole('button', { name: 'PL', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  for (const theme of ['light', 'dark']) {
+    await chooseTheme(page, theme);
+    await expectLayout(page);
+    await page.screenshot({ path: testInfo.outputPath(`landing-pl-${theme}.png`), fullPage: true });
+  }
+  await page.getByRole('link', { name: 'Stwórz świat' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
+  await expect(page.getByRole('heading', { name: 'Tworzenie świata', exact: true })).toBeVisible();
+  await expect(page.locator('#generation-status')).toContainText('Zmiany są stosowane automatycznie');
+  const seed = await page.locator('#seed').inputValue();
+  await expect(page.locator('#world-preview')).toHaveAttribute('aria-label', new RegExp(`ziarno ${seed}`));
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.locator('#seed')).toHaveValue(seed);
+  await expect(page.locator('#generation-status')).toContainText('Changes apply automatically');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});
+
+test('language choice works with blocked storage and theme menu fits on phones', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      get() { throw new DOMException('Storage unavailable', 'SecurityError'); },
+    });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'PL', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
+  await page.locator('.theme-picker > summary').focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('radio', { name: 'Systemowy', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('radio', { name: 'Jasny', exact: true })).toBeChecked();
+  await page.setViewportSize({ width: 320, height: 700 });
+  const bounds = await page.locator('.theme-switcher').boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.theme-picker > summary')).toBeFocused();
+  await expect(page.locator('.theme-picker')).not.toHaveAttribute('open');
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });

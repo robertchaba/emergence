@@ -4,7 +4,11 @@
 
 **Current: physical world atlas — 2026-09-15.** Decisions 010–013 implement the
 requested interface, generator, seasonal climate, and geographic diagnostics.
-There are no organisms, biological rules, or simulation time loop.
+Decision 014 adds a separate live world-building page and a UI seasonal preview
+clock. Decision 015 simplifies the atlas and adds measured climate playback
+controls. Decision 016 refines the controls, expands the notebook, and adds live
+English/Polish localization. There are no organisms, biological rules, or biological
+simulation loop.
 
 **Historical foundation status, superseded by 010–012:**
 **Foundation accepted for implementation — 2026-09-15.** This repository initially
@@ -499,3 +503,347 @@ including 320px.
 **Limits:** Browser and headless checks validate these physical-model invariants,
 not future ecology, geological realism, calibrated climate, or other browser
 engines. No cross-browser numerical equivalence is claimed.
+
+
+## 014 — Live world-building page and theme detail — 2026-09-15
+
+**Supersedes setup navigation and manual regeneration in 010, fixed spring
+abundance in 011, and manual-only preview seasons in 012.** The landing now links
+to `world.html`, a second native HTML entry emitted by Vite. Setup is a separate
+page with its own title, heading, and home link, so Create a world navigates
+normally and works on static hosts and subdirectory deployments. Workspace
+controls remain on that page. Theme initialization is shared; world UI initializes
+only where its form exists. The landing no longer generates an unused world.
+
+Every setup entry chooses a new seed using browser `crypto.getRandomValues`,
+including page restoration and returning from the atlas. The adjacent Randomize
+button uses the same path. The browser supplies this seed as an explicit engine
+input; headless generation remains deterministic. Other settings are retained
+when returning from the atlas, and focus moves to the seed field.
+
+Inputs regenerate automatically after a 180 ms debounce. A request revision
+invalidates older work before synchronous generation. Start is disabled for
+pending, invalid, or failed settings, and the last valid preview pauses while
+input is incomplete. A failed generation clears the preview and reports the
+error; there is no Generate button. Generation remains synchronous after a paint
+yield, so very large worlds can briefly block input.
+
+### Water abundance
+
+Generator version is now `physical-world-2`. The serializable `waterAbundance`
+setting ranges from 0 to 1, default 0.5. It maps to the fraction of eligible
+spring sites: 0.5% at zero, the previous 2.5% at midpoint, and 10% at maximum,
+linearly interpolated on each half. At least one eligible source remains. These
+are provisional physical preview controls, not ecological balancing rules.
+Sources use the existing stable seeded order, so more abundance adds sources
+on a fixed candidate terrain. Conserved spring flow still determines channels
+and fills only fed basins; lake count/area is not prescribed. The same quality
+gates apply, so a changed setting can select a different candidate. Monotonic
+lake counts across different candidates are not promised. UI reports actual
+lake and river hex counts alongside the land budget and dry land.
+
+### Seasonal presentation
+
+The setup preview starts running at 20×: 20 explicit days per second, approximately
+18 seconds per 360-day year. A browser animation clock batches climate updates
+roughly every 200 ms through `setDay`, replacing read-only snapshots. The renderer
+continues to receive snapshots and computed tokens. The headless layer neither
+reads time nor owns a loop. This is climate preview only; no biological turns
+are skipped or invented. Geography, drainage and regions stay fixed during it.
+
+Pause/Resume is a native button with pressed state. Hidden tabs and the atlas
+stop the preview clock without background catch-up. Long foreground frame gaps
+are capped at 250 ms to avoid large jumps; slow devices may play more slowly.
+A new world starts at day zero. Start opens the atlas at the preview's current
+day, where the existing manual day controls apply. Season text is visible but
+is not a constantly announcing live region.
+
+### Visual boundaries
+
+Light mode gains inset engraved button rules, shaped button corners, double
+frames, and rounded inner panel detail derived from the book mockup. Dark mode
+uses simple single rules and hides ornamental terminals, including the landing
+divider diamonds. Decoration uses theme tokens, including the no-JavaScript
+system fallback. Original artwork, full licence, credits, and disabled PL control
+are preserved. No dependencies, backend, or renderer palette were added.
+
+### Executed validation
+
+- `npm run build` passed and emitted both HTML entries and the full licence.
+- `npm test` passed 23 headless/renderer tests and 29 Chromium tests. The desktop
+  duplicate of the phone touch-pinch test is intentionally skipped.
+- New checks cover separate-page navigation, seed randomization on entry and
+  return, live updates with rapid input, invalid seed handling, water abundance
+  and conserved drainage, preview playback rate, pause/resume, and the stopped
+  preview clock while inspecting the atlas.
+- Landing, setup, and workspace were visually reviewed in light and dark at
+  desktop and phone widths. Responsive checks include 320px; keyboard focus,
+  wrapping, original artwork, and disabled language controls remain usable.
+- The development server loaded both pages and generated worlds at desktop and
+  phone widths without browser errors; the largest world's preview advanced.
+  Dark landing divider terminals were confirmed absent in computed styles.
+- `git diff --check` passed. Simulation source scans found no browser access,
+  wall-clock reads, or unseeded randomness; runtime dependencies remain empty.
+
+The limitations in 013 continue to apply: these checks establish physical and
+interface behavior, not ecological validity or cross-browser numerical equivalence.
+
+
+## 015 — Open atlas, notebook, and playback controls — 2026-09-15
+
+**Supersedes the framed map, layer toolbar, notebook tab,
+manual day entry, and menu-based Fit action in 010; the preview playback controls
+and extra inset frame in 014; and the older 20× speed label.** The user's follow-up
+asks for a larger map and a quiet inspection workspace. The setup preview retains
+one theme-defined outer border (double in light, single in dark); its extra inset
+ornament, season text, and Pause preview button are removed. The preview continues
+to advance automatically at 20 days/s. The landing utility row and hero start
+closer to the top. World setup uses the same square rule terminals as the landing,
+with both hidden in dark mode and in its no-JavaScript fallback.
+
+### Layout and controls
+
+The original theme-appropriate logo, Emergence, and Field atlas form one native
+`details` menu trigger. Layer radio controls and their legend move into that menu,
+alongside navigation and map input help. Moisture is the visible label for the
+existing `humidity` layer ID. The map has no layer toolbar or visible status
+caption. A visually hidden live region still announces deliberate pin changes;
+playback does not repeatedly announce the inspector.
+
+The notebook stays on the right, following the user’s correction, and is
+360–420 px wide at desktop sizes, with a smaller
+13 px token-defined facts scale. It contains only the notebook heading and hex
+inspection. Facts are Terrain, Elevation, Temperature, and Moisture. Elevation
+means ground/seabed height (`bedElevation`); spill height is a routing diagnostic
+and remains in the physical snapshot. No geography fields or calculation rules
+were removed. Sea/lake moisture is described as not applicable, never a fabricated
+percentage. Phones put the notebook below the map and wrap the bottom controls
+into two rows; short screens retain notebook scrolling.
+
+The bottom bar has day on the left, Play/Pause and speed in the center, and zoom,
+Center, and Fit on the right. This resolves the request's two different day
+positions in favor of its explicit day-left / zoom-right arrangement. Center
+resets pan without changing zoom. Fit resets to the largest centered scale that
+contains the complete world in the current map viewport. Native range/radio/button
+controls retain keyboard focus and accessible labels. Day and speed readouts do
+not continuously announce themselves.
+
+### Whole hexes and fitting
+
+Renderer bounds include the extra half-column of staggered odd rows. Every hex
+is drawn once, whole, without a duplicate seam half or rectangular stroke. Picking
+rejects empty notches beyond the first/last column. East/west engine adjacency and
+keyboard wrapping are unchanged. A clip path combines the interior rectangle and
+perimeter hexes to constrain rivers and region marks to the actual jagged outline;
+its construction is linear in width + height. Wrapped connections still take the
+short route and continue at the opposite edge. Springs and selection outlines
+are drawn once. A fitted view leaves at most 12 px on its limiting dimension.
+The canvas background resolves the same ground token as the surrounding surface.
+Intentional zooming/panning can still move cells partly beyond the viewport.
+
+### Browser pacing and measurement
+
+The atlas opens paused at the preview's current day. Play advances the existing
+climate API through explicit integer days. The speed slider is 1–10×, where 1×
+is 2 days/s and 10× is 20 days/s. This normalization replaces the previous preview's
+20× wording. The preview itself keeps its existing 20 days/s rate.
+
+The UI accumulates fractional days from animation-frame elapsed time and calls
+`setDay` for completed days. Actual speed counts advanced days divided by elapsed
+foreground time over approximately one-second windows, then reports days/s and
+its corresponding multiplier. It is not copied from the target. Frame gaps count
+in the measurement denominator, but at most 250 ms per frame supplies day credit,
+so a stalled browser reports slower throughput and avoids a large catch-up jump.
+Pause, speed changes, generation, screen transitions, and visibility changes reset
+clock credit and measurement; hidden tabs never accumulate background work.
+
+This remains a browser climate presentation clock. It introduces no biological
+loop or engine API, and does not select any future biological turn batching rule.
+The engine receives integer days, never browser time. UI replaces its snapshot
+reference; rendering reads the snapshot and theme values without mutating either.
+No dependencies or persistence formats were added.
+
+### Validation and limitations
+
+- `npm run build` passed and emitted both static HTML pages and the full licence.
+- `npm test` passed 24 headless/renderer checks and 29 Chromium checks; the desktop
+  duplicate of the phone touch-pinch check remains intentionally skipped.
+- Focused checks cover full edge hexes and picking, viewport-maximizing fit,
+  centering without changing zoom, menu keyboard access and all layers, the four
+  notebook facts, 1×/10× pacing, measured throughput after a stalled frame,
+  pause/resume, and hidden-tab suspension without catch-up. Playback timing tests
+  freeze automatic clock ticking during measurements so locator actions cannot
+  add unintended simulated time.
+- Visually inspected landing, setup, atlas, and menu in both themes at desktop
+  and phone widths. Final atlas checks include a right-side notebook, readable
+  facts, wrapping, visible focus, original logos, disabled controls, and no
+  horizontal overflow at 1440px, 390px, and 320px widths.
+- The development server served both pages without browser errors. A large
+  9,600-hex world advanced 48 days in a roughly 2.5-second foreground observation
+  at a 20 days/s target; the measured readout reached 20 days/s. This is a local
+  smoke observation, not a device-independent performance guarantee.
+- `git diff --check` passed. No runtime dependencies were added. The simulation
+  source remains free of browser access, unseeded randomness, and wall-clock
+  reads. Pre-existing work in the checkout and original research/artwork were
+  preserved.
+
+Chromium layout and clock checks cover this physical atlas, not ecological rules
+or calibrated climate. The target is a pacing request; actual throughput depends
+on workload and device. Other browser engines have not been tested.
+
+
+## 016 — Compact controls, full-height notebook, and live localization — 2026-09-15
+
+**Supersedes the disabled Polish placeholder in 008–010 and 014, the theme
+control presentation in 005, dark divider omissions in 014–015, and the notebook
+and playback bar layout in 015.** The user's current request explicitly enables
+Polish and language changes during atlas playback. The contributor contract now
+reflects that supported behavior; the original decision history remains intact.
+
+### Presentation
+
+A single borderless theme icon opens a native `details` menu with labelled
+System / Light / Dark radios. The trigger shows the selected preference (monitor, sun, or moon),
+with a translated accessible name and tooltip. Keyboard arrows select a radio;
+Escape returns focus to the trigger. Outside clicks and leaving the menu close it.
+Existing theme persistence, live system updates, and CSS-only fallback continue.
+Icons are inline SVG using the current token-derived text colour.
+
+The original atlas emblem grows from 48 to 64 px on desktop and from 36 to 52 px
+on phones, extending inside its existing vertical allocation. The top bar keeps
+its previous height, and the gap between Emergence and Field atlas decreases by
+3 px. Smaller phone tracking allows the Polish subtitle to fit at 320 px.
+
+On desktop, the notebook occupies its own grid column from the very top to the
+very bottom of the window. There is no application top bar above it or control
+bar below it. Its heading belongs to the notebook content. Map controls occupy
+only the left column. Phones retain a notebook below the map with independent
+scrolling, and use two rows for bottom controls.
+
+The bottom bar uses a quiet grouped Play/Pause control, consistent line icons,
+soft selected states, and labelled Center/Fit actions. Target and actual speed
+occupy adjacent columns with the same baseline, retaining both multipliers and
+days/s. The slider is 88 px rather than 260 px. Narrow screens place it beneath
+the readings; both columns stay alongside each other when text wraps. Actual
+speed remains measured from advanced days and elapsed foreground time.
+
+The day readout uses the normal theme body font, with a small Running / Paused
+label above it that follows playback and locale changes. Light-theme menus and
+the map/notebook divider use double borders; dark keeps single rules.
+Light-theme button inset lines use low-opacity dedicated tokens. Small 5 px
+rule terminals appear in both themes, with separate subtle light/dark colour
+tokens. The authored palette and complete type scale remain in `tokens.css`;
+explicit dark values and the no-JavaScript fallback match.
+
+Frost uses a near-white token and an 86% overlay applied after terrain relief.
+This prevents terrain shadow from masking freezing while preserving a little
+underlying relief. Water ice retains its blue tint. The threshold remains below
+0 °C; no climate, hydrology, regional, or ecological rule changes. Diagnostic
+layers keep their existing physical colour meanings.
+
+### Language and boundaries
+
+`src/ui/messages.js` owns complete English and Polish phrases. `locale.js` applies
+static text and accessible attributes, updates `html[lang]`, and owns locale-aware
+number formatting. Dynamic notebook, generation, map legend, day, and speed
+readouts re-render on a UI language-change event. The existing theme and language
+controls move together between setup and atlas.
+
+Locale changes neither generate a world nor reset the clock, camera, layer,
+selection, or measured speed. They never translate engine IDs, commands, seeds,
+or snapshots. The simulation and rendering layers have no locale dependency.
+Explicit choices use `emergence.locale` when storage is available; blocked storage
+still allows switching for the current visit. The initial language is English
+unless Polish was saved. Without JavaScript the readable static English page and
+system theme remain, and language buttons are disabled. No runtime dependencies
+or persistence format for simulation state were introduced.
+
+### Executed validation and limitations
+
+- `npm run build` passed and emitted both static pages plus the full licence.
+- `npm test` passed 25 headless/renderer checks and 37 Chromium checks. The
+  desktop duplicate of the phone touch-pinch check remains intentionally skipped.
+- New checks cover language persistence, blocked storage, translated accessible
+  controls, decimal formatting, in-place language changes during playback without
+  clock/selection/camera/layer resets, and translated Running / Paused status.
+- Layout checks cover both themes and locales at 1440, 1024, 800, 390, and 320 px,
+  including adjacent speed values and the full-height desktop notebook. The
+  menu keyboard and no-JavaScript system-theme checks continue to pass.
+- Inspected landing, setup, atlas, and menus in both themes at desktop and phone
+  widths. Verified double light-theme menu/divider rules, a borderless theme
+  trigger with keyboard focus retained, body-font day counts, whiter frost,
+  readable text, wrapping, and visible disabled zoom controls. Frost rendering
+  tests cover both palettes and unchanged elevation diagnostics.
+- The development server served both pages and generated worlds without browser
+  errors. `git diff --check` passed; runtime dependencies remain empty. Original
+  artwork, research, licence text, and pre-existing checkout work were preserved.
+
+These checks cover Chromium UI behavior and physical-atlas invariants. Other
+browser engines and future biological simulation have not been validated.
+Localization requires JavaScript; browser storage remains optional.
+
+## 017 — Landing spacing and centered playback controls — 2026-09-15
+
+**Supersedes the setup's upper decorative rule and the adjacent speed readouts,
+soft dark playback selection, and emblem sizes in 016.** The landing preferences
+row is shorter and the hero's extra top padding is removed, lifting the main
+copy by 28 px on desktop and 36 px on phones. World setup loses the first rule
+below preferences, including its diamond endpoints.
+
+The playback group sits at the center of the map footer between day and zoom.
+Target and Actual occupy aligned rows, with Actual below Target; label widths
+accommodate both locales. The zoom divider and phone playback separator are
+removed. At widths below 1440 px, playback occupies a centered second row
+so the longer Polish zoom labels have room. Phones keep the slider below the
+readouts and allow the values to wrap.
+
+Dark mode uses a bright green fill and dark icon for the active Play or Pause
+button, including while hovered. Dedicated tokens preserve the light theme's
+subtle selection and match the system-dark fallback. The original atlas logo
+is now 72 px on desktop and 60 px on phones, centered within its existing layout
+box; the header's height and brand spacing are unchanged.
+
+These are presentation changes only. The engine, pacing behavior, measured
+speed, original artwork, and locale state remain unchanged. No new
+runtime dependencies or usage steps are introduced.
+
+Existing layout expectations now check stacked speeds, centered
+playback, separation from zoom controls, and the absence of the setup rule.
+The preview pacing test freezes automatic wall-clock advancement before sampling,
+matching its existing atlas-clock check, to avoid locator timing adding extra days.
+
+
+The follow-up request unifies the light atlas with the other pages' warm paper.
+Page gradients and grain now share root tokens. The light workspace uses those
+same layers, with transparent toolbar and notebook surfaces revealing the paper.
+Dark retains its solid green ground and lifted panels, including its CSS fallback.
+The light Canvas ground is transparent, allowing paper to show outside the map;
+the renderer clears each frame before painting to prevent trails when panning or
+zooming. Hex colours remain opaque and keep their existing diagnostic meanings.
+The same transparent ground also reveals the setup preview's paper panel.
+
+
+Speed outputs reserve 18 monospace character widths, including decimal measured
+rates, and shrink only with the viewport. Changing from 9× to 10× therefore does
+not move the playback group or slider. The existing layout check now compares
+the slider rectangle before and after that transition in both themes and locales.
+The Paused / Running label uses the light theme's body serif; dark retains its
+monospace status label through a theme token.
+
+### Executed validation and limitations
+
+- `npm run build` passed; `npm test` passed 25 headless/renderer and 37 Chromium
+  checks, with the existing desktop duplicate of the touch-pinch check skipped.
+- Layout checks cover both themes and languages at 1440, 1401, 1281, 1024, 800,
+  390, and 320 px, including a stationary slider during the 9× → 10× transition.
+- Visually inspected landing, setup, and atlas in both themes on desktop and
+  phones, including wrapping, focus, logo assets, and disabled zoom controls.
+- Browser measurements confirm the larger logo preserves the header height,
+  active Play/Pause keeps its bright fill on hover and keyboard focus, and light
+  atlas background layers match the page. Canvas corner alpha is zero in light
+  and opaque in dark after zoom/fit; the light status font resolves to Georgia.
+- `git diff --check` passed. Prior checkout work and layer boundaries were
+  preserved. No build wiring or usage instructions changed.
+
+Validation covers Chromium and existing physical-atlas behavior, not other browser
+engines or future ecology. Measured speed remains dependent on device workload.

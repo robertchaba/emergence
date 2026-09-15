@@ -3,6 +3,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: './',
+  build: {
+    rolldownOptions: { input: { landing: 'index.html', world: 'world.html' } },
+  },
   plugins: [{
     name: 'project-license',
     generateBundle() {

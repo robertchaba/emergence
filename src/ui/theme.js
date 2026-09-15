@@ -1,8 +1,12 @@
+import { t } from './locale.js';
+
 const storageKey = 'emergence.theme';
 
 export function initTheme() {
   const root = document.documentElement;
   const switcher = document.querySelector('.theme-switcher');
+  const picker = document.querySelector('.theme-picker');
+  const trigger = picker.querySelector('summary');
   const system = window.matchMedia('(prefers-color-scheme: dark)');
   let preference = 'system';
 
@@ -18,6 +22,10 @@ export function initTheme() {
       ? (system.matches ? 'dark' : 'light')
       : preference;
     switcher.querySelector(`input[value="${preference}"]`).checked = true;
+    picker.dataset.preference = preference;
+    const label = t('themeChoice', { theme: t(preference) });
+    trigger.setAttribute('aria-label', label);
+    trigger.title = label;
   }
 
   switcher.addEventListener('change', (event) => {
@@ -36,6 +44,17 @@ export function initTheme() {
     if (preference === 'system') applyTheme();
   });
 
+  document.addEventListener('emergence:localechange', applyTheme);
+  picker.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') { picker.open = false; trigger.focus(); }
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!picker.contains(event.target)) picker.open = false;
+  });
+  picker.addEventListener('focusout', (event) => {
+    if (!picker.contains(event.relatedTarget)) picker.open = false;
+  });
+
   applyTheme();
-  switcher.hidden = false;
+  picker.hidden = false;
 }
