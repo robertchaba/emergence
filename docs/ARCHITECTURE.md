@@ -847,3 +847,53 @@ monospace status label through a theme token.
 
 Validation covers Chromium and existing physical-atlas behavior, not other browser
 engines or future ecology. Measured speed remains dependent on device workload.
+
+## 018 — Aligned playback rate columns — 2026-09-15
+
+Target and Actual speed outputs now use the same fixed-width multiplier column
+and a separate days-per-second column. This extends 017's stable outer width so
+single-digit, double-digit, and decimal multipliers cannot shift the rate's start.
+The UI retains each complete translated speed phrase and native output element;
+the rate column can wrap within constrained widths. Simulation, timing, renderer,
+colour tokens, and usage remain unchanged.
+
+Validation: `npm run build` and `npm test` passed (25 headless/renderer checks,
+37 Chromium checks, one existing desktop touch-test skip). Browser measurements
+confirmed aligned rate starts in both locales and themes at 1440, 800, 390, and
+320 px and during playback. Both themes were visually inspected on desktop and
+phone. Existing checks cover wrapping, overflow, keyboard focus, assets, disabled
+controls, and the stationary slider. `git diff --check` passed. Validation remains
+limited to Chromium and the existing physical atlas.
+
+## 019 — Quieter rivers and mineral terrain palette — 2026-09-15
+
+**Supersedes 017's bright dark-mode playback fill and refines 010's river and
+terrain presentation.** The user supplied an earlier-version screenshot as a
+visual reference. Dark Play/Pause now uses the existing pale lichen accent,
+including hover, instead of the more saturated green. Light selection retains
+its existing treatment. Explicit dark and system-dark fallback tokens match.
+
+Rivers use muted blue-grey tokens and finer flow-dependent strokes, bounded to
+0.45–2.5 CSS pixels instead of 0.7–7. Spring markers and their outlines are smaller
+and use subdued water tones. Actual drainage links, tributary width ordering,
+lake outlets, wrapped connections, and frozen-channel colouring remain intact.
+Channels still follow the physical hex links; this does not add meandering or
+change hydrology. At fitted phone scale, fine rivers are intentionally subtle;
+zooming makes individual channels easier to inspect.
+
+Land shifts from yellow-beige toward stone and taupe, with more neutral dark
+relief and a warmer paper-compatible light palette. Elevation still drives land
+colour, and terrain relief and frost retain their existing calculations. All
+colours stay in `src/ui/styles/tokens.css`; rendering receives computed tokens
+and only changes stroke/marker sizing. No engine state, generation, climate,
+localization, usage, artwork, or dependencies change.
+
+Validation: `npm run build` passed. `npm test` passed 25 headless/renderer checks
+and 37 Chromium checks, with the existing desktop touch-test duplicate skipped.
+The suite covers frozen snapshots, seam connections, frost, theme changes,
+playback, keyboard focus, assets, disabled controls, both locales, and responsive
+bounds through 320 px. Visually inspected light/dark atlas views at 1440 and
+390 px and dark rivers at 2.3× zoom. Browser measurements confirmed the active
+button keeps the lichen fill on hover and has a solid keyboard-focus outline.
+`git diff --check` passed. Existing decision 018 work was preserved. Validation
+is limited to Chromium and the existing physical atlas.

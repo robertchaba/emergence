@@ -295,7 +295,8 @@ export function createMapRenderer(canvas, { tokens }) {
         if (hex.runoff > 0 && hex.downstream !== null && hex.waterType !== 'sea') {
           const outlet = world.hexes[hex.downstream];
           if (hex.waterType === 'lake' && outlet.waterType === 'lake' && hex.waterLevel === outlet.waterLevel) continue;
-          const riverWidth = clamp((0.12 + Math.sqrt(hex.runoff) * 0.06) * view.scale, 0.7, 7);
+          // Fine channels retain flow hierarchy without dominating the relief.
+          const riverWidth = clamp((0.045 + Math.sqrt(hex.runoff) * 0.025) * view.scale, 0.45, 2.5);
           const riverColor = layer === 'terrain' && hex.temperature < 0 ? palette.ice : palette.river;
           connection(world, hex.id, hex.downstream, view, riverColor, riverWidth);
         }
@@ -303,13 +304,13 @@ export function createMapRenderer(canvas, { tokens }) {
       for (const hex of world.hexes) {
         if (!(hex.springDischarge > 0)) continue;
         const position = cellCenter(world, hex.id, camera);
-        const radius = clamp(view.scale * 0.22, 1.5, 5);
+        const radius = clamp(view.scale * 0.12, 0.8, 2.5);
         context.beginPath();
         context.arc(position.x, position.y, radius, 0, Math.PI * 2);
         context.fillStyle = palette.spring;
         context.fill();
         context.strokeStyle = palette['spring-ring'];
-        context.lineWidth = 1;
+        context.lineWidth = 0.65;
         context.stroke();
       }
     }
