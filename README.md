@@ -54,6 +54,30 @@ Playwright are development dependencies only. System fonts keep the page
 self-contained. Light and dark are complete themes; System follows the device
 preference, and an explicit choice is remembered when browser storage is available.
 
+The landing page presents the original logo over subtle circular lines, with
+paper grain in light mode and a quiet green glow in dark mode. Theme and language
+preferences occupy a small utility row. English is available; the disabled PL
+control reserves a place for a future Polish translation.
+
+## Author and planned release
+
+Created by **Robert Chaba** — [robert.chaba@gmail.com](mailto:robert.chaba@gmail.com).
+Repository: [robertchaba/emergence](https://github.com/robertchaba/emergence).
+
+The repository is currently private. A public release under a BSD licence is
+planned when the sandbox is working and published; this is a release intention,
+not a licence grant for the current checkout.
+
+**Recommendation: BSD-3-Clause.** Like BSD-2-Clause and MIT, it permits broad reuse
+subject to preserving the required notices. Its extra non-endorsement condition
+prevents the author's or contributors' names from being used to promote derived
+products without permission. BSD-2-Clause is the simpler BSD option; MIT is
+another short permissive option. The BSD variant remains to be confirmed before
+adding the release's `LICENSE` file and package licence metadata.
+See the canonical [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html),
+[BSD-2-Clause](https://spdx.org/licenses/BSD-2-Clause.html), and
+[MIT](https://spdx.org/licenses/MIT.html) texts.
+
 ## Documentation
 
 The supplied research notes are in **`docs/`**, despite the original brief's

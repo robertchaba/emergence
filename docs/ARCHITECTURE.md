@@ -168,3 +168,54 @@ the steps that implement those behaviors.
   in desktop and phone screenshots.
 - `npm ls --omit=dev` reported no runtime dependencies; `git diff --check` passed.
 - Verification ran with Node 26.8.1. The declared tooling minimum is Node 22.12.
+
+## 007 — Landing identity, texture, and release information — 2026-09-15
+
+**Supersedes the landing logo framing in 005.** The rectangular specimen panel
+and plate labels suggested an in-game inspector. The landing logo now sits
+freely over two faint circular outlines. The appendage can extend beyond the
+circles; the artwork is neither cropped nor redrawn. The original logos continue
+to define both themes. Caption styling remains quiet and editorial.
+
+The repeated wordmark and unrelated asterisk have been removed from the top.
+Only theme preferences and the language placeholder occupy the utility row.
+The large project title and emblem provide the page's identity.
+
+Light mode gains a very faint paper grain, fibre pattern, and aged edge wash.
+Dark mode uses lower-contrast grain and a soft green halo behind the logo. CSS
+gradients and pseudo-elements supply these static decorations without asset
+requests, animation, or dependencies. Decorative lines do not intercept input.
+Their colours, alpha values, halo, and logo shadows use theme tokens, including
+the no-JavaScript fallback. Small diamond terminals finish the section rule.
+
+The footer credits Robert Chaba, links `robert.chaba@gmail.com` using `mailto:`,
+and links the supplied GitHub repository. It states that the repository is
+private and a public BSD release is planned, rather than implying it is already
+available. No repository visibility change or release is part of this task.
+
+**Licensing recommendation:** BSD-3-Clause, because it combines permissive reuse
+with an explicit non-endorsement condition for the author and contributors.
+BSD-2-Clause and MIT are simpler permissive alternatives. The choice remains
+pending; no operative licence file or SPDX package licence has been added.
+The README links the canonical licence texts. On release, confirm the BSD
+variant, add its full text with the author's copyright, and update the footer
+and package metadata together.
+
+## 008 — Language placeholder and future Polish locale — 2026-09-15
+
+English remains the only available locale and `html[lang]` stays `en`. The
+preferences row displays the current EN language and a disabled PL button,
+with a visible availability note and an accessible language group. It does not
+change locale or save a nonfunctional preference.
+
+Polish localization is a later step. Keep phrases complete and allow text to
+grow and wrap. That step should introduce the actual message catalogue, update
+document/control language metadata, and use locale-aware formatting in UI.
+Stable engine IDs, commands, and serialized state must remain locale-independent.
+No translation framework, dictionary, or speculative locale controller is needed
+for this placeholder.
+
+Validation: `npm run build` and all 10 Playwright checks passed. The loading check
+now also covers the disabled language placeholder and footer link destinations.
+Both themes were reviewed in screenshots at 1440px and phone widths, including
+320px; layout checks found no horizontal overflow. `git diff --check` passed.

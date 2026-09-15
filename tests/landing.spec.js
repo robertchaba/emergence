@@ -48,6 +48,10 @@ test('landing loads, both themes render, and the layout fits', async ({ page }) 
   await expect(page).toHaveTitle('Emergence — an evolution sandbox');
   await expect(page.getByRole('heading', { level: 1, name: 'Emergence', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start a world' })).toBeDisabled();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('group', { name: 'Language', exact: true }).getByRole('button', { name: 'PL' })).toBeDisabled();
+  await expect(page.getByRole('link', { name: 'robert.chaba@gmail.com' })).toHaveAttribute('href', 'mailto:robert.chaba@gmail.com');
+  await expect(page.getByRole('link', { name: 'Emergence on GitHub' })).toHaveAttribute('href', 'https://github.com/robertchaba/emergence');
 
   const backgrounds = [];
   for (const theme of ['light', 'dark']) {

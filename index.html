@@ -14,17 +14,18 @@
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="page-shell">
-      <header class="site-header">
-        <a class="wordmark" href="./" aria-label="Emergence home">
-          <span class="brand-mark" aria-hidden="true">✳</span>
-          Emergence
-        </a>
+      <header class="page-preferences" aria-label="Page preferences">
         <fieldset class="theme-switcher" hidden>
           <legend class="visually-hidden">Colour theme</legend>
           <label><input type="radio" name="theme" value="system" checked /><span>System</span></label>
           <label><input type="radio" name="theme" value="light" /><span>Light</span></label>
           <label><input type="radio" name="theme" value="dark" /><span>Dark</span></label>
         </fieldset>
+        <div class="language-switcher" role="group" aria-label="Language">
+          <span class="current-language" lang="en" aria-label="Current language: English">EN</span>
+          <span class="language-divider" aria-hidden="true">/</span>
+          <button type="button" lang="pl" disabled>PL</button>
+        </div>
       </header>
 
       <main id="main">
@@ -35,18 +36,16 @@
             <p class="tagline">A small beginning.<br />An unwritten world.</p>
             <p class="introduction">Generate a world. Seed life in a single hex. Watch resources, inheritance, mutation, and seasons shape the generations that follow.</p>
             <div class="start-block">
-              <button class="start-button" type="button" disabled aria-describedby="start-note">Start a world <span aria-hidden="true">↗</span></button>
-              <p id="start-note" class="fine-print">The sandbox is taking shape. Explore soon.</p>
+              <button class="start-button" type="button" disabled>Start a world <span aria-hidden="true">↗</span></button>
             </div>
           </div>
 
           <figure class="specimen" aria-label="Emergence emblem">
-            <div class="plate-heading" aria-hidden="true"><span>THE LIVING WORLD</span><span>PLATE 001</span></div>
             <div class="specimen-art">
               <img class="logo logo-light" src="/resources/logo-light.webp" width="1280" height="1280" alt="An engraved hexagonal cell with a curling, delicate appendage." fetchpriority="high" />
               <img class="logo logo-dark" src="/resources/logo-dark.webp" width="1280" height="1280" alt="A luminous green hexagonal cell with a curling, delicate appendage." fetchpriority="high" />
             </div>
-            <figcaption><span>From one beginning, many possibilities.</span><span class="plate-symbol" aria-hidden="true">✳</span></figcaption>
+            <figcaption>From one beginning, many possibilities.</figcaption>
           </figure>
         </section>
 
@@ -76,8 +75,14 @@
       </main>
 
       <footer class="site-footer">
-        <p>Emergence <span aria-hidden="true">/</span> A world worth observing.</p>
-        <p class="readout">ONE HEX. AN OPEN POSSIBILITY.</p>
+        <div class="creator-credit">
+          <p>Created by <span class="creator-name">Robert Chaba</span></p>
+          <a href="mailto:robert.chaba@gmail.com">robert.chaba@gmail.com</a>
+        </div>
+        <div class="project-credit">
+          <a href="https://github.com/robertchaba/emergence">Emergence on GitHub <span aria-hidden="true">↗</span></a>
+          <p><a href="./LICENSE">BSD-3-Clause licence</a></p>
+        </div>
       </footer>
     </div>
   </body>

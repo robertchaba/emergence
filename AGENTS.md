@@ -81,6 +81,15 @@ headless engine.
 - Use native semantic controls, visible keyboard focus, readable contrast,
   meaningful text alternatives, and layouts that work on phones and desktops.
   Do not add fake statistics or suggest that a disabled feature is operational.
+- English is the current language; Polish is planned. Keep visible copy as
+  complete translatable phrases, allow longer labels to wrap, and keep locale
+  formatting in UI. Later locale changes must update the document's `lang`;
+  never translate engine IDs, commands, or saved state. The disabled PL control
+  is a placeholder, not an implemented language switch.
+- Credit Robert Chaba and preserve the supplied contact/repository links.
+  The repository is currently private, with a BSD release planned. Do not
+  describe the source as publicly available or the release licence as already
+  applied until that release actually happens.
 
 ## Before declaring work done
 
