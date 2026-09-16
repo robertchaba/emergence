@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/src/ui/styles/tokens.css" />
     <link rel="stylesheet" href="/src/ui/styles/landing.css" />
     <link rel="stylesheet" href="/src/ui/styles/workspace.css" />
+    <link rel="stylesheet" href="/src/ui/styles/botanicals.css" />
     <script type="module" src="/src/ui/main.js"></script>
   </head>
   <body>
@@ -116,6 +117,9 @@
           <div class="notebook-heading"><p class="eyebrow" data-i18n="notebook">Field notebook</p></div>
           <section id="hex-panel" aria-label="Hex details" data-i18n-aria-label="hexDetails"><div id="hex-details"><h2 data-i18n="inspectHeading">A world to inspect.</h2><p data-i18n="inspectHelp">Pin a hex to read its terrain, elevation, temperature, and moisture.</p></div></section>
           <section class="life-panel" aria-labelledby="life-title">
+            <div class="botanical-layer" aria-hidden="true">
+              <img class="botanical-plate botanical-life-seedling" src="/resources/drawings/pic12.webp" width="1254" height="1254" alt="" loading="lazy" decoding="async" draggable="false" />
+            </div>
             <h2 id="life-title" data-i18n="lifeBeginning">A small beginning</h2>
             <p class="life-introduction" data-i18n="lifeIntroduction">Life will begin in one selected hex. Local conditions will shape what follows.</p>
             <button id="start-life" class="action-button primary" type="button" disabled data-i18n="startLife">Start life here</button>

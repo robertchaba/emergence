@@ -1163,3 +1163,118 @@ without a selection. Additional checks confirmed keyboard focus and no horizonta
 overflow in Polish through 320 px. Existing checks cover original assets and
 responsive atlas behavior. Validation remains limited to Chromium and the physical
 atlas; life seeding is still unimplemented.
+
+## 028 — Faded specimen plates in the light theme — 2026-09-16
+
+The user's visual experiment adds six of the supplied transparent drawings as
+quiet atlas decorations: a ginkgo and wing study around the landing hero, a moth
+and shell in the page footers, a fern above world setup and in the notebook, and
+a small seedling at the life panel's edge. Original `pic1`, `pic2`, `pic5`, `pic7`,
+`pic8`, and `pic12` WebP files are referenced directly and retain their pixels.
+The remaining drawings and all supplied background images are untouched; existing
+page textures, backgrounds, logos, colours and typography are preserved.
+
+Placement lives in `src/ui/styles/botanicals.css`; two root tokens set 24% and
+15% opacity. The existing ornament display token confines the drawings to light
+mode, including live System changes and the CSS fallback without JavaScript.
+Absolute, clipped layers sit behind content without adding layout space or
+intercepting input. Empty alternatives and `aria-hidden` keep the artwork out of
+accessible content. Phone layouts scale/reposition the plates and omit the wing
+and large notebook fern to preserve space for controls and details.
+
+This changes static markup and UI styles only. The images are decoration, not
+organisms or generated ecological information; simulation, rendering, state,
+localization and life-button behavior are unchanged. No dependency or usage
+change requires a README update. Keeping the originals adds approximately 2.2 MB
+of image assets to the static build; footer and notebook images use lazy loading.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47
+Chromium checks, with the existing desktop touch-test duplicate skipped), and
+`git diff --check` passed. Inspected landing, setup and notebook in both themes
+at desktop and phone widths, including Polish at 320 px, selected/unselected
+hexes, keyboard focus and disabled controls. Production browser checks verified
+asset loading, decorative accessibility attributes, non-intercepting layers,
+no horizontal overflow and light/dark visibility, including the no-JavaScript
+system fallback. The existing development server also served both pages.
+Validation remains limited to Chromium; the amount of decoration is an aesthetic
+experiment for the user to judge.
+
+## 029 — Keep only the notebook specimens — 2026-09-16
+
+**Supersedes 028's placements outside the life panel and lower notebook corner.**
+At the user's request, remove the landing, setup, footer and notebook-heading
+drawings and their unused styles. The landing no longer loads the botanical
+stylesheet. Keep the life panel's seedling at its existing size, position and
+15% opacity. Move the notebook fern beyond the bottom-right corner so the
+existing decorative layer crops it at both edges; its size and 24% opacity
+remain unchanged. The existing phone rule continues to hide the large fern.
+
+Only `pic7` and `pic12` remain application assets from the drawing collection,
+totalling approximately 787 kB. Original resource files and all backgrounds are
+preserved. This is a static markup and UI styling refinement with no engine,
+renderer, state, localization, control behavior, dependency or usage changes.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47
+Chromium checks, one existing skip), and `git diff --check` passed. Visually
+checked the remaining decorations in both themes at desktop and phone widths.
+Additional browser checks confirmed the removed placements are absent, the fern
+extends beyond both clipping edges, assets load, layouts do not overflow, and
+the life button retains its disabled/unselected and enabled/selected states.
+The development pages loaded successfully. Existing checks cover keyboard
+focus, system themes, both locales and responsive layouts. Browser validation
+remains limited to Chromium.
+
+## 030 — Larger, lighter notebook fern — 2026-09-16
+
+**Supersedes 029's deep corner crop and 028's fern opacity.** Raise the fern
+from a −104 px bottom offset to −30 px and bring it inward from −96 px to
+−32 px at the right edge, leaving only the root tips slightly cropped.
+Increase its maximum width from 330 to 380 px, bounded by the notebook width,
+and reduce its opacity from 24% to 16% through the existing root token.
+The life-panel seedling retains its existing appearance and 15% opacity.
+
+The fern remains decorative, clipped, absent from dark mode and hidden on phones.
+Only UI sizing, placement and an opacity token change; original images,
+backgrounds, simulation, rendering and controls are preserved. Usage is unchanged.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47
+Chromium checks, one existing skip), and `git diff --check` passed. Visually
+inspected both themes at desktop and phone widths. Browser checks confirmed
+16% fern opacity, unchanged 15% seedling opacity, theme visibility, image loading
+and no horizontal overflow. Existing checks cover focus, disabled controls and
+both locales. Browser validation remains limited to Chromium.
+
+## 031 — Mirror the notebook fern — 2026-09-16
+
+Mirror the notebook fern horizontally with `scaleX(-1)` applied to its existing
+rotated presentation, as requested. Its size, placement, opacity and responsive
+visibility remain unchanged. This CSS-only adjustment preserves the original
+image, life-panel decoration, backgrounds and application behavior; no layer
+boundary or usage changes are introduced.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47
+Chromium checks, one existing skip), and `git diff --check` passed. Visually
+inspected both themes at desktop and phone widths; additional browser checks
+confirmed asset loading, theme visibility and no horizontal overflow. Existing
+checks cover focus, disabled controls and localization. Browser validation
+remains limited to Chromium.
+
+## 032 — Centered insect plate at the notebook foot — 2026-09-16
+
+**Supersedes 029–031's notebook fern treatment.** The user's request for the
+winged insect is implemented with the full insect study in `pic5.webp`.
+Replace the fern with this plate, centered horizontally, 12 px above the
+notebook's bottom edge, at up to 340 px wide and 15% opacity. Remove the fern's
+mirroring and corner offsets. The existing light-only and phone-hidden treatment
+continues; the user's intervening life-panel styling adjustments are preserved.
+
+Only static markup and UI placement change. Source images, backgrounds, engine,
+renderer, controls and usage remain unchanged. The drawings are decorative and
+do not describe generated organisms.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47
+Chromium checks, one existing skip), and `git diff --check` passed. Visually
+inspected both themes at desktop and phone widths. Additional browser checks
+confirmed centered placement, the 12 px bottom inset, 15% opacity, asset loading,
+theme visibility and no horizontal overflow. Existing checks cover focus,
+disabled controls and both locales. Browser validation remains limited to Chromium.

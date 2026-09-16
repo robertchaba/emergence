@@ -1,0 +1,34 @@
+/* Original specimen plates decorate the paper UI; they carry no world data.
+   The existing ornament token also follows System without JavaScript. */
+.life-panel {
+  position: relative;
+  isolation: isolate;
+}
+
+.botanical-layer {
+  display: var(--ornament-display);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+  user-select: none;
+}
+
+.botanical-plate {
+  position: absolute;
+  display: block;
+  height: auto;
+  opacity: var(--botanical-opacity);
+}
+
+.botanical-life-seedling {
+  width: 170px;
+  left: -58px;
+  bottom: -30px;
+  transform: rotate(-18deg);
+}
+
+@media (max-width: 760px) {
+  .botanical-life-seedling { width: 145px; left: -50px; bottom: -22px; }
+}

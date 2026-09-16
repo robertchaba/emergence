@@ -1,4 +1,4 @@
-/* All authored UI colours and typography live here. Supplied raster logos
+/* All authored UI colours and typography live here. Supplied raster illustrations
    retain their original artwork colours. Theme values are never engine data. */
 :root,
 :root[data-theme='light'] {
@@ -106,6 +106,8 @@
   --tagline-style: italic;
   --panel-radius: 3px;
   --ornament-display: block;
+  --botanical-opacity: 0.16;
+  --botanical-faint-opacity: 0.15;
   --frame-width: 4px;
   --frame-style: double;
   --button-corner: 10px 2px;
