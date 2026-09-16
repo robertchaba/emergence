@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assignClimate, setDay } from '../../src/simulation/climate.js';
+import { assignClimate, climateAt, setDay } from '../../src/simulation/climate.js';
 import { createGrid } from '../../src/simulation/grid.js';
 import { partitionRegions } from '../../src/simulation/regions.js';
 import { generateWorld } from '../../src/simulation/world.js';
@@ -31,6 +31,24 @@ function freeze(value) {
 function near(actual, expected) {
   assert.ok(Math.abs(actual - expected) < 1e-10, `${actual} is not close to ${expected}`);
 }
+
+test('sparse climate readings match complete atlas seasons without changing inputs', () => {
+  const world = freeze(generateWorld({ seed: 'sparse-climate', size: 'small' }));
+  const before = JSON.stringify(world);
+  for (const day of [0, 1, 90, 270, 359, 360, 721]) {
+    const full = setDay(world, day);
+    for (const hex of world.hexes) {
+      const readings = climateAt(world, hex, day);
+      for (const [key, value] of Object.entries(readings)) {
+        assert.equal(value, full.hexes[hex.id][key], `${key} at ${hex.id}, day ${day}`);
+      }
+    }
+  }
+  assert.equal(JSON.stringify(world), before);
+  for (const day of [-1, 0.5, NaN, Infinity]) {
+    assert.throws(() => climateAt(world, world.hexes[0], day), RangeError);
+  }
+});
 
 test('seasons are annual and opposite across mirrored hemispheres', () => {
   const spring = assignClimate(fixture(), 0);

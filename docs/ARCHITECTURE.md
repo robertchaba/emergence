@@ -2,7 +2,12 @@
 
 ## Status
 
-**Current: physical world atlas — 2026-09-15.** Decisions 010–013 implement the
+**Current: v1 life simulation — 2026-09-16.** Decision 036 implements the first
+life model, browser execution, and live notebook/atlas observations. Model choices
+and approximation limits are recorded in
+[`v1/docs/DECISIONS.md`](../src/simulation/life/v1/docs/DECISIONS.md).
+
+**Historical physical-atlas status, superseded by 036 — 2026-09-15.** Decisions 010–013 implement the
 requested interface, generator, seasonal climate, and geographic diagnostics.
 Decision 014 adds a separate live world-building page and a UI seasonal preview
 clock. Decision 015 simplifies the atlas and adds measured climate playback
@@ -10,7 +15,8 @@ controls. Decision 016 refines the controls, expands the notebook, and adds live
 English/Polish localization. There are no organisms, biological rules, or biological
 simulation loop.
 
-**Documentation boundary update — 2026-09-16:** Decision 034 separates shared
+**Historical documentation boundary update — 2026-09-16, implementation
+deferrals superseded by 036:** Decision 034 separates shared
 world rules from versioned life-model research and defines common life inspection
 semantics plus a provisional rendering brief. Application behavior is unchanged;
 `src/simulation/life/v1/` contains documentation only. Decision 035 refines its
@@ -1412,3 +1418,126 @@ relocated research content matches its originals apart from link destinations.
 Diff review and `git diff --check` passed. These checks cover the physical atlas
 and documentation structure, not the still-unimplemented biological model.
 No UI changed, so no additional visual inspection was performed.
+
+
+## 036 — Working v1 life and the living Field Notebook — 2026-09-16
+
+**Supersedes the biological implementation deferrals in 001–004, 026–027,
+034–035, and the climate-only playback boundary in 015.** The current user
+explicitly requests the complete first life model, its UI, and performance
+optimizations, and authorizes judgment for unspecified rules provided those
+choices are recorded. The original research is preserved. Adopted biological
+rules and departures belong in
+[`src/simulation/life/v1/docs/DECISIONS.md`](../src/simulation/life/v1/docs/DECISIONS.md),
+not in shared physical modules or presentation code.
+
+### Ownership and execution
+
+V1 owns introduction, complete genomes, local habitats, energy, light competition,
+feeding, movement, births, mutation, starvation, dispersal, species identity,
+representation, and continuation state. It exposes completed serializable
+observations through the common boundary. Species and variants have separate
+identities; neither a map region nor a new mutation automatically creates a
+species. Counts refer to represented living organisms, not cohort records or
+map markers. Classification uses actual occupied habitat connectivity.
+
+`climateAt(world, hex, day)` is a new shared physical query. It returns the same
+readings as `setDay` for one location without copying a whole world. Both paths
+use one implementation and a cached 360-day seasonal signal. Formulas and
+geography remain unchanged. V1 evaluates only occupied locations and candidate
+arrival locations; empty regions need no biological update.
+
+The browser owns the life worker and pacing. UI supplies explicit introduction
+and advance commands; the headless model never reads time, DOM, or browser
+services. Worker replies contain completed observations. The atlas advances its
+physical day only when the corresponding biology has completed. Playback uses
+the existing 1×–10× meanings (2–20 simulated days/s), with bounded requests and
+no accumulation of hidden-tab catch-up. Target speed does not alter daily rules,
+mutation probability, or the species qualification period. Querying, drawing,
+locale, and theme cannot consume the model's random stream.
+
+### Controls and observations
+
+The selected hex is the explicit introduction input; the user does not choose a
+founding population size. Following the user's clarification during this step,
+the model supplies a small photosynthetic plant colony and adapts its initial
+habitat and temperature traits to that hex. This initial choice does not make
+subsequent mutations environment-directed or change genomes during life. Hard
+exclusions and conditions no available founder genome can support return an
+explanation without choosing another site.
+
+Introducing life leaves playback paused; Play/Pause and one-day stepping control
+advancement. There is no reset while organisms survive. After extinction, the
+same introduction action can explicitly start a fresh attempt on the current
+world/day. It never reseeds automatically. Returning to setup continues to
+generate a new physical world. A pause finishes an already requested bounded
+batch and shows that pending state before reporting Paused.
+
+The Field Notebook displays world counts, selected-hex inhabitants, a living
+species catalogue, variants, eight-trait profiles, abstract specimen plates,
+and accumulated life events. UI formats whole phrases and numbers in English
+and Polish and retains world, camera, and selections across locale/theme changes.
+Model notes distinguish exact represented counts from approximate ecology.
+
+The map consumes common abundance, normalized size, habitat, and derived-role
+summaries. Small producers tint hexes; larger producers and consumers have
+bounded, deterministic decorative markers. Species highlighting shows occupied
+locations. Marker count is unrelated to organism count, and zoom only changes
+presentation detail. Colors come from root theme tokens, including system-dark
+fallbacks. Original artwork and historical research are preserved.
+
+### Performance and limits
+
+Complete genomes are interned; equivalent local states share integer-count
+cohorts. Random event counts retain stochastic demographic variation rather than
+using deterministic expected populations. Daily energy quantization is identified
+as a biological approximation with an exact-energy comparison mode. Rare variants
+are retained, and no fixed population cap or skipped ecological days substitute
+for resource competition. V1's decision record specifies the selected coefficients,
+ordering, rounding, and checkpoint metadata.
+
+Rendering caches presentation geometry, limits each occupied hex to a small
+marker budget, culls offscreen work, and invalidates changed life areas alongside
+seasonal map damage. Biological work runs independently of camera and redraw
+frequency. The static build gains a life worker but no application dependencies,
+backend, framework, or transpilation.
+
+### Executed validation
+
+- `npm run build` and `npm test` passed: 55 headless/renderer checks and 55
+  Chromium checks, with the existing desktop duplicate of the touch test skipped.
+  Life checks cover rejected-command atomicity, site-adapted plant introduction,
+  extinction-only restart, conserved counts, newborn activation, complete seeded
+  continuation, gene graphs, light caps, habitat-local feeding, predator depletion,
+  movement, 100-day species qualification and reconnection resetting its timer.
+- Browser checks exercise real worker playback against headless results at the
+  same day, including theme/locale changes; they also follow a land colony through
+  seasonal extinction and an explicit new attempt without replacing the world.
+  Existing physical, localization, theme, input, accessibility and layout checks
+  continue to pass at desktop and phone sizes, including 320 px.
+- Both themes were visually inspected with living populations, census/trend,
+  gene portraits, native focus, disabled controls and notebook scrolling. The
+  development server ran a medium-world life population through 40 days without
+  browser errors. No founder-size input or reset action remains.
+- Final local Node 26.8.1 benchmarks used seeds `life-benchmark-small`, `-medium`,
+  and `-large`, default physical settings, day-zero water sites nearest 20 °C,
+  and 360 complete biological days. Model-only totals were approximately 65,
+  420 and 986 ms. The large run ended with 130,793 organisms in 749 occupied
+  hexes and 1,676 cohorts; its 95th-percentile update took 4.55 ms and observation
+  construction took 2.15 ms. These low-diversity runs do not establish speed for
+  all ecosystems or devices. The v1 decision record includes approximation limits.
+- A deliberately dense 10,000-predator/10,000-prey checkpoint exposed quadratic
+  hunting work. Size-indexed prey pools and immediate recombination reduced that
+  local one-day test from approximately 424 to 8 ms, retaining its 5,898 kills.
+  Additional mixed-food-chain stress checks reconciled births, deaths, species,
+  hex populations, bounded energy and checkpoint continuation across 30 seeds.
+- `git diff --check` passed, all 94 local Markdown file links resolve, the full
+  built licence matches `LICENSE`, and runtime dependencies remain empty. Source
+  review found no browser services, wall-clock access or unseeded randomness in
+  simulation, and no reverse layer imports. Original research and artwork remain.
+
+Energy bins and shared-pool grazing are explicit experimental approximations.
+There is no independent individual reference, calibrated ecological balance,
+rare-lineage accuracy guarantee, or validated long-term trajectory error bound.
+Exact counts mean exact counts of the represented state. Browser validation is
+limited to Chromium, and no cross-browser numerical equivalence is claimed.

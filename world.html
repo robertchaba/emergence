@@ -100,6 +100,8 @@
               <label><input type="radio" name="layer" value="regions" /><span data-i18n="regions">Regions</span></label>
             </fieldset>
             <p id="layer-legend" class="field-note" data-i18n="legendTerrain">Depth-graded seas · teal lakes · spring-fed rivers · white frost</p>
+            <label class="life-overlay-control"><input id="show-life" type="checkbox" checked /><span data-i18n="showLife">Show life on the map</span></label>
+            <p class="field-note" data-i18n="lifeMapLegend">Green producers · gold grazers · coral predators · violet mixed feeders. Marks show groups, not individual counts.</p>
             <p id="map-help" class="field-note" data-i18n="mapHelp">Drag to pan. Scroll or pinch to zoom. Click to pin. With the map focused, use arrow keys to inspect, + / − to zoom, and Escape to clear.</p>
             <button id="return-setup" type="button" data-i18n="returnSetup">Return to World setup</button>
           </div>
@@ -114,7 +116,18 @@
 
       </div>
         <aside class="notebook" aria-label="Field notebook" data-i18n-aria-label="notebook">
-          <div class="notebook-heading"><p class="eyebrow" data-i18n="notebook">Field notebook</p></div>
+          <div class="notebook-heading"><p class="eyebrow" data-i18n="notebook">Field notebook</p><span class="model-badge">v1</span></div>
+          <section class="life-overview" aria-label="Life census" data-i18n-aria-label="lifeCensus">
+            <div class="census-heading"><span id="life-state" class="readout"></span><span id="life-census-day" class="field-note"></span></div>
+            <dl class="life-counts">
+              <div><dt data-i18n="organisms">Organisms</dt><dd id="organism-count">0</dd></div>
+              <div><dt data-i18n="species">Species</dt><dd id="species-count">0</dd></div>
+              <div><dt data-i18n="variants">Variants</dt><dd id="variant-count">0</dd></div>
+              <div><dt data-i18n="occupiedHexes">Occupied hexes</dt><dd id="occupied-count">0</dd></div>
+            </dl>
+            <figure id="life-population-trend" class="population-trend" hidden><div class="population-trend-drawing"></div><figcaption class="field-note"></figcaption></figure>
+            <p id="life-census-note" class="field-note" data-i18n="countNote">Exact counts of represented organisms; ecological processes are approximated.</p>
+          </section>
           <section id="hex-panel" aria-label="Hex details" data-i18n-aria-label="hexDetails"><div id="hex-details"><h2 data-i18n="inspectHeading">A world to inspect.</h2><p data-i18n="inspectHelp">Pin a hex to read its terrain, elevation, temperature, and moisture.</p></div></section>
           <section class="life-panel" aria-labelledby="life-title">
             <div class="botanical-layer" aria-hidden="true">
@@ -122,11 +135,28 @@
             </div>
             <h2 id="life-title" data-i18n="lifeBeginning">A small beginning</h2>
             <p class="life-introduction" data-i18n="lifeIntroduction">Life will begin in one selected hex. Local conditions will shape what follows.</p>
+            <div id="life-introduction-controls">
+              <p class="field-note" data-i18n="founderHelp">Begin with plants. Starting traits are chosen for the selected hex’s habitat and temperature; their descendants evolve from there.</p>
             <button id="start-life" class="action-button primary" type="button" disabled data-i18n="startLife">Start life here</button>
+            </div>
+            <p id="life-message" class="field-note" role="status"></p>
+            <button id="retry-life" class="action-button" type="button" hidden data-i18n="retryLife">Retry initialization</button>
           </section>
+          <section id="species-panel" class="species-panel" aria-labelledby="species-title" hidden>
+            <div class="section-heading-inline"><h2 id="species-title" data-i18n="livingCatalogue">Living catalogue</h2><span class="readout" data-i18n="observations">Observations</span></div>
+            <label class="field-note" for="species-select" data-i18n="inspectSpecies">Inspect species</label>
+            <select id="species-select"></select>
+            <div id="species-detail"></div>
+          </section>
+          <details id="life-processes" class="life-processes">
+            <summary data-i18n="lifeRecord">Life record & model notes</summary>
+            <p class="field-note" data-i18n="lifeEventsPeriod">Since introduction</p>
+            <dl id="life-events" class="life-event-facts"></dl>
+            <p class="field-note" data-i18n="modelNotes">Identical organisms share energy and age cohorts. Large random events use count sampling. Mutations are undirected; survival and diversification are not guaranteed.</p>
+          </details>
         </aside>
       <footer class="workspace-footer">
-        <div class="simulation-date"><span id="playback-state" class="readout">Paused</span><div class="day-readout"><span data-i18n="day">Day</span><output id="world-day" aria-label="Simulation day" data-i18n-aria-label="simulationDay" aria-live="off">0</output></div></div>
+        <div class="simulation-date"><span id="playback-state" class="readout">Paused</span><div class="day-readout"><span data-i18n="day">Day</span><output id="world-day" aria-label="Simulation day" data-i18n-aria-label="simulationDay" aria-live="off">0</output><button id="step-world" type="button" aria-label="Advance one day" data-i18n-aria-label="stepDay" title="Advance one day" data-i18n-title="stepDay"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 5 10 7-10 7Zm14 0v14"/></svg></button></div></div>
         <div class="playback-controls" role="group" aria-label="Simulation playback" data-i18n-aria-label="playback">
           <div class="playback-buttons"><button id="play-world" type="button" aria-label="Play" data-i18n-aria-label="play" aria-pressed="false"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 11 7-11 7Z"/></svg></button><button id="pause-world" type="button" aria-label="Pause" data-i18n-aria-label="pause" aria-pressed="true"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button></div>
           <div class="speed-control">

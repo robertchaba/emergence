@@ -1,9 +1,9 @@
 # Versioned life models
 
 This directory holds alternative life/evolution models: `v1/`, later `v2/`, and
-so on. **Only documentation exists here now.** The current application remains a
-physical world atlas; no model selection, life seeding, or biological loop is
-implemented by this step.
+so on. **V1 is implemented.** The application runs the first model against the
+shared physical atlas. Alternative-model selection remains future work; the
+original research and its implementation decisions stay inside each version.
 
 ## Ownership
 
@@ -39,7 +39,8 @@ Physical modules do not import a life model. Life versions do not import one
 another or UI/rendering. A version can use shared headless physical utilities;
 browser workers, clocks, persistence adapters and message transport stay outside
 the headless layer. Rendering does not import any simulation implementation.
-No registry, interface class, command dispatcher or worker protocol is added now.
+The browser life worker is a UI adapter, not part of a model. No cross-model
+registry or implicit state migration is needed for the single implemented model.
 
 All versions retain the repository's deterministic execution requirements:
 explicit simulated time, seeded randomness with complete serializable state,
@@ -64,7 +65,8 @@ Changing models starts a separate life run against the chosen shared world and
 explicit starting day. There is no implicit migration of organisms, species IDs
 or PRNG state between incompatible models. Any future conversion must be designed
 and documented explicitly. Same terrain and seed do not promise identical biology
-across models. Model selection UI and save/load formats remain future work.
+across models. Model selection UI and browser save/load remain future work. V1 exports a
+versioned headless checkpoint for deterministic continuation.
 
 Later implementations must validate the common inspection invariants as well as
 their own biological and approximation rules. Neither this directory layout nor
@@ -85,7 +87,7 @@ vN/
 These paths are relative to each `life/vN/`, not the repository root. Shared
 world documentation stays in the repository's `docs/`. Gene code remains owned
 by its model version; this layout does not create a shared gene implementation.
-The current v1 folders contain documentation only.
+The v1 folders contain the implementation, gene code, and preserved research.
 
 - [Common life observations and UI commands](CONTRACT.md)
 - [Life model v1 research and open decisions](v1/README.md)

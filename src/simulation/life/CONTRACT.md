@@ -1,9 +1,10 @@
 # Common life-model contract
 
-This is the semantic contract future `life/vN/` implementations must expose to UI
+This is the semantic contract `life/vN/` implementations must expose to UI
 and rendering. It defines meanings and required queries, not JavaScript function
-signatures, private state layouts, a worker protocol or a save-file schema. No API
-is implemented yet. The [ownership rules](README.md) apply to every version.
+signatures, private state layouts, a worker protocol or a save-file schema.
+V1 implements these semantics; its concrete API is documented in
+[v1/README.md](v1/README.md). The [ownership rules](README.md) apply to every version.
 
 ## Commands and simulated time
 
@@ -19,7 +20,7 @@ World setup's **Start** continues to open the atlas. **Play/Pause** and speed
 remain shared browser controls. They must not implicitly seed, replace or reseed
 life. **Start life here** is the separate biological intent described above;
 whether successful introduction also requests playback is a later UI decision.
-The current enabled life button still has no action.
+The implemented v1 UI introduces life separately and leaves playback paused.
 
 Future advancement supplies explicit simulated days and the matching shared
 environment. Each model completes its own required biological updates before

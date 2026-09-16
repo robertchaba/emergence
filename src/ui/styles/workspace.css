@@ -160,3 +160,80 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
 @media (max-width: 760px) and (max-height: 650px) {
   .workspace { grid-template-rows: auto minmax(0, 1fr) minmax(0, 30%) auto; }
 }
+
+/* The notebook reads like a live field record; species data remain text-accessible. */
+.notebook-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.model-badge { padding: 2px 7px; border: 1px solid var(--color-rule); color: var(--color-muted); font-family: var(--font-readout); font-size: var(--text-notebook); }
+.life-overview { margin: 0 24px 22px; padding: 14px 0; border-block: 1px solid var(--color-rule-strong); }
+.census-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+.census-heading .readout { color: var(--color-accent); font-size: var(--text-notebook); letter-spacing: 0; }
+.census-heading .field-note { font-size: var(--text-compact); }
+.life-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; margin: 18px 0 12px; }
+.life-counts > div { display: flex; flex-direction: column-reverse; gap: 2px; min-width: 0; }
+.life-counts dt { color: var(--color-muted); font-size: var(--text-notebook); }
+.life-counts dd { margin: 0; font-family: var(--font-heading); font-size: var(--text-section); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#life-census-note { font-size: var(--text-compact); }
+#life-introduction-controls > .field-note { margin-top: 12px; font-size: var(--text-xs); }
+#life-message { margin-top: 14px; font-size: var(--text-xs); }
+.life-overlay-control { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: var(--text-xs); }
+.life-overlay-control input { width: 18px; height: 18px; accent-color: var(--color-accent); flex: none; }
+.hex-life-summary { border-left: 2px solid var(--color-accent); padding-left: 10px; margin-top: 16px; }
+.species-panel { margin: 24px; padding-top: 8px; }
+.section-heading-inline { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.section-heading-inline h2 { font-size: var(--text-title); }
+.section-heading-inline .readout { font-size: var(--text-compact); }
+.species-panel > label, .variant-label { display: block; margin-bottom: 6px; font-size: var(--text-xs); }
+.species-panel select { font-size: var(--text-xs); }
+.species-population { font-size: var(--text-base); margin-top: 14px; }
+.species-ancestry, .variant-population { font-size: var(--text-notebook); }
+.notebook-button { min-height: 44px; margin: 10px 0 18px; padding: 8px 12px; border: 1px solid var(--color-rule-strong); border-radius: var(--panel-radius); color: var(--color-accent); background: var(--color-clear); cursor: pointer; font: inherit; font-size: var(--text-xs); }
+.variant-population { margin-top: 7px; }
+.specimen-portrait { margin: 20px 0; padding: 16px; text-align: center; border: var(--frame-width) var(--frame-style) var(--color-rule); background: radial-gradient(ellipse at center, var(--color-control-selected), var(--color-clear) 72%); color: var(--color-accent); }
+.specimen-drawing svg { display: block; width: 100%; height: 170px; }
+.specimen-portrait figcaption { font-size: var(--text-compact); margin-top: 8px; }
+.gene-heading { font-size: var(--text-base); margin-bottom: 12px; }
+.gene-list { margin: 0; }
+.gene-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 5px 12px; padding: 11px 0; border-bottom: 1px solid var(--color-rule); font-size: var(--text-notebook); }
+.gene-row dt { color: var(--color-muted); }
+.gene-row dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.gene-row.is-active dd { color: var(--color-accent); }
+.gene-expression { grid-column: 1 / -1; display: block; height: 3px; background: var(--color-rule); }
+.gene-expression > span { display: block; height: 100%; background: var(--color-accent); }
+.gene-help { margin-top: 14px; font-size: var(--text-xs); }
+.life-processes { margin: 24px; padding-block: 16px; border-top: 1px solid var(--color-rule); }
+.life-processes > summary { min-height: 32px; cursor: pointer; color: var(--color-muted); font-size: var(--text-xs); }
+.life-processes > p { margin-top: 14px; font-size: var(--text-xs); }
+.life-event-facts { margin: 8px 0; font-size: var(--text-notebook); }
+.life-event-facts > div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--color-rule); }
+.life-event-facts dt { color: var(--color-muted); }
+.life-event-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .notebook { display: flex; flex-direction: column; }
+  .notebook-heading { order: -3; }
+  #hex-panel { order: -2; }
+  .life-overview { margin: 0 16px 16px; padding-block: 12px; }
+  .life-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .life-counts dd { font-size: var(--text-title); }
+  .life-counts dt { font-size: var(--text-compact); overflow-wrap: anywhere; }
+  .species-panel, .life-processes { margin-inline: 16px; }
+  .life-panel, .life-overview, #hex-panel, .species-panel, .life-processes { flex-shrink: 0; }
+}
+
+.hex-species-list { padding: 0; margin: 8px 0 0; list-style: none; }
+.hex-species-list button { display: block; width: 100%; min-height: 44px; padding: 8px 10px; text-align: left; border: 1px solid var(--color-rule); color: var(--color-accent); background: var(--color-clear); font: inherit; font-size: var(--text-notebook); cursor: pointer; overflow-wrap: anywhere; }
+
+.population-trend { margin: 14px 0; color: var(--color-accent); }
+.population-trend svg { display: block; width: 100%; height: 62px; overflow: visible; }
+.population-trend figcaption { margin-top: 4px; font-size: var(--text-compact); }
+.life-trend-area { opacity: 0.10; }
+.life-trend-baseline { opacity: 0.35; }
+.specimen-guide { opacity: 0.45; }
+.specimen-scale { opacity: 0.6; }
+
+.variant-profile { margin-top: 12px; padding: 8px 10px; border-left: 2px solid var(--color-accent); color: var(--color-accent); background: var(--color-control-selected); font-size: var(--text-notebook); }
+
+.day-readout #step-world { min-width: 32px; min-height: 32px; margin-left: 3px; padding: 4px; }
+.day-readout #step-world .control-icon { width: 17px; height: 17px; }
+.life-panel[data-status='living'] { display: flex; align-items: center; gap: 12px; padding: 12px; text-align: left; }
+.life-panel[data-status='living'] > h2, .life-panel[data-status='living'] > .life-introduction, .life-panel[data-status='living'] > .botanical-layer { display: none; }
+.life-panel[data-status='living'] #life-message { flex: 1; margin: 0; font-size: var(--text-notebook); }

@@ -1,13 +1,15 @@
 # Simulation boundary
 
-This layer generates physical geography and derives seasonal climate. It has no
-organisms, ecological labels, movement rules or simulation clock.
+This layer generates physical geography, derives seasonal climate, and implements
+the first versioned life model. The physical modules do not own biological rules
+or a browser clock.
 
-Future life/evolution implementations and their approximation methods belong in
+Life/evolution implementations and their approximation methods belong in
 versioned `life/v1/`, `life/v2/`, etc. The [life boundary](life/README.md) and
 [common observations](life/CONTRACT.md) define how alternative models consume
-shared physical inputs and expose data to UI. [V1](life/v1/README.md) currently
-contains research documentation only. Generation, terrain, water, temperature,
+shared physical inputs and expose data to UI. [V1](life/v1/README.md) implements
+the eight-trait candidate and records its choices in
+[DECISIONS.md](life/v1/docs/DECISIONS.md). Generation, terrain, water, temperature,
 moisture, seasons and shared speed meanings are not versioned with life models;
 their [rules stay in docs/](../../docs/evolution_simulation_summary_v6.md).
 
@@ -28,8 +30,9 @@ and returns a new snapshot without changing geography, hydrology or region IDs.
 
 Snapshots contain serializable plain data. Consumers treat them as read-only.
 Generation records its version, normalized seed, candidate index and stateless
-integer hash inputs. There is no evolving random stream yet; a later organism
-engine must select and serialize its own complete PRNG state.
+integer hash inputs. V1 owns a separate seeded biological random stream and exports complete
+continuation state. `climateAt(world, hex, day)` lets sparse biological work query
+the same climate as the atlas without allocating an entire seasonal world.
 
 The cylindrical odd-row grid wraps longitude only. Periodic five-octave noise
 provides synthetic geography; it is not a tectonic model. Stable priority flood

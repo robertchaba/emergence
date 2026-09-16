@@ -1,6 +1,7 @@
 import { t, formatNumber } from './locale.js';
 import { setDay } from '../simulation/climate.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
+import { createLifeNotebook } from './life-notebook.js';
 
 const number = { format: (value) => formatNumber(value) };
 const integer = { format: (value) => formatNumber(value, 'integer') };
@@ -33,6 +34,7 @@ export function initWorldUI() {
   const speedInput = document.querySelector('#simulation-speed');
   const playButton = document.querySelector('#play-world');
   const pauseButton = document.querySelector('#pause-world');
+  const stepButton = document.querySelector('#step-world');
   const details = document.querySelector('#hex-details');
   const startLifeButton = document.querySelector('#start-life');
   const tokens = readTokens();
@@ -57,6 +59,86 @@ export function initWorldUI() {
   let frame = null;
   let statusKey = 'updating';
   let actualDaysPerSecond = 0;
+  let life = null;
+  let lifeWorker = null;
+  let lifeRevision = 0;
+  let lifeBusy = false;
+  let lifePendingCommand = null;
+  let lifeFailed = false;
+  let selectedSpeciesId = null;
+  let showLife = true;
+  const notebook = createLifeNotebook({
+    onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
+    onLocate(id) { pin(id, true); canvas.focus({ preventScroll: true }); },
+  });
+
+  function updateLifeInteraction() {
+    notebook.setInteraction(lifeBusy, pinnedId);
+    playButton.disabled = (lifeBusy && !life) || lifeFailed;
+    stepButton.disabled = lifeBusy || lifeFailed || playing;
+  }
+
+  function stopLife() {
+    lifeRevision += 1;
+    lifeWorker?.terminate();
+    lifeWorker = null;
+    life = null;
+    lifeBusy = false;
+    lifePendingCommand = null;
+    lifeFailed = false;
+    notebook.reset();
+  }
+
+  function lifeFailure(command) {
+    lifeBusy = false;
+    lifePendingCommand = null;
+    lifeFailed = true;
+    setPlaying(false);
+    notebook.fail({ canRetry: command === 'initialize' && life === null });
+    playButton.disabled = true;
+    stepButton.disabled = true;
+  }
+
+  function initializeLife() {
+    stopLife();
+    const session = lifeRevision;
+    lifeBusy = true;
+    lifePendingCommand = 'initialize';
+    updateLifeInteraction();
+    try {
+      lifeWorker = new Worker(new URL('./life-worker.js', import.meta.url), { type: 'module' });
+      lifeWorker.onmessage = ({ data }) => {
+        if (session !== lifeRevision) return;
+        if (data.error) { lifeFailure(data.command); return; }
+        lifeBusy = false;
+        lifePendingCommand = null;
+        updatePlaybackState();
+        const previousDay = world.day;
+        life = data.observation;
+        if (life.day !== world.day) world = setDay(world, life.day);
+        measuredDays += Math.max(0, world.day - previousDay);
+        notebook.update(life, { busy: false, pinnedId });
+        if (data.command === 'introduce') notebook.message(data.result?.ok ? 'lifeIntroduced' : data.result?.reason || 'lifeError');
+        updateDayReadout();
+        updateInspector(false);
+        updateLifeInteraction();
+        if (life.status === 'extinct' && playing) setPlaying(false);
+        queueDraw();
+      };
+      lifeWorker.onerror = () => { if (session === lifeRevision) lifeFailure(lifePendingCommand); };
+      lifeWorker.postMessage({ command: 'initialize', world, options: { runId: `life-${session}` } });
+    } catch { lifeFailure('initialize'); }
+  }
+
+  function requestLifeCommand(command) {
+    if (lifeBusy || lifeFailed || !lifeWorker) return false;
+    lifeBusy = true;
+    lifePendingCommand = command.command;
+    updateLifeInteraction();
+    updatePlaybackState();
+    lifeWorker.postMessage(command);
+    return true;
+  }
 
   function readSettings() {
     const values = new FormData(form);
@@ -86,7 +168,7 @@ export function initWorldUI() {
         previewCanvas.dataset.zoom = String(previewCamera.zoom);
       }
     } else if (resizeRenderer(map, canvas)) {
-      map.draw(world, { camera, layer, pinnedId, geography });
+      map.draw(world, { camera, layer, pinnedId, geography, life, showLife, selectedSpeciesId });
       canvas.dataset.zoom = String(camera.zoom);
       canvas.dataset.panX = String(camera.x);
       canvas.dataset.panY = String(camera.y);
@@ -123,7 +205,7 @@ export function initWorldUI() {
   }
 
   function updateInspector(announce = true) {
-    startLifeButton.disabled = pinnedId === null || !world;
+    updateLifeInteraction();
     details.replaceChildren();
     const heading = document.createElement('h2');
     details.append(heading);
@@ -146,6 +228,31 @@ export function initWorldUI() {
     addFact(facts, t('temperature'), `${number.format(hex.temperature)} °C`);
     addFact(facts, t('humidity'), hex.humidity === null ? t('waterMoisture') : percent.format(hex.humidity));
     details.append(facts);
+    if (life?.status !== 'not-introduced' && life !== null) {
+      const localLife = document.createElement('p');
+      localLife.className = 'hex-life-summary';
+      localLife.textContent = notebook.localSummary(pinnedId);
+      details.append(localLife);
+      const occupants = life.hexes.find(row => row.hexId === pinnedId)?.species ?? [];
+      if (occupants.length) {
+        const list = document.createElement('ul');
+        list.className = 'hex-species-list';
+        for (const species of occupants) {
+          const row = document.createElement('li');
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = t('speciesOption', { id: species.id, population: integer.format(species.population) });
+          button.addEventListener('click', () => {
+            notebook.selectSpecies(species.id);
+            document.querySelector('#species-panel').scrollIntoView({ block: 'start', behavior: 'instant' });
+            document.querySelector('#species-select').focus({ preventScroll: true });
+          });
+          row.append(button);
+          list.append(row);
+        }
+        details.append(list);
+      }
+    }
     if (announce) document.querySelector('#map-status').textContent = t('pinned', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1), surface: surface.toLowerCase(), temperature: number.format(hex.temperature) });
   }
 
@@ -188,10 +295,11 @@ export function initWorldUI() {
     playButton.setAttribute('aria-pressed', String(playing));
     pauseButton.setAttribute('aria-pressed', String(!playing));
     resetClock();
+    updateLifeInteraction();
   }
 
   function updatePlaybackState() {
-    document.querySelector('#playback-state').textContent = t(playing ? 'running' : 'paused');
+    document.querySelector('#playback-state').textContent = t(playing ? 'running' : lifeBusy && lifePendingCommand === 'advance' ? 'finishingDay' : 'paused');
   }
 
   function generate() {
@@ -251,6 +359,7 @@ export function initWorldUI() {
   }
 
   function scheduleGeneration(delay = 180) {
+    stopLife();
     revision += 1;
     clearTimeout(generationTimer);
     generationWorker?.terminate();
@@ -282,14 +391,32 @@ export function initWorldUI() {
   document.querySelector('#randomize-seed').addEventListener('click', randomizeSeed);
   playButton.addEventListener('click', () => setPlaying(true));
   pauseButton.addEventListener('click', () => setPlaying(false));
+  stepButton.addEventListener('click', () => {
+    setPlaying(false);
+    requestLifeCommand({ command: 'advance', day: world.day + 1 });
+  });
+  startLifeButton.addEventListener('click', () => {
+    setPlaying(false);
+    requestLifeCommand({ command: 'introduce', hexId: pinnedId });
+  });
+  document.querySelector('#retry-life').addEventListener('click', () => {
+    if (!lifeFailed || life !== null) return;
+    setPlaying(false);
+    initializeLife();
+  });
+  document.querySelector('#show-life').addEventListener('change', (event) => {
+    showLife = event.target.checked;
+    queueDraw();
+  });
   speedInput.addEventListener('input', () => {
     targetSpeed = Math.max(1, Math.min(10, Number(speedInput.value)));
     updateTargetSpeed();
     resetClock();
   });
 
-  // Browser pacing advances only the current climate model through explicit
-  // integer days. The engine never reads this clock. Hidden tabs do not catch up.
+  // Browser pacing requests bounded integer-day batches from the life worker.
+  // Every biological day executes; only completed observations reach the map.
+  // The engine never reads this clock, and hidden tabs do not catch up.
   function animateClimate(timestamp) {
     const active = !document.hidden && (workspace.hidden || playing);
     if (!active || generating || startButton.disabled || !world) {
@@ -298,16 +425,17 @@ export function initWorldUI() {
       const elapsed = clockTimestamp === null ? 0 : timestamp - clockTimestamp;
       clockTimestamp = timestamp;
       const daysPerSecond = workspace.hidden ? 20 : targetSpeed * 2;
-      dayCredit += Math.min(250, elapsed) * daysPerSecond / 1000;
+      dayCredit = Math.min(5, dayCredit + Math.min(250, elapsed) * daysPerSecond / 1000);
       measuredElapsed += elapsed;
       const days = Math.floor(dayCredit + 1e-9);
-      if (days > 0) {
+      if (days > 0 && (workspace.hidden || !lifeBusy && !lifeFailed)) {
         dayCredit = Math.max(0, dayCredit - days);
-        world = setDay(world, world.day + days);
-        measuredDays += days;
-        updateDayReadout();
-        if (!workspace.hidden && pinnedId !== null) updateInspector(false);
-        queueDraw();
+        if (workspace.hidden) {
+          world = setDay(world, world.day + days);
+          measuredDays += days;
+          updateDayReadout();
+          queueDraw();
+        } else requestLifeCommand({ command: 'advance', day: world.day + days });
       }
       if (!workspace.hidden && measuredElapsed >= 1000) {
         showActualSpeed(measuredDays * 1000 / measuredElapsed);
@@ -326,6 +454,7 @@ export function initWorldUI() {
     updateDayReadout();
     savedScroll = window.scrollY;
     workspace.hidden = false;
+    initializeLife();
     page.hidden = true;
     document.querySelector('.skip-link').hidden = true;
     document.body.classList.add('workspace-open');
@@ -516,6 +645,7 @@ export function initWorldUI() {
     updateTargetSpeed();
     showActualSpeed(actualDaysPerSecond);
     updatePlaybackState();
+    notebook.update(life, { busy: lifeBusy, pinnedId });
     document.querySelector('#layer-legend').textContent = t(legends[layer]);
     if (world) updateDayReadout();
     queueDraw();

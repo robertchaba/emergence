@@ -1,4 +1,38 @@
-# Life model v1 — research candidate
+# Life model v1 — experimental implementation
+
+V1 is implemented in [`model.js`](model.js). The preserved research below remains
+the design history; the user's subsequent implementation request supersedes its
+documentation-only status. [`docs/DECISIONS.md`](docs/DECISIONS.md) records the
+resolved coefficients, initialization, feeding, continuity and approximations.
+The default mode uses exact integer cohorts with stored energy rounded down to
+1/64 units; `energyQuantum: 0` retains exact energy for comparison. Neither mode
+has empirically calibrated ecological balance.
+
+```js
+import { createLifeModel, restoreLifeModel } from './model.js';
+
+const life = createLifeModel(world, { runId: 'world-session-1' });
+const result = life.introduce(selectedHexId);
+// Inspect result.ok / result.reason; rejected commands do not alter the run.
+life.advanceTo(world.day + 1);
+const snapshot = life.observe();
+const local = life.inspectHex(selectedHexId);
+const checkpoint = life.exportState();
+const continued = restoreLifeModel(world, checkpoint);
+```
+
+Advancement is headless and explicit. The model never calls browser services or
+changes the shared world. Observations and checkpoints are detached serializable
+data; complete checkpoints include the random stream, genomes, cohorts, species
+and classification timers. Queries do not advance the model. A checkpoint is a
+model-local continuation representation, not a version-independent saved-world
+format. A caller supplies a distinct `runId` for each world session. Introduction
+starts a fixed small colony of plants with genes matched to the selected site.
+Living runs cannot reset or reseed. After extinction an explicit `introduce`
+command may begin a new attempt at the completed physical day, with a new run ID
+and archived prior attempt summary. A rejected command never changes state.
+
+## Preserved pre-implementation assessment
 
 This is the first candidate life/evolution model, reserved before implementation.
 Its biological and approximation notes were moved from `docs/` on 2026-09-16.
@@ -50,7 +84,10 @@ rendering. Exact cohorts and statistical batching are proposed calculation
 methods inside v1. Energy-bin approximations remain optional research requiring
 validation, not a selected default or a shared approximation engine.
 
-## Open decisions before implementation
+## Former open decisions before implementation
+
+These historical open items are now resolved in [DECISIONS.md](docs/DECISIONS.md).
+They are retained to explain what the original proposals left unspecified.
 
 - **Start life here:** choose founder population/seeding density and initial
   energy, fully specify site viability and failure reasons, and settle repeated

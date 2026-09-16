@@ -14,9 +14,10 @@ Applies to human contributors and coding agents throughout this repository.
 - Follow the user's current step and explicit instructions. `docs/prompts.md`
   contains future steps, not permission to implement them now.
 - The current application includes the landing page, world setup, a Canvas atlas,
-  deterministic physical generation, drainage, climate, and geographic regions.
-  Do not add biological simulation, organisms, life seeding, or speculative
-  engine APIs until a later task requests them.
+  deterministic physical generation, drainage, climate, geographic regions, and
+  the v1 life simulation with explicit introduction and notebook inspection.
+  Keep new biological capabilities within the user's requested scope; do not
+  add speculative engine APIs or another life model without a task requesting it.
 - Geography supplies physical conditions; ecology emerges from life. Do not
   introduce predefined species, assigned ecological biomes, scripted evolution,
   or guaranteed outcomes.
@@ -28,8 +29,8 @@ Applies to human contributors and coding agents throughout this repository.
   population calculations and representation. Models consume the same shared
   world, climate, calendar and speed meanings. Expose the common read-only life
   observations to UI/rendering; do not make those layers read model internals.
-  `src/rendering/LIFE.md` is a provisional visual brief awaiting later instructions,
-  not authorization to implement life rendering.
+  `src/rendering/LIFE.md` records the implemented life visualization and preserves
+  the original provisional brief as history.
 - Extend `docs/ARCHITECTURE.md` in **every later step** with decisions, reasons,
   boundaries, validation, and limitations. Preserve history; explicitly mark
   superseded decisions instead of silently rewriting them.
@@ -42,7 +43,7 @@ Applies to human contributors and coding agents throughout this repository.
 - No application runtime package dependencies. Vite is the development server
   and static bundler; Playwright is the real-browser development check.
 - Node 22.12+ is for tooling only. Keep dependencies and the npm lockfile aligned.
-- Canvas 2D for the map; SVG for future illustrations and charts.
+- Canvas 2D for the map; SVG for illustrations and charts.
 
 ## Layer boundaries
 
@@ -68,7 +69,8 @@ headless engine.
   theme, processor speed, and browser timing must not change biological results.
 - Reproducibility requires versions, inputs, command ordering, stable iteration
   and tie-breaking, and complete state. Do not claim cross-browser numerical
-  equivalence without evidence. No PRNG or persistence format is selected yet.
+  equivalence without evidence. V1 owns its PRNG and versioned checkpoint format;
+  these are not automatically shared rules for later models.
 
 ## Visual contract and accessibility
 

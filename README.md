@@ -5,10 +5,11 @@ hex, and observe how resources, inheritance, mutation, and seasons shape its
 descendants. Geography supplies physical conditions; ecology emerges from life.
 There are no predefined species or scripted outcomes.
 
-**Current stage: physical world atlas.** Generate deterministic cylindrical hex
-worlds, inspect drainage and spring-fed lakes, change the season, and explore
-geographic regions. The landing page and both themes are preserved. Biological
-simulation, organisms, and evolution are future work.
+**Current stage: working v1 life simulation.** Generate deterministic cylindrical
+hex worlds, introduce a locally suited plant lineage, and observe resource competition,
+inheritance, mutation, dispersal, and species branching. The Field Notebook shows
+living populations, species, genetic variants, and all eight traits. V1 is an
+experimental model with documented approximations, not calibrated biology.
 
 ## Run locally
 
@@ -27,7 +28,7 @@ Open the local URL printed by Vite (normally `http://127.0.0.1:5173`).
 npm run build    # Produce a static dist/ directory
 npm run preview  # Serve dist/ locally, normally on port 4173
 npm test         # Run headless checks, build, serve, and check Chromium
-npm run test:headless # Check geography, climate, drainage, and map geometry
+npm run test:headless # Check physical rules, life rules, and rendering
 ```
 
 On Linux CI, `npx playwright install --with-deps chromium` also installs browser
@@ -45,7 +46,7 @@ world.html               World setup and accessible workspace controls
 src/
   simulation/            Headless generation, drainage, climate, and regions
     life/                Common life-model boundary and observation contract
-      v1/                First candidate's biological and approximation research
+      v1/                First life model, genes, research, and implementation decisions
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -101,14 +102,27 @@ camera, selected layer, and pinned hex. Without JavaScript, static copy is Engli
    Use the logo menu's **Return to World setup** to build another world, then
    **Back to Emergence** to return to the landing page.
 
-Playback currently changes climate only. A year has 360 days, beginning at the
-northern spring equinox. Hydrology and geographic regions stay fixed while
-temperature and land moisture change; biological simulation is future work.
+A year has 360 days, beginning at the northern spring equinox. Hydrology and
+geographic regions stay fixed while temperature and land moisture change. Once
+life is introduced, every completed day also processes biology; higher speed
+requests more days without changing event probabilities.
 
-Below the hex details, the notebook includes a **Start life here** panel with a
-short explanation. Its button is disabled until a hex is pinned. With a selection,
-it is enabled for design review but has no action yet; life seeding is not implemented.
-On phones, scroll within the notebook to see the panel.
+Pin a suitable land or water hex and select **Start life here** in the notebook.
+The model introduces a small plant colony and chooses its initial habitat and
+temperature traits from the selected location. There is no population-size input.
+An unsuitable site receives an explanation. Introduction leaves playback paused;
+use **Play** or the one-day step control to observe descendants.
+
+Living populations cannot be reset or replaced. If every organism dies, **Start
+life here** becomes available again for an explicit new beginning on the same
+world at the current day. Life is never introduced or restarted automatically.
+
+The notebook reports actual population, species, variants, occupied hexes, births,
+deaths, and mutations. Select a species and variant to inspect its derived feeding
+role, specimen illustration, and eight-gene profile. Map tints and dots aggregate
+life; they are not individual organism counts. On phones, scroll the notebook to
+reach the species and gene sections. Theme, language, and display changes preserve
+the run.
 
 The preview's land budget counts the non-marine footprint before freshwater
 lakes; dry land is reported separately. Spring discharge and runoff use reference
@@ -129,6 +143,27 @@ const world = generateWorld({
 const summer = setDay(world, 90); // New snapshot; world is unchanged.
 const serialized = JSON.stringify(summer);
 ```
+
+Life is a separate model with its own explicit commands:
+
+```js
+import { createLifeModel, restoreLifeModel } from './src/simulation/life/v1/model.js';
+
+const life = createLifeModel(world);
+const result = life.introduce(selectedHexId);
+if (result.ok) {
+  life.advanceTo(world.day + 360); // Completes every biological day.
+  const observation = life.observe(); // Detached, serializable observation.
+  const continued = restoreLifeModel(world, life.exportState());
+  continued.advanceTo(observation.day + 1);
+}
+```
+
+`inspectHex(id)` and `inspectSpecies(id)` expose consistent local counts and
+locations. Checkpoints retain the complete biological PRNG and classification
+state; a world seed alone cannot resume a run. Browser save/load is not provided.
+See [v1 decisions](src/simulation/life/v1/docs/DECISIONS.md) for experimental
+coefficients, cohort representation, energy rounding, and validation limits.
 
 Snapshots record the generator version, settings, selected candidate, hash
 inputs, physical hex fields, drainage basins, regions, and their connections.
@@ -154,7 +189,7 @@ The build includes the full licence as `dist/LICENSE`, linked from the footer.
 Shared world rules and the decision record stay in **`docs/`**, despite the
 original brief's `/documents` path. Life/evolution and approximation research is
 now under **`src/simulation/life/v1/docs/`**, with gene descriptions in
-**`src/simulation/life/v1/genes/docs/`** and future gene code in the enclosing
+**`src/simulation/life/v1/genes/docs/`** and gene code in the enclosing
 **`genes/`** directory. Later models will use the same layout in sibling version
 folders while keeping the same physical world and common UI data contract.
 Research filename suffixes retain their original revisions; they are separate
@@ -165,16 +200,17 @@ from the enclosing life-model version.
 - [Shared world, climate, and playback rules](docs/evolution_simulation_summary_v6.md)
 - [Life-model ownership and versioning](src/simulation/life/README.md)
 - [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
-- [Life model v1 research and open decisions](src/simulation/life/v1/README.md)
+- [Life model v1 implementation and research](src/simulation/life/v1/README.md)
 - [V1 habitats, movement, energy, and initialization](src/simulation/life/v1/docs/evolution_simulation_summary_v6.md)
 - [V1 inheritance and species classification](src/simulation/life/v1/docs/evolution_mechanics_summary_v3.md)
 - [V1 starting traits](src/simulation/life/v1/genes/docs/evolution_simulation_genes_v1.md)
+- [V1 implementation choices and approximations](src/simulation/life/v1/docs/DECISIONS.md)
 - [V1 approximation and performance research](src/simulation/life/v1/docs/evolution_simulation_approximation_strategies_v1.md)
-- [Provisional life rendering brief](src/rendering/LIFE.md)
+- [Life rendering conventions](src/rendering/LIFE.md)
 - [Original staged prompts](docs/prompts.md)
 
 The combined v6 summary has been split by ownership, retaining original section
-numbers for traceability. The architecture record identifies adopted physical
-rules; biological proposals remain unimplemented research. The common contract
-defines consistent world/species/hex counts without fixing a model's biology.
-Life rendering is documented only and will receive further instructions.
+numbers for traceability. The architecture record identifies adopted physical and integration
+rules; v1's `DECISIONS.md` records biological defaults and approximation limits.
+The original research remains preserved. The common contract defines consistent
+world/species/hex counts without fixing another model's biology.

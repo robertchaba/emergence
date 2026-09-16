@@ -12,11 +12,69 @@ export const MAP_TOKEN_NAMES = Object.freeze([
   'spring-ring', 'grid', 'pin', 'pin-outline', 'pin-fill', 'temperature-cold',
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
+  'life-producer', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
+  'life-outline', 'life-selected',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
 ].map((name) => `--map-${name}`));
 
 const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
 const modulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
+const LIFE_ROLES = ['producer', 'grazer', 'predator', 'mixed', 'other'];
+const LIFE_MARKER_LIMIT = 12;
+
+// These positions are cosmetic, deterministic, and independent of biological
+// randomness. The fixed budget bounds geometry by occupied hexes, not organisms.
+function lifeMarkerPositions(hexId) {
+  const rotation = ((Math.imul(hexId + 1, 2654435761) >>> 0) / 4294967296) * Math.PI * 2;
+  return Array.from({ length: LIFE_MARKER_LIMIT }, (_, index) => {
+    const angle = rotation + index * 2.399963229728653;
+    const radius = Math.sqrt((index + 0.5) / LIFE_MARKER_LIMIT) * 0.57;
+    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  });
+}
+
+function lifeSummary(observation) {
+  const summaries = new Map();
+  for (const hex of observation?.hexes ?? []) {
+    if (!(hex.population > 0)) continue;
+    let smallLand = 0;
+    let smallWater = 0;
+    const groups = new Map();
+    for (const display of hex.display ?? []) {
+      if (!(display.population > 0)) continue;
+      const size = clamp(Number(display.size) || 0);
+      const role = LIFE_ROLES.includes(display.role) ? display.role : 'other';
+      if (role === 'producer' && size <= 0.25) {
+        if (display.habitat === 'water') smallWater += display.population;
+        else smallLand += display.population;
+        continue;
+      }
+      const key = `${role}:${display.habitat === 'water' ? 'water' : 'land'}`;
+      const group = groups.get(key) ?? { key, role, population: 0, weightedSize: 0 };
+      group.population += display.population;
+      group.weightedSize += size * display.population;
+      groups.set(key, group);
+    }
+    // At most ten role/habitat groups; one representative each is allocated
+    // before adding extra abundance samples. A dot never means one organism.
+    const ordered = [...groups.values()].sort((a, b) => a.key.localeCompare(b.key, 'en'));
+    for (const group of ordered) {
+      group.size = group.weightedSize / group.population;
+      group.samples = Math.min(4, 1 + Math.floor(Math.log10(group.population)));
+    }
+    const markers = [];
+    for (let sample = 0; sample < 4 && markers.length < LIFE_MARKER_LIMIT; sample += 1) {
+      for (const group of ordered) {
+        if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, size: group.size });
+      }
+    }
+    const tint = Math.min(0.48, Math.min(0.44, Math.log1p(smallLand) / 26) + Math.min(0.20, Math.log1p(smallWater) / 40));
+    const species = new Set((hex.species ?? []).filter(row => row.population > 0).map(row => row.id));
+    const signature = JSON.stringify([tint, markers, [...species].sort()]);
+    summaries.set(hex.hexId, { tint, markers, species, signature });
+  }
+  return summaries;
+}
 
 // All numeric channels come from supplied tokens; interpolation introduces no
 // second palette. Both hex and computed rgb() CSS serializations are accepted.
@@ -83,6 +141,8 @@ export function createMapRenderer(canvas, { tokens }) {
   let temperatureRamp;
   let colorCache = new WeakMap();
   const geometryCache = new WeakMap();
+  const lifeGeometryCache = new WeakMap();
+  let cachedLife = null;
   let previousFrame = null;
 
   function setTokens(nextTokens) {
@@ -350,24 +410,39 @@ export function createMapRenderer(canvas, { tokens }) {
     }
   }
 
-  function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world } = {}) {
+  function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world,
+    life = null, showLife = true, selectedSpeciesId = null } = {}) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (!world?.hexes?.length) {
       context.clearRect(0, 0, width, height);
       previousFrame = null;
       return;
     }
+    if (!cachedLife || cachedLife.observation !== life || cachedLife.revision !== life?.revision || cachedLife.runId !== life?.runId) {
+      cachedLife = { observation: life, revision: life?.revision, runId: life?.runId, summaries: lifeSummary(life) };
+    }
+    const lifeHexes = showLife ? cachedLife.summaries : null;
     const view = transform(world, camera);
     const frozen = layer === 'terrain' ? world.hexes.map((hex) => hex.temperature < 0) : null;
     const stable = previousFrame && previousFrame.geography === geography
       && previousFrame.layer === layer && previousFrame.zoom === camera.zoom
       && previousFrame.x === camera.x && previousFrame.y === camera.y
-      && previousFrame.pinnedId === pinnedId && previousFrame.hoveredId === hoveredId;
+      && previousFrame.pinnedId === pinnedId && previousFrame.hoveredId === hoveredId
+      && previousFrame.showLife === showLife && previousFrame.selectedSpeciesId === selectedSpeciesId
+      && previousFrame.lifeRunId === life?.runId;
+    const frame = { geography, layer, zoom: camera.zoom, x: camera.x, y: camera.y, pinnedId, hoveredId, frozen,
+      lifeHexes, showLife, selectedSpeciesId, lifeRunId: life?.runId };
     let damagedRows = null;
     context.save();
     if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
-      const changed = frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : [];
-      if (!changed.length) {
+      const changed = new Set(frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : []);
+      if (lifeHexes !== previousFrame.lifeHexes) {
+        for (const id of new Set([...(lifeHexes?.keys() ?? []), ...(previousFrame.lifeHexes?.keys() ?? [])])) {
+          if (world.hexes[id] && lifeHexes?.get(id)?.signature !== previousFrame.lifeHexes?.get(id)?.signature) changed.add(id);
+        }
+      }
+      if (!changed.size) {
+        previousFrame = frame;
         context.restore();
         return;
       }
@@ -403,7 +478,7 @@ export function createMapRenderer(canvas, { tokens }) {
       }
       context.clip();
     }
-    previousFrame = { geography, layer, zoom: camera.zoom, x: camera.x, y: camera.y, pinnedId, hoveredId, frozen };
+    previousFrame = frame;
     // Clearing respects the damage clip, including the transparent light ground.
     context.clearRect(0, 0, width, height);
     context.fillStyle = palette.ground;
@@ -444,7 +519,9 @@ export function createMapRenderer(canvas, { tokens }) {
       const x = view.x + position.x * view.scale;
       if (x + view.scale < 0 || x - view.scale > width) continue;
       polygon(context, x, y, view.scale + 0.35);
-      context.fillStyle = fills[hex.id];
+      const tint = lifeHexes?.get(hex.id)?.tint ?? 0;
+      context.fillStyle = tint && ['terrain', 'elevation'].includes(layer)
+        ? cssRgb(blend(rgb(fills[hex.id]), channels['life-producer'], tint)) : fills[hex.id];
       context.fill();
       if (view.scale >= 5) {
         polygon(context, x, y, view.scale);
@@ -510,6 +587,48 @@ export function createMapRenderer(canvas, { tokens }) {
         const lineWidth = clamp(view.scale * 0.28, 2, 7);
         connection(world, pass.fromHex, pass.toHex, view, palette['pass-outline'], lineWidth + 2);
         connection(world, pass.fromHex, pass.toHex, view, palette.pass, lineWidth, [3, 2]);
+      }
+    }
+
+    if (lifeHexes?.size) {
+      let geometry = lifeGeometryCache.get(geography);
+      if (!geometry) {
+        geometry = new Map();
+        lifeGeometryCache.set(geography, geometry);
+      }
+      for (const [id, summary] of lifeHexes) {
+        const hex = world.hexes[id];
+        if (!hex) continue;
+        if (damagedRows) {
+          const range = damagedRows.get(hex.row);
+          if (!range || hex.col < range[0] || hex.col > range[1]) continue;
+        }
+        const position = center(hex);
+        const x = view.x + position.x * view.scale;
+        const y = view.y + position.y * view.scale;
+        if (x + view.scale < 0 || x - view.scale > width || y + view.scale < 0 || y - view.scale > height) continue;
+        if (selectedSpeciesId !== null && summary.species.has(selectedSpeciesId)) {
+          polygon(context, x, y, view.scale * 0.77);
+          context.strokeStyle = palette['life-selected'];
+          context.lineWidth = clamp(view.scale * 0.045, 0.8, 2.2);
+          context.stroke();
+        }
+        if (!summary.markers.length) continue;
+        if (!geometry.has(id)) geometry.set(id, lifeMarkerPositions(id));
+        const positions = geometry.get(id);
+        const markerLimit = view.scale < 7 ? 3 : view.scale < 15 ? 6 : LIFE_MARKER_LIMIT;
+        for (let index = 0; index < Math.min(markerLimit, summary.markers.length); index += 1) {
+          const marker = summary.markers[index];
+          const point = positions[index];
+          const radius = clamp(view.scale * (0.055 + marker.size * 0.11), 0.65, 8);
+          context.beginPath();
+          context.arc(x + point.x * view.scale, y + point.y * view.scale, radius, 0, Math.PI * 2);
+          context.fillStyle = palette[`life-${marker.role}`];
+          context.fill();
+          context.strokeStyle = palette['life-outline'];
+          context.lineWidth = clamp(radius * 0.26, 0.35, 1.2);
+          context.stroke();
+        }
       }
     }
 
