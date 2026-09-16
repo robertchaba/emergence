@@ -38,6 +38,8 @@ test('setup settings update live and returning to setup randomizes the seed', as
 
 test('wheel zoom, drag, pin, keyboard inspection and fit work together', async ({ page }) => {
   const map = await openWorld(page);
+  const startLife = page.locator('#start-life');
+  await expect(startLife).toBeDisabled();
   const bounds = await map.boundingBox();
   const x = bounds.x + bounds.width / 2;
   const y = bounds.y + bounds.height / 2;
@@ -51,12 +53,14 @@ test('wheel zoom, drag, pin, keyboard inspection and fit work together', async (
   await expect(map).toHaveAttribute('data-pinned-id', '');
   await page.mouse.click(x, y);
   await expect(map).toHaveAttribute('data-pinned-id', /\d+/);
+  await expect(startLife).toBeEnabled();
   const pinned = Number(await map.getAttribute('data-pinned-id'));
   await expect(page.locator('#hex-details h2')).toContainText('Hex');
   await page.keyboard.press('ArrowRight');
   await expect(map).toHaveAttribute('data-pinned-id', String(Math.floor(pinned / 60) * 60 + (pinned % 60 + 1) % 60));
   await page.keyboard.press('Escape');
   await expect(map).toHaveAttribute('data-pinned-id', '');
+  await expect(startLife).toBeDisabled();
   await expect(page.locator('#map-status')).toHaveText('No hex pinned.');
   for (let i = 0; i < 15; i += 1) await page.keyboard.press('+');
   await expect(map).toHaveAttribute('data-zoom', '32');
@@ -77,6 +81,7 @@ test('keyboard wraps the seam, stops at poles and opens the brand menu', async (
   const map = await openWorld(page);
   await page.keyboard.press('ArrowRight');
   await expect(map).toHaveAttribute('data-pinned-id', /\d+/);
+  await expect(page.locator('#start-life')).toBeEnabled();
   const first = Number(await map.getAttribute('data-pinned-id'));
   for (let i = 0; i < 60; i += 1) await page.keyboard.press('ArrowRight');
   await expect(map).toHaveAttribute('data-pinned-id', String(first));

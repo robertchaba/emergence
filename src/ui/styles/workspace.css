@@ -77,11 +77,9 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
 .notebook-heading { padding: 26px 24px 16px; }
 .notebook-heading .eyebrow { font-size: var(--text-notebook); }
 .life-panel { margin: 0 24px 24px; padding: 24px 20px 18px; border: var(--frame-width) var(--frame-style) var(--color-rule-strong); background: var(--color-panel); text-align: center; }
-.life-icon { display: block; width: 40px; height: 40px; margin: 0 auto 14px; color: var(--color-accent); }
 .life-panel h2 { font-size: var(--text-title); }
 .life-introduction { margin-top: 10px; color: var(--color-muted); font-size: var(--text-sm); }
 .life-panel .action-button { width: 100%; justify-content: center; min-height: 48px; margin-top: 22px; font-size: var(--text-sm); }
-.life-availability { margin-top: 10px; color: var(--color-muted); font-size: var(--text-notebook); }
 #hex-panel { padding: 12px 24px 24px; }
 #hex-panel h2 { font-size: var(--text-base); margin-bottom: 12px; }
 #hex-panel p { font-size: var(--text-xs); color: var(--color-muted); }
@@ -142,7 +140,6 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
   .notebook { grid-column: 1; grid-row: 3; border-left: 0; border-top: var(--frame-width) var(--frame-style) var(--color-rule); }
   .notebook-heading { padding: 12px 16px 0; }
   .life-panel { margin: 0 16px 16px; padding: 18px 16px 14px; }
-  .life-icon { width: 28px; height: 28px; margin-bottom: 8px; }
   .life-panel h2 { font-size: var(--text-base); }
   #hex-panel { padding: 10px 16px 16px; }
   #hex-panel h2 { margin-bottom: 6px; }

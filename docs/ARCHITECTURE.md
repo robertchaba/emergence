@@ -1140,3 +1140,26 @@ Additional browser checks covered both languages, horizontal overflow through
 world's day, camera, layer and selection unchanged. Existing checks cover assets,
 disabled controls and physical-atlas behavior. Validation is limited to Chromium;
 life simulation remains unimplemented.
+
+## 027 — Selection-gated life button and quieter panel — 2026-09-16
+
+**Supersedes 026's always-enabled button, decorative cell and availability note.**
+The life panel retains its heading, explanation and full-width button below the
+hex details. The icon, availability text, unused translations/styles and associated
+accessible description have been removed at the user's request.
+
+The button is disabled in initial markup and whenever no hex is pinned. The
+existing inspector update synchronizes its native disabled state with selection,
+including pointer/keyboard selection, clearing, generation and locale refreshes.
+Any selected hex enables the button; this is presentation state, not a biological
+suitability check. The enabled button still has no action. No simulation, rendering,
+playback or dependency changes were introduced. The README describes the behavior.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47 Chromium
+checks, one existing skip), and `git diff --check` passed. Existing map interaction
+checks now assert disabled initial/cleared states and enabled pointer/keyboard
+selection states. Visually inspected both themes on desktop and phone with and
+without a selection. Additional checks confirmed keyboard focus and no horizontal
+overflow in Polish through 320 px. Existing checks cover original assets and
+responsive atlas behavior. Validation remains limited to Chromium and the physical
+atlas; life seeding is still unimplemented.

@@ -34,6 +34,7 @@ export function initWorldUI() {
   const playButton = document.querySelector('#play-world');
   const pauseButton = document.querySelector('#pause-world');
   const details = document.querySelector('#hex-details');
+  const startLifeButton = document.querySelector('#start-life');
   const tokens = readTokens();
   const preview = createMapRenderer(previewCanvas, { tokens });
   const map = createMapRenderer(canvas, { tokens });
@@ -122,6 +123,7 @@ export function initWorldUI() {
   }
 
   function updateInspector(announce = true) {
+    startLifeButton.disabled = pinnedId === null || !world;
     details.replaceChildren();
     const heading = document.createElement('h2');
     details.append(heading);
