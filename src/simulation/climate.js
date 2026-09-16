@@ -55,7 +55,13 @@ export function assignClimate(world, day = 0) {
 function copySnapshot(value) {
   if (Array.isArray(value)) return value.map(copySnapshot);
   if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copySnapshot(item)]));
+    // Copy scalar fields together; recurse only into owned nested records.
+    // Avoid allocating an entry pair and callback result for every scalar.
+    const copy = { ...value };
+    for (const key of Object.keys(copy)) {
+      if (copy[key] !== null && typeof copy[key] === 'object') copy[key] = copySnapshot(copy[key]);
+    }
+    return copy;
   }
   return value;
 }

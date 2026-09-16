@@ -134,6 +134,14 @@ test('touch pinch zooms without creating a pin', async ({ page, context }, testI
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(2);
   await expect(map).toHaveAttribute('data-pinned-id', '');
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: points(120) });
+  for (const distance of [80, 40, 15, 5]) {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(distance) });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(map).toHaveAttribute('data-zoom', '1');
+  await expect(map).toHaveAttribute('data-pan-x', '0');
+  await expect(map).toHaveAttribute('data-pan-y', '0');
   await session.detach();
 });
 
@@ -325,7 +333,8 @@ test('switching language during playback preserves the world, camera, layer, and
   await expect(page.getByRole('slider', { name: 'Prędkość', exact: true })).toHaveValue('10');
   await expect(page.locator('#layer-legend')).toContainText('wskaźnik wilgotności lądu');
   await page.clock.runFor(1100);
-  await expect(page.locator('#zoom-level')).toHaveText('1,5×');
+  const localizedZoom = new Intl.NumberFormat('pl', { maximumFractionDigits: 1 }).format(Number(before.camera.zoom));
+  await expect(page.locator('#zoom-level')).toHaveText(`${localizedZoom}×`);
   expect(Number((await state()).day)).toBeGreaterThan(Number(before.day));
   await page.getByRole('button', { name: 'Pauza', exact: true }).click();
   const paused = await state();

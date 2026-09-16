@@ -114,10 +114,11 @@ test('all layers draw frozen snapshots and seam flow uses short edge segments', 
   }
   assert.equal(JSON.stringify(world), before);
   // A segment crossing the wrap must be one neighbor spacing, not the whole map.
+  map.setTokens(tokens);
   calls.length = 0;
   map.draw(world, { camera: map.fit(world), layer: 'terrain' });
   const connections = calls.filter((call, index) => call[0] === 'moveTo' && calls[index + 1]?.[0] === 'bezierCurveTo' && calls[index + 2]?.[0] === 'stroke');
-  assert.equal(connections.length, 6); // bank and water, each with seam copies
+  assert.equal(connections.length, 4); // bank and water at both visible seam ends
   const spacing = map.cellCenter(world, 7, map.fit(world)).x - map.cellCenter(world, 6, map.fit(world)).x;
   for (const move of connections) {
     const line = calls[calls.indexOf(move) + 1];
@@ -173,6 +174,7 @@ test('curved tributaries join, stay in their linked hexes, and remain stable acr
   hexes[9].waterType = 'sea';
   const world = { ...base, hexes };
   const capture = (snapshot, camera) => {
+    map.setTokens(tokens); // Force a full frame when comparing geometry.
     calls.length = 0;
     map.draw(snapshot, { camera });
     return calls.flatMap((call, index) => call[0] === 'bezierCurveTo'
@@ -180,8 +182,8 @@ test('curved tributaries join, stay in their linked hexes, and remain stable acr
   };
   const camera = map.fit();
   const curves = capture(world, camera);
-  // Central copies of the four bank paths; water follows the identical geometry.
-  const main = [1, 4, 7, 10].map(index => curves[index]);
+  // Offscreen copies are culled; water follows the four visible bank paths.
+  const main = curves.slice(0, 4);
   assert.deepEqual(main[1][1].slice(4), main[2][0]);
   assert.deepEqual(main[3][1].slice(4), main[2][0]);
   assert.deepEqual(main[2][1].slice(4), main[0][0]);
@@ -200,7 +202,7 @@ test('curved tributaries join, stay in their linked hexes, and remain stable acr
     }
   }
   assert.deepEqual(capture({ ...world, hexes: hexes.map(hex => ({ ...hex, temperature: -15 })) }, camera), curves);
-  const zoomedCamera = { zoom: 3, x: 41, y: -24 };
+  const zoomedCamera = { zoom: 1.2, x: 41, y: -24 };
   const zoomed = capture(world, zoomedCamera);
   const anchor = map.cellCenter(world, 0, camera);
   const zoomedAnchor = map.cellCenter(world, 0, zoomedCamera);
@@ -208,7 +210,7 @@ test('curved tributaries join, stay in their linked hexes, and remain stable acr
     for (let part = 0; part < 2; part += 1) {
       curves[i][part].forEach((value, index) => {
         const axis = index % 2 ? 'y' : 'x';
-        assert.ok(Math.abs((zoomed[i][part][index] - zoomedAnchor[axis]) / 3 - (value - anchor[axis])) < 1e-8);
+        assert.ok(Math.abs((zoomed[i][part][index] - zoomedAnchor[axis]) / zoomedCamera.zoom - (value - anchor[axis])) < 1e-8);
       });
     }
   }
@@ -221,4 +223,40 @@ test('pin tint is drawn once when hovered and preserves terrain beneath it', () 
   fills.length = 0;
   map.draw(fixture(), { hoveredId: 11 });
   assert.equal(fills.includes(tokens['--map-pin-fill']), false);
+});
+
+test('cover fills the frame while fit keeps the full hex outline available', () => {
+  const { map } = renderer();
+  const world = fixture();
+  for (const [width, height] of [[900, 600], [390, 300], [320, 600]]) {
+    map.resize(width, height);
+    const camera = map.cover(world);
+    assert.ok(camera.zoom > 1);
+    for (const x of [0, width / 2, width]) {
+      for (const y of [0, height / 2, height]) {
+        assert.notEqual(map.hitTest(world, camera, x, y), null);
+      }
+    }
+    assert.deepEqual(map.fit(), { zoom: 1, x: 0, y: 0 });
+  }
+});
+
+test('unchanged terrain skips raster work, with invalidation for presentation changes', () => {
+  const { map, calls, fills } = renderer();
+  const geography = fixture();
+  const world = { ...geography, hexes: geography.hexes.map(hex => ({ ...hex, temperature: hex.temperature + 0.1 })) };
+  map.draw(geography, { geography });
+  calls.length = 0;
+  fills.length = 0;
+  map.draw(world, { geography });
+  assert.equal(fills.length, 0);
+  assert.equal(calls.some(([method]) => method === 'clearRect'), false);
+  map.draw(world, { geography, pinnedId: 6 });
+  assert.ok(fills.includes(tokens['--map-pin-fill']));
+  for (const invalidate of [() => map.setTokens(tokens), () => map.resize(390, 300, 1.5)]) {
+    invalidate();
+    fills.length = 0;
+    map.draw(world, { geography, pinnedId: 6 });
+    assert.ok(fills.length >= geography.hexes.length);
+  }
 });

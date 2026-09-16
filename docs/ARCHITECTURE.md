@@ -938,3 +938,78 @@ language changes, assets, focus, disabled controls, and responsive bounds throug
 close-up rivers and selection over a channel. `git diff --check` passed and dark
 fallback tokens match. Validation covers Chromium and representative geometry;
 these curves do not establish geological realism or future ecological behavior.
+
+## 021 — Responsive generation, seasonal repainting, and frame-filling views — 2026-09-16
+
+**Supersedes synchronous browser generation in 011/014 and the initial fitted
+camera in 010/015.** The setup preview and newly opened atlas now use a centered
+cover scale calculated from the rectangle inside the staggered hex perimeter.
+This fills both dimensions of the frame. Fit still reveals the full outline,
+including whole edge hexes. Zooming down to 1× also resets pan so an anchored
+wheel gesture cannot leave the fully zoomed-out world partially offscreen.
+Picking and silhouette clipping retain the original physical hex geometry.
+
+### Work avoided and layer boundaries
+
+Generation runs in `src/ui/generation-worker.js`, a browser adapter importing the
+unchanged headless generator. Input still debounces for 180 ms. New input
+terminates obsolete workers immediately, and a revision guard rejects stale
+responses. Successful workers return the complete generated snapshot and then
+terminate; failure keeps Start disabled and displays the existing translated
+failure message. There is no backend or new dependency. Vite emits the module
+worker as a separate static asset. Browser module-worker support is required.
+
+UI retains the original generation snapshot as read-only `geography` while
+replacing the current seasonal snapshot. Rendering uses that explicit identity
+to cache shaded warm/frozen terrain colours and curved river geometry. New
+geography replaces that identity; theme changes invalidate colour caches.
+Offscreen river copies and springs are culled using padded geometric bounds.
+The renderer never imports the generator or changes either snapshot.
+
+The renderer retains its previous Canvas frame. With geography, camera, viewport,
+theme, layer and selection unchanged, terrain updates compare frost/ice states.
+Only changed cells and their river destinations need repainting. Pixel-aligned
+damage rectangles clip clearing and drawing; nearby hexes repaint in their
+original order, followed by rivers, springs and selection. This also preserves
+the transparent light-theme ground. Unchanged terrain, elevation and region
+frames skip raster work entirely. Temperature and moisture remain continuous
+diagnostic layers and repaint from the current readings. Changes to camera,
+selection, viewport/DPR, theme, layer or geography trigger a full repaint.
+
+`setDay` still owns a complete deep copy of its result, including nested
+neighbours and region records. Its copying loop now copies scalar fields
+together and recurses only into nested data, avoiding per-scalar entry-pair
+allocations. Climate formulas, all generated values, clock pacing (including
+20 preview days/s), snapshot ownership, and deterministic behavior are unchanged.
+No biological batching or simulation rules were introduced.
+
+### Validation and measured limits
+
+- `npm run build` passed; `npm test` passed 29 headless/renderer checks and
+  43 Chromium checks, with the existing desktop touch-test duplicate skipped.
+- New checks cover frame coverage, complete fitted edges, minimum-zoom
+  recentering, skipped unchanged frames, cache invalidation, and worker
+  cancellation while controls remain usable. Worker output is compared with
+  direct headless generation for the same settings.
+- Pixel comparisons check partial repainting against fresh complete frames
+  through warm/frozen seasons, rivers and a pin, at fit/cover/panned cameras,
+  both themes, and DPR 1/1.5. The comparison allows tiny Canvas antialiasing
+  differences: mean premultiplied channel difference at most 0.01 out of 255,
+  and at most 0.05% of pixels differing by more than two channel levels.
+- Visually inspected setup and atlas in both themes at desktop and phone
+  widths, including frame coverage, wrapping, focus, assets and controls.
+  Existing browser checks also cover 320 px, both locales, playback and layers.
+  The development page generated a world, opened the atlas and fitted the
+  complete map without browser errors. `git diff --check` passed.
+- A local headless Chromium comparison used seed `map-performance`, a
+  1000 × 650 Canvas at DPR 1, five warmup updates and 60 measured seasonal
+  updates, including a one-pixel readback to finish raster work. Medium-world
+  climate plus drawing fell from about 40.5 ms/update to 3.6 ms; large-world
+  work fell from about 67.0 ms to 14.5 ms. The generator itself is unchanged;
+  moving it to a worker improves responsiveness rather than generation speed.
+
+These are local measurements of stationary terrain playback, not guaranteed
+frame rates on the user's Linux hardware. Panning, zooming and continuous
+diagnostic layers still require full repaints. No other browser engine or future
+ecological behavior was validated. Original research, artwork, theme tokens,
+licence text, and engine/browser dependency boundaries remain intact.

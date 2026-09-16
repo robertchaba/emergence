@@ -82,6 +82,8 @@ export function createMapRenderer(canvas, { tokens }) {
   let channels;
   let temperatureRamp;
   let colorCache = new WeakMap();
+  const geometryCache = new WeakMap();
+  let previousFrame = null;
 
   function setTokens(nextTokens) {
     palette = {};
@@ -95,9 +97,11 @@ export function createMapRenderer(canvas, { tokens }) {
     }
     temperatureRamp = [hsl(channels['temperature-cold']), hsl(channels['temperature-hot'])];
     colorCache = new WeakMap();
+    previousFrame = null;
   }
 
   function resize(nextWidth, nextHeight, dpr = 1) {
+    if (width !== Math.max(1, nextWidth) || height !== Math.max(1, nextHeight) || pixelRatio !== Math.max(1, dpr)) previousFrame = null;
     width = Math.max(1, nextWidth);
     height = Math.max(1, nextHeight);
     pixelRatio = Math.max(1, dpr);
@@ -126,6 +130,15 @@ export function createMapRenderer(canvas, { tokens }) {
 
   function fit() {
     return { zoom: 1, x: 0, y: 0 };
+  }
+
+  // Cover the frame using the rectangle inside the staggered hex perimeter.
+  // Fit remains the separate, complete-world view with all edge hexes intact.
+  function cover(world) {
+    const fitted = transform(world, fit());
+    const innerWidth = Math.max(1, world.width - 0.5) * ROOT_THREE;
+    const innerHeight = Math.max(1, world.height * 1.5 - 0.5);
+    return { zoom: Math.max(1, Math.max(width / innerWidth, height / innerHeight) / fitted.scale), x: 0, y: 0 };
   }
 
   function cellCenter(world, id, camera = fit()) {
@@ -206,11 +219,23 @@ export function createMapRenderer(canvas, { tokens }) {
     return cssRgb(value);
   }
 
-  function colors(world, layer) {
-    let cached = colorCache.get(world);
+  function colors(world, layer, geography) {
+    const staticLayer = ['terrain', 'elevation', 'regions'].includes(layer);
+    const key = staticLayer ? geography : world;
+    let cached = colorCache.get(key);
     if (!cached) {
       cached = new Map();
-      colorCache.set(world, cached);
+      colorCache.set(key, cached);
+    }
+    if (layer === 'terrain') {
+      if (!cached.has(layer)) {
+        cached.set(layer, {
+          warm: geography.hexes.map((hex) => fillColor({ ...hex, temperature: 1 }, geography, layer)),
+          frozen: geography.hexes.map((hex) => fillColor({ ...hex, temperature: -1 }, geography, layer)),
+        });
+      }
+      const { warm, frozen } = cached.get(layer);
+      return world.hexes.map((hex) => (hex.temperature < 0 ? frozen : warm)[hex.id]);
     }
     if (!cached.has(layer)) cached.set(layer, world.hexes.map((hex) => fillColor(hex, world, layer)));
     return cached.get(layer);
@@ -242,6 +267,7 @@ export function createMapRenderer(canvas, { tokens }) {
   // Cosmetic geometry stays in hex units, so seasons, theme, and zoom cannot
   // move a channel. Shared nodes keep tributaries joined; water ends stay centered.
   function riverGeometry(world) {
+    if (geometryCache.has(world)) return geometryCache.get(world);
     const circumference = world.width * ROOT_THREE;
     const nodes = world.hexes.map((hex) => {
       const point = center(hex);
@@ -295,13 +321,26 @@ export function createMapRenderer(canvas, { tokens }) {
         second: { x: to.x - b.x * handle, y: to.y - b.y * handle },
       };
     });
-    return { nodes, segments };
+    const geometry = { nodes, segments };
+    geometryCache.set(world, geometry);
+    return geometry;
+  }
+
+  function visibleCurve(from, first, second, to, shift, view) {
+    // A cubic is contained by its control-point bounds. Include stroke padding.
+    const xs = [from.x, first.x, second.x, to.x];
+    const ys = [from.y, first.y, second.y, to.y];
+    return view.x + (Math.max(...xs) + shift) * view.scale >= -4
+      && view.x + (Math.min(...xs) + shift) * view.scale <= width + 4
+      && view.y + Math.max(...ys) * view.scale >= -4
+      && view.y + Math.min(...ys) * view.scale <= height + 4;
   }
 
   function riverCurve(segment, world, view) {
     const { from, first, second, to } = segment;
     const circumference = world.width * ROOT_THREE;
     for (const shift of [-circumference, 0, circumference]) {
+      if (!visibleCurve(from, first, second, to, shift, view)) continue;
       const x = (point) => view.x + (point.x + shift) * view.scale;
       const y = (point) => view.y + point.y * view.scale;
       context.beginPath();
@@ -311,15 +350,65 @@ export function createMapRenderer(canvas, { tokens }) {
     }
   }
 
-  function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null } = {}) {
+  function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world } = {}) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    // Clear old frames before applying a potentially transparent theme ground.
+    if (!world?.hexes?.length) {
+      context.clearRect(0, 0, width, height);
+      previousFrame = null;
+      return;
+    }
+    const view = transform(world, camera);
+    const frozen = layer === 'terrain' ? world.hexes.map((hex) => hex.temperature < 0) : null;
+    const stable = previousFrame && previousFrame.geography === geography
+      && previousFrame.layer === layer && previousFrame.zoom === camera.zoom
+      && previousFrame.x === camera.x && previousFrame.y === camera.y
+      && previousFrame.pinnedId === pinnedId && previousFrame.hoveredId === hoveredId;
+    let damagedRows = null;
+    context.save();
+    if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
+      const changed = frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : [];
+      if (!changed.length) {
+        context.restore();
+        return;
+      }
+      // Preserve the existing frame and repaint complete cell-sized rectangles
+      // around frost transitions. Pixel-aligned clips avoid antialiased seams.
+      damagedRows = new Map();
+      context.beginPath();
+      const damaged = new Set(changed);
+      for (const id of changed) {
+        const hex = world.hexes[id];
+        if (hex.runoff > 0 && hex.downstream !== null) damaged.add(hex.downstream);
+      }
+      for (const id of damaged) {
+        const hex = world.hexes[id];
+        const point = center(hex);
+        const x = view.x + point.x * view.scale;
+        const y = view.y + point.y * view.scale;
+        const padding = view.scale + 4;
+        const left = Math.floor((x - padding) * pixelRatio) / pixelRatio;
+        const top = Math.floor((y - padding) * pixelRatio) / pixelRatio;
+        const right = Math.ceil((x + padding) * pixelRatio) / pixelRatio;
+        const bottom = Math.ceil((y + padding) * pixelRatio) / pixelRatio;
+        if (right < 0 || left > width || bottom < 0 || top > height) continue;
+        context.rect(left, top, right - left, bottom - top);
+        // Include every cell whose enlarged fill or grid can touch the damage.
+        const reach = Math.ceil((padding / view.scale + 1.5) / 1.5) + 1;
+        for (let row = Math.max(0, hex.row - reach); row <= Math.min(world.height - 1, hex.row + reach); row += 1) {
+          const range = damagedRows.get(row) ?? [world.width, -1];
+          range[0] = Math.min(range[0], Math.max(0, hex.col - reach));
+          range[1] = Math.max(range[1], Math.min(world.width - 1, hex.col + reach));
+          damagedRows.set(row, range);
+        }
+      }
+      context.clip();
+    }
+    previousFrame = { geography, layer, zoom: camera.zoom, x: camera.x, y: camera.y, pinnedId, hoveredId, frozen };
+    // Clearing respects the damage clip, including the transparent light ground.
     context.clearRect(0, 0, width, height);
     context.fillStyle = palette.ground;
     context.fillRect(0, 0, width, height);
-    if (!world?.hexes?.length) return;
-    const view = transform(world, camera);
-    const fills = colors(world, layer);
+    const fills = colors(world, layer, geography);
     const circumference = world.width * ROOT_THREE;
     context.save();
     // Clip overlays to the actual hex silhouette. A central rectangle and the
@@ -345,6 +434,10 @@ export function createMapRenderer(canvas, { tokens }) {
     context.clip();
 
     for (const hex of world.hexes) {
+      if (damagedRows) {
+        const range = damagedRows.get(hex.row);
+        if (!range || hex.col < range[0] || hex.col > range[1]) continue;
+      }
       const position = center(hex);
       const y = view.y + position.y * view.scale;
       if (y + view.scale < 0 || y - view.scale > height) continue;
@@ -363,14 +456,14 @@ export function createMapRenderer(canvas, { tokens }) {
 
     context.lineCap = 'round';
     if (layer === 'terrain' || layer === 'elevation') {
-      const rivers = riverGeometry(world);
+      const rivers = riverGeometry(geography);
       // Paint banks first so confluences have one continuous water surface.
       for (const bank of [true, false]) {
         for (const segment of rivers.segments) {
           const { hex } = segment;
           const riverWidth = clamp((0.045 + Math.sqrt(hex.runoff) * 0.025) * view.scale, 0.45, 2.5);
           context.strokeStyle = bank ? palette['river-bank']
-            : layer === 'terrain' && hex.temperature < 0 ? palette.ice : palette.river;
+            : layer === 'terrain' && world.hexes[hex.id].temperature < 0 ? palette.ice : palette.river;
           context.lineWidth = riverWidth + (bank ? Math.min(view.scale * 0.035, 1.2) : 0);
           riverCurve(segment, world, view);
         }
@@ -380,6 +473,7 @@ export function createMapRenderer(canvas, { tokens }) {
         const node = rivers.nodes[hex.id];
         const position = { x: view.x + node.x * view.scale, y: view.y + node.y * view.scale };
         const radius = clamp(view.scale * 0.12, 0.8, 2.5);
+        if (position.x < -4 || position.x > width + 4 || position.y < -4 || position.y > height + 4) continue;
         context.beginPath();
         context.arc(position.x, position.y, radius, 0, Math.PI * 2);
         context.fillStyle = palette.spring;
@@ -439,8 +533,9 @@ export function createMapRenderer(canvas, { tokens }) {
       context.stroke();
     }
     context.restore();
+    context.restore();
   }
 
   setTokens(tokens);
-  return { resize, setTokens, fit, draw, hitTest, cellCenter };
+  return { resize, setTokens, fit, cover, draw, hitTest, cellCenter };
 }

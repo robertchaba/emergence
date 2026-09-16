@@ -71,15 +71,17 @@ camera, selected layer, and pinned hex. Without JavaScript, static copy is Engli
    entry gets a fresh seed, including returning from the atlas. Enter a seed to
    reproduce a world, or use **Randomize** beside the seed field.
 2. Choose size, geography, land fraction, and **Lakes and rivers**. Changes update
-   the preview automatically after a short input delay. Sizes are 24 × 16,
+   the preview automatically after a short input delay. Generation runs in a
+   browser worker so the controls remain responsive. Sizes are 24 × 16,
    60 × 40, and 120 × 80. The water slider increases spring abundance; actual
    rivers and lakes follow drainage and basins rather than an exact count.
 3. The map previews the seasons automatically at 20 days per second. Select
-   **Start** to open the atlas at the current day, initially paused.
+   **Start** to open the atlas at the current day, initially paused. Both views
+   start zoomed to fill their frame.
 4. Drag to pan, scroll or pinch to zoom from the fitted world to 32×, and click to
    pin a hex. Focus the map and use arrows to inspect neighboring cells, `+` / `−`
    to zoom, and `Escape` to clear the pin. East/west inspection wraps. Edge hexes
-   appear whole in the fitted view.
+   appear whole in the fitted view; zooming fully out also centers that outline.
 5. Open the **Emergence / Field atlas** logo menu to choose **Terrain**,
    **Elevation**, **Temperature**, **Moisture**, or **Regions**. The wider notebook
    on the right occupies the full window height and shows terrain, ground/seabed

@@ -1,5 +1,4 @@
 import { t, formatNumber } from './locale.js';
-import { generateWorld } from '../simulation/world.js';
 import { setDay } from '../simulation/climate.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
 
@@ -38,6 +37,8 @@ export function initWorldUI() {
   const preview = createMapRenderer(previewCanvas, { tokens });
   const map = createMapRenderer(canvas, { tokens });
   let world = null;
+  let geography = null;
+  let generationWorker = null;
   let camera = { zoom: 1, x: 0, y: 0 };
   let layer = 'terrain';
   let pinnedId = null;
@@ -77,9 +78,13 @@ export function initWorldUI() {
     frame = null;
     if (!world) return;
     if (workspace.hidden) {
-      if (resizeRenderer(preview, previewCanvas)) preview.draw(world, { camera: preview.fit(world), layer: 'terrain' });
+      if (resizeRenderer(preview, previewCanvas)) {
+        const previewCamera = preview.cover(world);
+        preview.draw(world, { camera: previewCamera, layer: 'terrain', geography });
+        previewCanvas.dataset.zoom = String(previewCamera.zoom);
+      }
     } else if (resizeRenderer(map, canvas)) {
-      map.draw(world, { camera, layer, pinnedId });
+      map.draw(world, { camera, layer, pinnedId, geography });
       canvas.dataset.zoom = String(camera.zoom);
       canvas.dataset.panX = String(camera.x);
       canvas.dataset.panY = String(camera.y);
@@ -186,7 +191,7 @@ export function initWorldUI() {
     document.querySelector('#playback-state').textContent = t(playing ? 'running' : 'paused');
   }
 
-  async function generate() {
+  function generate() {
     const request = revision;
     if (!form.checkValidity()) {
       generating = false;
@@ -198,35 +203,49 @@ export function initWorldUI() {
     form.setAttribute('aria-busy', 'true');
     showGenerationStatus('generating');
     const settings = readSettings();
-    // Paint the busy state, then discard requests superseded by newer input.
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    if (request !== revision) return;
-    try {
-      world = generateWorld(settings);
-      pinnedId = null;
-      camera = { zoom: 1, x: 0, y: 0 };
-      updateWorldSummary();
-      previewCanvas.dataset.waterAbundance = String(world.waterAbundance);
-      startButton.disabled = false;
-      showGenerationStatus('ready');
-      resetClock();
-      updateDayReadout();
-      updateInspector();
-      queueDraw();
-    } catch {
-      world = null;
-      previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-      updateWorldSummary();
-      showGenerationStatus('generationFailed');
-    } finally {
+    // The browser worker owns execution, while the engine remains headless.
+    // Replacing settings terminates obsolete work instead of queuing more worlds.
+    const finish = (snapshot) => {
+      if (request !== revision) return;
+      generationWorker?.terminate();
+      generationWorker = null;
+      world = snapshot;
+      geography = snapshot;
+      if (world) {
+        pinnedId = null;
+        camera = { zoom: 1, x: 0, y: 0 };
+        updateWorldSummary();
+        previewCanvas.dataset.waterAbundance = String(world.waterAbundance);
+        startButton.disabled = false;
+        showGenerationStatus('ready');
+        resetClock();
+        updateDayReadout();
+        updateInspector();
+        queueDraw();
+      } else {
+        previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        updateWorldSummary();
+        showGenerationStatus('generationFailed');
+      }
       generating = false;
       form.removeAttribute('aria-busy');
+    };
+    try {
+      generationWorker = new Worker(new URL('./generation-worker.js', import.meta.url), { type: 'module' });
+      generationWorker.onmessage = (event) => finish(event.data.world ?? null);
+      generationWorker.onerror = () => finish(null);
+      generationWorker.postMessage(settings);
+    } catch {
+      finish(null);
     }
   }
 
   function scheduleGeneration(delay = 180) {
     revision += 1;
     clearTimeout(generationTimer);
+    generationWorker?.terminate();
+    generationWorker = null;
+    form.removeAttribute('aria-busy');
     startButton.disabled = true;
     generating = true;
     showGenerationStatus('updating');
@@ -302,7 +321,7 @@ export function initWorldUI() {
     themePicker.open = false;
     document.querySelector('#workspace-preferences').append(themePicker, languageSwitcher);
     resizeRenderer(map, canvas);
-    camera = map.fit(world);
+    camera = map.cover(world);
     draw();
     canvas.focus({ preventScroll: true });
   });
@@ -354,6 +373,7 @@ export function initWorldUI() {
       x: anchor.x - bounds.width / 2 - (anchor.x - bounds.width / 2 - camera.x) * ratio,
       y: anchor.y - bounds.height / 2 - (anchor.y - bounds.height / 2 - camera.y) * ratio,
     };
+    if (zoom === 1) camera = map.fit();
     queueDraw();
   }
   document.querySelector('#zoom-in').addEventListener('click', () => zoomBy(1.5));
@@ -425,8 +445,10 @@ export function initWorldUI() {
     if (previousPair) {
       const next = pairMetrics(pointers);
       zoomBy(next.distance / Math.max(1, previousPair.distance), previousPair);
-      camera.x += next.x - previousPair.x;
-      camera.y += next.y - previousPair.y;
+      if (camera.zoom > 1) {
+        camera.x += next.x - previousPair.x;
+        camera.y += next.y - previousPair.y;
+      }
     } else if (pointers.size === 1 && moved) {
       camera.x += point.x - previous.x;
       camera.y += point.y - previous.y;

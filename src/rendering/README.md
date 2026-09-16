@@ -5,6 +5,14 @@ resolved theme tokens, viewport size, a presentation camera, selected layer, and
 pin. Geometry methods fit the map, locate hex centers, and pick a hex from pointer
 coordinates. Wrapped connections are clipped at both cylindrical edges.
 
+`cover(world)` fills the viewport; `fit()` reveals every complete edge hex.
+During climate playback, UI also supplies the original read-only `geography`
+snapshot to `draw`. Its identity keys static colours and river geometry. It must
+be replaced whenever physical geography changes. The renderer retains the last
+frame and repaints frost/ice changes locally; camera, selection, size, layer,
+geography, and token changes invalidate that frame. Temperature and moisture
+still repaint from the current readings. These caches never alter snapshots.
+
 Never mutate snapshots or simulation state, issue engine commands, or import UI
 or engine implementations. UI supplies snapshots and presentation options.
 Map drawing uses Canvas 2D; future illustrations and charts use SVG. Colours and
