@@ -1,12 +1,17 @@
 # Evolution Simulation - Evolution Mechanics - v3
 
+> Relocated from `docs/` on 2026-09-16 as research for life model v1.
+> The filename revision is the research revision, not the life-model version.
+> See the [v1 index](README.md) for authority and unresolved decisions;
+> this move does not implement or approve the proposed biology.
+
 ## Purpose
 
 These are the reference rules for individual organisms: inheritance, mutation, selection, drift, dispersal and species identity.
 
 This version replaces `evolution_mechanics_summary_v2.md` and is paired with `evolution_simulation_summary_v6.md`. It retains the slow mutation rate and existing branching thresholds, incorporates the starting gene catalog, and aligns dispersal and spatial connectivity with habitats and physical barriers.
 
-Environmental conditions, energy acquisition, resource competition, upkeep, starvation, movement and offspring establishment follow the simulation summary v6. Spatial rules must not be taken from the unrestricted water/land dispersal paragraph in an older version.
+Environmental conditions come from the [shared world summary](../../../../docs/evolution_simulation_summary_v6.md). Energy acquisition, resource competition, upkeep, starvation, movement and offspring establishment follow the [life part of simulation summary v6](evolution_simulation_summary_v6.md). Spatial rules must not be taken from the unrestricted water/land dispersal paragraph in an older version.
 
 Population aggregation, representative sampling, prediction, caching and browser optimizations remain outside this document. Later approximations should reproduce these individual-level rules rather than redefine them.
 
@@ -290,7 +295,7 @@ This classifier intentionally does not recognize speciation within one connected
 
 Mutation probability is tied to offspring production, not wall-clock time.
 
-At 100x time compression, execute more simulation turns per real second. Each offspring still has a 0.01% mutation chance, and the branching qualification period still lasts 100 simulation turns. The neighboring dispersal attempt remains 5%, and active movement retains its per-turn rule.
+At higher time compression, execute more simulation turns per real second. The original 100× example was illustrative; the shared application currently offers 1×–10×, as documented in the [shared playback rules](../../../../docs/evolution_simulation_summary_v6.md#shared-playback-and-time-rules). Each offspring still has a 0.01% mutation chance, and the branching qualification period still lasts 100 simulation turns. The neighboring dispersal attempt remains 5%, and active movement retains its per-turn rule.
 
 A large, rapidly reproducing population can produce many mutants even at this low per-offspring probability. Establishment and spread also depend on geography, ecological advantage and random outcomes.
 

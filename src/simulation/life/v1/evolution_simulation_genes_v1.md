@@ -1,5 +1,10 @@
 # Evolution Simulation - Starting Gene Set - v1
 
+> Relocated from `docs/` on 2026-09-16 as research for life model v1.
+> The filename revision is the research revision, not the life-model version.
+> See the [v1 index](README.md) for authority and unresolved decisions;
+> this move does not implement or approve the proposed biology.
+
 This document defines a minimal starting set of genes intended to support:
 
 - aquatic and terrestrial organisms,

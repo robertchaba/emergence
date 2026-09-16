@@ -1,5 +1,11 @@
 # Rendering boundary
 
+The [provisional life rendering brief](LIFE.md) records future green hex tinting
+for very small plants and size-scaled dots for larger organisms. It remains
+documentation only and will be refined by later instructions. Future life
+rendering consumes the [common life observations](../simulation/life/CONTRACT.md),
+independently of a model's internal organism/cohort representation.
+
 `map.js` presents read-only world snapshots using Canvas 2D. The UI supplies
 resolved theme tokens, viewport size, a presentation camera, selected layer, and
 pin. Geometry methods fit the map, locate hex centers, and pick a hex from pointer

@@ -10,6 +10,11 @@ controls. Decision 016 refines the controls, expands the notebook, and adds live
 English/Polish localization. There are no organisms, biological rules, or biological
 simulation loop.
 
+**Documentation boundary update — 2026-09-16:** Decision 034 separates shared
+world rules from versioned life-model research and defines common life inspection
+semantics plus a provisional rendering brief. Application behavior is unchanged;
+`src/simulation/life/v1/` contains documentation only.
+
 **Historical foundation status, superseded by 010–012:**
 **Foundation accepted for implementation — 2026-09-15.** This repository initially
 contained one static landing page with theme controls. There was no engine,
@@ -26,14 +31,16 @@ geography, seed life in one hex, and observe descendants shaped by resources,
 inheritance, mutation, and seasons. Species and ecological patterns emerge;
 they are not predefined outcomes or world-generation inputs.
 
-The supplied notes are in `docs/`, not `/documents`:
+The supplied notes were initially in `docs/`, not `/documents`. **Their location
+and combined scope are superseded by 034; links below follow the relocation.**
 
-- [Simulation summary v6](evolution_simulation_summary_v6.md): world, climate,
-  habitats, movement, resources, and proposed daily phases.
-- [Evolution mechanics v3](evolution_mechanics_summary_v3.md): inheritance,
+- Simulation summary v6, now split into [shared world rules](evolution_simulation_summary_v6.md)
+  and [life rules](../src/simulation/life/v1/evolution_simulation_summary_v6.md):
+  world, climate, habitats, movement, resources, and proposed daily phases.
+- [Evolution mechanics v3](../src/simulation/life/v1/evolution_mechanics_summary_v3.md): inheritance,
   mutation, drift, and proposed species classification.
-- [Starting genes v1](evolution_simulation_genes_v1.md): capabilities and trade-offs.
-- [Approximation strategies v1](evolution_simulation_approximation_strategies_v1.md):
+- [Starting genes v1](../src/simulation/life/v1/evolution_simulation_genes_v1.md): capabilities and trade-offs.
+- [Approximation strategies v1](../src/simulation/life/v1/evolution_simulation_approximation_strategies_v1.md):
   fidelity, profiling, and eventual optimization recommendations.
 - [Staged prompts](prompts.md): historical task sequence and visual direction.
 
@@ -1278,3 +1285,105 @@ inspected both themes at desktop and phone widths. Additional browser checks
 confirmed centered placement, the 12 px bottom inset, 15% opacity, asset loading,
 theme visibility and no horizontal overflow. Existing checks cover focus,
 disabled controls and both locales. Browser validation remains limited to Chromium.
+
+## 033 — Remove the notebook insect — 2026-09-16
+
+**Supersedes 032's insect decoration.** Remove the insect markup, its positioning
+styles and the notebook's now-unneeded decorative stacking context at the user's
+request. The life-panel seedling and its current user-adjusted styling remain.
+Original drawings are preserved in `resources/`; the built UI now references only
+`pic12` from that collection. Backgrounds, application behavior, layer boundaries
+and usage are unchanged.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks and 47
+Chromium checks, one existing skip), and `git diff --check` passed. Visually
+inspected both themes at desktop and phone widths. Additional browser checks
+confirmed the insect is absent, the seedling loads, theme visibility is preserved
+and layouts have no horizontal overflow. Existing checks cover focus, disabled
+controls and both locales. Browser validation remains limited to Chromium.
+
+## 034 — Versioned life models and common observations — 2026-09-16
+
+**Supersedes 001's single research location and combined world/life scope, and
+003's deferral of a documented life-observation contract.** The user's current
+request establishes `src/simulation/life/v1/`, with future candidate models in
+sibling version folders. This step creates documentation only: no biological
+implementation, registry, model selector, engine API or life overlay is added.
+
+### Ownership and source split
+
+Generation, grid/hex identity, terrain, water/drainage, temperature, moisture,
+seasons and geographic diagnostics remain shared. Existing physical modules stay
+where they are. Browser playback retains its shared 1×–10× scale (2–20 days/s),
+20 days/s preview, measured throughput and hidden-tab pause behavior. Life models
+receive explicit time and read-only physical inputs; they do not read browser
+time, mutate geography or override the climate. The physical generator must not
+import a life implementation.
+
+Every biological choice belongs to its candidate model: the meaning of introducing
+life, founder settings and admission, genes, organism behavior, movement and
+crossing, reproduction, species classification, population dynamics, numerical
+representation and approximations. In particular, v1's resource budget and
+adaptation formulas are not promoted into shared physics. Alternative models must
+remain possible without importing another candidate's biological rules.
+
+The combined `docs/evolution_simulation_summary_v6.md` is split in place: shared
+sections 1–4, geographic material in 9, and physical checks in 12 remain there.
+Life-specific paragraphs from 1/4, sections 5–8 and 10–11, classification in 9,
+and biological examples/checks in 12 move to the same filename under `life/v1/`.
+Original section numbers remain traceable. Mechanics v3, genes v1 and approximation
+strategies v1 move into that folder, retaining their research revision names.
+Cross-references, contributor instructions, and README indexes follow the split.
+Historical prompts remain unchanged and do not authorize future work.
+
+One ownership clarification explicitly supersedes the original summary's request
+to publish its organism traversal formula as the world's static difficulty:
+that calculation is v1-local; the implemented geographic diagnostic in 012 stays
+shared. Existing research formulas and biological proposals are otherwise retained.
+Older gene proposals remain subordinate to their later summaries. Missing
+production, reproduction, feeding and initialization decisions are listed in the
+[v1 index](../src/simulation/life/v1/README.md), with no invented coefficients.
+The previously cited readiness review is absent from this checkout.
+
+### Common UI boundary and rendering direction
+
+The [life boundary](../src/simulation/life/README.md) and
+[observation contract](../src/simulation/life/CONTRACT.md) define version-independent
+meanings for global population/species counts, species lists, per-hex occupants,
+species-to-hex populations and display summaries. Counts represent organisms,
+not cohorts, cells or markers. Species classification remains model-owned;
+generic consumers use opaque IDs, consistent completed revisions and explicit
+exact/estimated/unavailable metadata. Global and local counts must reconcile;
+missing information is not zero. Queries do not advance time or consume
+biological random state. Optional model details must not become generic UI
+requirements. Exact JavaScript APIs and storage/transport formats remain deferred.
+
+World setup Start, Play/Pause and biological introduction are distinct intents.
+A future model validates life introduction and reports structured results;
+UI neither invents founders nor implements suitability checks. Model changes
+start separate life runs; no implicit state migration is promised. Reproducibility
+requires the model/rules/approximation identity and complete state in addition to
+physical inputs. Comparing different models does not promise matching seed paths.
+
+The [provisional rendering brief](../src/rendering/LIFE.md) records greener hexes
+for very small plants (stronger on land, subtler on water), green dots for larger
+plants, other colours for other larger organisms, and larger dots for larger
+bodies. Further user instructions will refine this. Thresholds, mixed roles,
+marker aggregation, palette and scaling are intentionally undecided. UI supplies
+computed theme tokens; rendering consumes read-only common observations and has
+no biological authority. No UI or renderer implementation changes in this step.
+
+### Validation and limitations
+
+`npm run build` and `npm test` passed: 29 headless/renderer checks and 47 Chromium
+checks, with the existing desktop touch-test duplicate skipped. Local Markdown
+file/heading links resolve, the source split was compared against the original
+notes, and `git diff --check` passed. The diff contains only Markdown; historical
+decisions and the pre-existing decision 033 were preserved. No UI changed and no
+additional visual inspection was performed.
+
+These checks cover the existing physical atlas, not the unimplemented biology,
+approximation fidelity or cross-model compatibility. The shared contract is a
+documented integration requirement awaiting real implementations, not a tested
+interface. Biological coefficients and the further rendering instructions remain
+open as described in the model index and visual brief.

@@ -44,11 +44,13 @@ index.html               Landing page
 world.html               World setup and accessible workspace controls
 src/
   simulation/            Headless generation, drainage, climate, and regions
+    life/                Common life-model boundary and observation contract
+      v1/                First candidate's biological and approximation research
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
 resources/               Original logos and reference mockups
-docs/                    Research notes and architecture decisions
+docs/                    Shared world rules, architecture, and historical prompts
 AGENTS.md                Contributor and coding-agent contract
 ```
 
@@ -149,17 +151,28 @@ The build includes the full licence as `dist/LICENSE`, linked from the footer.
 
 ## Documentation
 
-The supplied research notes are in **`docs/`**, despite the original brief's
-`/documents` path. They have been preserved in place.
+Shared world rules and the decision record stay in **`docs/`**, despite the
+original brief's `/documents` path. Life/evolution and approximation research is
+now under **`src/simulation/life/v1/`**. Later models will use sibling version
+folders while keeping the same physical world and common UI data contract.
+Research filename suffixes retain their original revisions; they are separate
+from the enclosing life-model version.
 
 - [Architecture and decision record](docs/ARCHITECTURE.md)
 - [Contributor contract](AGENTS.md)
-- [World and ecology research](docs/evolution_simulation_summary_v6.md)
-- [Inheritance and mutation research](docs/evolution_mechanics_summary_v3.md)
-- [Starting trait research](docs/evolution_simulation_genes_v1.md)
-- [Approximation and performance research](docs/evolution_simulation_approximation_strategies_v1.md)
+- [Shared world, climate, and playback rules](docs/evolution_simulation_summary_v6.md)
+- [Life-model ownership and versioning](src/simulation/life/README.md)
+- [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
+- [Life model v1 research and open decisions](src/simulation/life/v1/README.md)
+- [V1 habitats, movement, energy, and initialization](src/simulation/life/v1/evolution_simulation_summary_v6.md)
+- [V1 inheritance and species classification](src/simulation/life/v1/evolution_mechanics_summary_v3.md)
+- [V1 starting traits](src/simulation/life/v1/evolution_simulation_genes_v1.md)
+- [V1 approximation and performance research](src/simulation/life/v1/evolution_simulation_approximation_strategies_v1.md)
+- [Provisional life rendering brief](src/rendering/LIFE.md)
 - [Original staged prompts](docs/prompts.md)
 
-The architecture record identifies the specific generation and climate proposals
-adopted in this step. The notes' biological rules remain research, not implemented
-simulation behavior.
+The combined v6 summary has been split by ownership, retaining original section
+numbers for traceability. The architecture record identifies adopted physical
+rules; biological proposals remain unimplemented research. The common contract
+defines consistent world/species/hex counts without fixing a model's biology.
+Life rendering is documented only and will receive further instructions.

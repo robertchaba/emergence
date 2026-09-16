@@ -3,6 +3,14 @@
 This layer generates physical geography and derives seasonal climate. It has no
 organisms, ecological labels, movement rules or simulation clock.
 
+Future life/evolution implementations and their approximation methods belong in
+versioned `life/v1/`, `life/v2/`, etc. The [life boundary](life/README.md) and
+[common observations](life/CONTRACT.md) define how alternative models consume
+shared physical inputs and expose data to UI. [V1](life/v1/README.md) currently
+contains research documentation only. Generation, terrain, water, temperature,
+moisture, seasons and shared speed meanings are not versioned with life models;
+their [rules stay in docs/](../../docs/evolution_simulation_summary_v6.md).
+
 ```js
 import { generateWorld, setDay } from './world.js';
 

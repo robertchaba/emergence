@@ -4,9 +4,12 @@ Applies to human contributors and coding agents throughout this repository.
 
 ## Scope and source of truth
 
-- Read `docs/ARCHITECTURE.md` and relevant research notes in `docs/` before
-  proposing changes. The brief calls these notes `/documents`; their actual
-  location is `docs/`. Preserve the original notes and `resources/` artwork.
+- Read `docs/ARCHITECTURE.md` and relevant research before proposing changes.
+  Shared world rules stay in `docs/` (called `/documents` in the original brief).
+  Life-model research lives in `src/simulation/life/v1/`, with later alternatives
+  in sibling version folders. Read `src/simulation/life/README.md` and
+  `CONTRACT.md` there for the common boundary. Preserve research content/history
+  and `resources/` artwork when reorganizing documentation.
 - Follow the user's current step and explicit instructions. `docs/prompts.md`
   contains future steps, not permission to implement them now.
 - The current application includes the landing page, world setup, a Canvas atlas,
@@ -19,6 +22,13 @@ Applies to human contributors and coding agents throughout this repository.
 - Research documents describe earlier proposals, not automatically accepted
   rewrite decisions. Ask when a consequential requirement is ambiguous; do not
   silently pick missing ecological rules or balancing coefficients.
+- Keep every life-specific rule and approximation inside its `life/vN/` model:
+  initialization, genes, organism behavior, movement, species classification,
+  population calculations and representation. Models consume the same shared
+  world, climate, calendar and speed meanings. Expose the common read-only life
+  observations to UI/rendering; do not make those layers read model internals.
+  `src/rendering/LIFE.md` is a provisional visual brief awaiting later instructions,
+  not authorization to implement life rendering.
 - Extend `docs/ARCHITECTURE.md` in **every later step** with decisions, reasons,
   boundaries, validation, and limitations. Preserve history; explicitly mark
   superseded decisions instead of silently rewriting them.
