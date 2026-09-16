@@ -13,7 +13,8 @@ simulation loop.
 **Documentation boundary update — 2026-09-16:** Decision 034 separates shared
 world rules from versioned life-model research and defines common life inspection
 semantics plus a provisional rendering brief. Application behavior is unchanged;
-`src/simulation/life/v1/` contains documentation only.
+`src/simulation/life/v1/` contains documentation only. Decision 035 refines its
+internal documentation and gene directory layout.
 
 **Historical foundation status, superseded by 010–012:**
 **Foundation accepted for implementation — 2026-09-15.** This repository initially
@@ -35,12 +36,12 @@ The supplied notes were initially in `docs/`, not `/documents`. **Their location
 and combined scope are superseded by 034; links below follow the relocation.**
 
 - Simulation summary v6, now split into [shared world rules](evolution_simulation_summary_v6.md)
-  and [life rules](../src/simulation/life/v1/evolution_simulation_summary_v6.md):
+  and [life rules](../src/simulation/life/v1/docs/evolution_simulation_summary_v6.md):
   world, climate, habitats, movement, resources, and proposed daily phases.
-- [Evolution mechanics v3](../src/simulation/life/v1/evolution_mechanics_summary_v3.md): inheritance,
+- [Evolution mechanics v3](../src/simulation/life/v1/docs/evolution_mechanics_summary_v3.md): inheritance,
   mutation, drift, and proposed species classification.
-- [Starting genes v1](../src/simulation/life/v1/evolution_simulation_genes_v1.md): capabilities and trade-offs.
-- [Approximation strategies v1](../src/simulation/life/v1/evolution_simulation_approximation_strategies_v1.md):
+- [Starting genes v1](../src/simulation/life/v1/genes/docs/evolution_simulation_genes_v1.md): capabilities and trade-offs.
+- [Approximation strategies v1](../src/simulation/life/v1/docs/evolution_simulation_approximation_strategies_v1.md):
   fidelity, profiling, and eventual optimization recommendations.
 - [Staged prompts](prompts.md): historical task sequence and visual direction.
 
@@ -1387,3 +1388,27 @@ approximation fidelity or cross-model compatibility. The shared contract is a
 documented integration requirement awaiting real implementations, not a tested
 interface. Biological coefficients and the further rendering instructions remain
 open as described in the model index and visual brief.
+
+## 035 — Model documentation and gene directories — 2026-09-16
+
+**Supersedes 034's flat research-file layout within each model version.** Each
+`life/vN/` keeps model documentation in `docs/`, gene code in `genes/`, and gene
+descriptions in `genes/docs/`, as requested. These are model-relative paths;
+the repository's `docs/` continues to own shared world rules and this record.
+
+V1's life summary, mechanics and approximation notes move into `v1/docs/`;
+the starting-gene catalogue moves into `v1/genes/docs/`. Research filenames,
+content and authority are preserved, and links and contributor indexes follow
+the relocation. The model README remains its entry point. Later versions use
+the same structure without sharing model-specific gene rules implicitly.
+
+This is a documentation reorganization only. No biological code, speculative
+gene API, application behavior or layer dependency is introduced. Original
+artwork and historical decisions remain intact.
+
+Validation: `npm run build` and `npm test` passed (29 headless/renderer checks,
+47 Chromium checks, one existing skip). All 85 local Markdown file links resolve;
+relocated research content matches its originals apart from link destinations.
+Diff review and `git diff --check` passed. These checks cover the physical atlas
+and documentation structure, not the still-unimplemented biological model.
+No UI changed, so no additional visual inspection was performed.

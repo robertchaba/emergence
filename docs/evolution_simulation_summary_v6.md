@@ -5,7 +5,7 @@
 **Split on 2026-09-16; no physical rules changed.** This file keeps the shared
 world material from the original combined v6 summary at its existing path.
 The life-specific material now lives in
-[life model v1's summary](../src/simulation/life/v1/evolution_simulation_summary_v6.md).
+[life model v1's summary](../src/simulation/life/v1/docs/evolution_simulation_summary_v6.md).
 Original section numbers are retained across the split so research citations
 remain traceable: sections 1–4 describe the world, 5–8 and 10–11 describe life,
 and 9 and 12 are split by ownership.
@@ -20,8 +20,8 @@ remain provisional defaults, not scientific calibration.
 
 Source history: the original v6 superseded a v5 summary absent from this checkout
 and drew on [staged prompts](prompts.md),
-[starting genes](../src/simulation/life/v1/evolution_simulation_genes_v1.md), and
-[evolution mechanics](../src/simulation/life/v1/evolution_mechanics_summary_v3.md).
+[starting genes](../src/simulation/life/v1/genes/docs/evolution_simulation_genes_v1.md), and
+[evolution mechanics](../src/simulation/life/v1/docs/evolution_mechanics_summary_v3.md).
 The latter two are now research for life model v1, not shared world rules.
 The common [life-model boundary](../src/simulation/life/README.md) and
 [UI data contract](../src/simulation/life/CONTRACT.md) explain how models consume

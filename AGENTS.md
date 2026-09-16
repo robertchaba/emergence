@@ -6,8 +6,9 @@ Applies to human contributors and coding agents throughout this repository.
 
 - Read `docs/ARCHITECTURE.md` and relevant research before proposing changes.
   Shared world rules stay in `docs/` (called `/documents` in the original brief).
-  Life-model research lives in `src/simulation/life/v1/`, with later alternatives
-  in sibling version folders. Read `src/simulation/life/README.md` and
+  Life-model research lives in `src/simulation/life/v1/docs/`, gene code belongs
+  in `v1/genes/`, and gene descriptions in `v1/genes/docs/`, with the same layout
+  for later alternatives in sibling version folders. Read `src/simulation/life/README.md` and
   `CONTRACT.md` there for the common boundary. Preserve research content/history
   and `resources/` artwork when reorganizing documentation.
 - Follow the user's current step and explicit instructions. `docs/prompts.md`

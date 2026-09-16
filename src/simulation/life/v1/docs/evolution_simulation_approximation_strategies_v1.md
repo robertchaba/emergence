@@ -2,7 +2,7 @@
 
 > Relocated from `docs/` on 2026-09-16 as research for life model v1.
 > The filename revision is the research revision, not the life-model version.
-> See the [v1 index](README.md) for authority and unresolved decisions;
+> See the [v1 index](../README.md) for authority and unresolved decisions;
 > this move does not implement or approve the proposed biology.
 
 **Status:** Implementation recommendations, not replacement simulation rules.  
@@ -23,14 +23,14 @@ The largest specified world is 120 x 80, or 9,600 hexes. Start measurements with
 
 | Document | Role |
 |---|---|
-| [Shared world summary](../../../../docs/evolution_simulation_summary_v6.md) | World, climate, geography, seasons and application speed; physical decisions remain shared. |
+| [Shared world summary](../../../../../docs/evolution_simulation_summary_v6.md) | World, climate, geography, seasons and application speed; physical decisions remain shared. |
 | [Life summary v6](evolution_simulation_summary_v6.md) | V1 habitats, energy, movement, dispersal and turn order. |
 | `evolution_mechanics_summary_v3.md` | Inheritance, valid mutations, genetic distance, species classification. |
 | `evolution_simulation_genes_v1.md` | Starting capabilities and feeding principles where not superseded by the two documents above. |
-| [Staged prompts](../../../../docs/prompts.md) | Application structure, visual direction, interaction, and staged foundation work; newer mechanics take precedence. |
+| [Staged prompts](../../../../../docs/prompts.md) | Application structure, visual direction, interaction, and staged foundation work; newer mechanics take precedence. |
 | This document | How to execute and display those rules efficiently without silently replacing them. |
 
-Missing ecological coefficients must be resolved in the reference model and recorded as explicit model decisions. They must not emerge accidentally from an optimization. In particular, the current documents still require a complete reproduction and feeding specification before those operations can be optimized faithfully. The previously cited `evolution_simulation_codex_readiness_v1.md` is absent from this checkout; see the [v1 open decisions](README.md#open-decisions-before-implementation).
+Missing ecological coefficients must be resolved in the reference model and recorded as explicit model decisions. They must not emerge accidentally from an optimization. In particular, the current documents still require a complete reproduction and feeding specification before those operations can be optimized faithfully. The previously cited `evolution_simulation_codex_readiness_v1.md` is absent from this checkout; see the [v1 open decisions](../README.md#open-decisions-before-implementation).
 
 No new genes, biomass system, age-dependent biology, global fitness score, or predefined ecological classes are introduced here. Algorithms, storage layouts, and internal module choices remain implementation decisions within the project's browser-first, plain-JavaScript constraints. [P1-P4]
 
@@ -267,7 +267,7 @@ Count complete genomes to determine majorities. Genetic distance uses valid muta
 
 ## 12. Rendering and browser execution
 
-Shared pacing and hidden-tab behavior are already adopted in the [world rules](../../../../docs/evolution_simulation_summary_v6.md#shared-playback-and-time-rules). The following remains execution research; it does not relocate browser adapters into this model or authorize changes to physical APIs. The newer [provisional life rendering brief](../../../rendering/LIFE.md) supplies the requested initial visual direction.
+Shared pacing and hidden-tab behavior are already adopted in the [world rules](../../../../../docs/evolution_simulation_summary_v6.md#shared-playback-and-time-rules). The following remains execution research; it does not relocate browser adapters into this model or authorize changes to physical APIs. The newer [provisional life rendering brief](../../../../rendering/LIFE.md) supplies the requested initial visual direction.
 
 Run complete daily simulation steps independently of redraws. At high time compression, execute several days and publish the newest completed snapshot instead of rendering every intermediate day. Report both the simulated date and measured execution rate so the interface does not imply an unachieved speed.
 
@@ -342,7 +342,7 @@ Test small, medium, and maximum worlds with different occupancy and diversity. D
 
 ## 15. Implementation sequence
 
-**First:** Resolve the reference-model gaps listed in the [v1 index](README.md#open-decisions-before-implementation); the originally cited readiness review is absent. Build the smallest end-to-end individual simulation, deterministic fixtures, inspection, and saved checkpoints.
+**First:** Resolve the reference-model gaps listed in the [v1 index](../README.md#open-decisions-before-implementation); the originally cited readiness review is absent. Build the smallest end-to-end individual simulation, deterministic fixtures, inspection, and saved checkpoints.
 
 **Second:** Add low-risk shared calculations, genome interning, local indexes, compact snapshots, and independent rendering. Profile the result.
 
@@ -358,10 +358,10 @@ Stop when the agreed world sizes run acceptably. A more elaborate approximation 
 
 Project references are the supplied design documents, not claims about measured biological constants:
 
-- **[P1]** Summary v6, now split between the [shared world sections 1–4 and 9](../../../../docs/evolution_simulation_summary_v6.md) and [v1 life sections 5–11](evolution_simulation_summary_v6.md), plus the acceptance checks in both parts. Original section numbering is retained.
+- **[P1]** Summary v6, now split between the [shared world sections 1–4 and 9](../../../../../docs/evolution_simulation_summary_v6.md) and [v1 life sections 5–11](evolution_simulation_summary_v6.md), plus the acceptance checks in both parts. Original section numbering is retained.
 - **[P2]** `evolution_mechanics_summary_v3.md`, particularly mutation, demographic randomness, and species classification.
 - **[P3]** `evolution_simulation_genes_v1.md`, particularly energy-acquisition shares, grazing, encounters, and carnivory.
-- **[P4]** [Staged prompts](../../../../docs/prompts.md), particularly application boundaries, scale, themes, and map interaction.
+- **[P4]** [Staged prompts](../../../../../docs/prompts.md), particularly application boundaries, scale, themes, and map interaction.
 
 Browser references checked on 15 September 2026:
 

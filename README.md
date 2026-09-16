@@ -153,7 +153,9 @@ The build includes the full licence as `dist/LICENSE`, linked from the footer.
 
 Shared world rules and the decision record stay in **`docs/`**, despite the
 original brief's `/documents` path. Life/evolution and approximation research is
-now under **`src/simulation/life/v1/`**. Later models will use sibling version
+now under **`src/simulation/life/v1/docs/`**, with gene descriptions in
+**`src/simulation/life/v1/genes/docs/`** and future gene code in the enclosing
+**`genes/`** directory. Later models will use the same layout in sibling version
 folders while keeping the same physical world and common UI data contract.
 Research filename suffixes retain their original revisions; they are separate
 from the enclosing life-model version.
@@ -164,10 +166,10 @@ from the enclosing life-model version.
 - [Life-model ownership and versioning](src/simulation/life/README.md)
 - [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
 - [Life model v1 research and open decisions](src/simulation/life/v1/README.md)
-- [V1 habitats, movement, energy, and initialization](src/simulation/life/v1/evolution_simulation_summary_v6.md)
-- [V1 inheritance and species classification](src/simulation/life/v1/evolution_mechanics_summary_v3.md)
-- [V1 starting traits](src/simulation/life/v1/evolution_simulation_genes_v1.md)
-- [V1 approximation and performance research](src/simulation/life/v1/evolution_simulation_approximation_strategies_v1.md)
+- [V1 habitats, movement, energy, and initialization](src/simulation/life/v1/docs/evolution_simulation_summary_v6.md)
+- [V1 inheritance and species classification](src/simulation/life/v1/docs/evolution_mechanics_summary_v3.md)
+- [V1 starting traits](src/simulation/life/v1/genes/docs/evolution_simulation_genes_v1.md)
+- [V1 approximation and performance research](src/simulation/life/v1/docs/evolution_simulation_approximation_strategies_v1.md)
 - [Provisional life rendering brief](src/rendering/LIFE.md)
 - [Original staged prompts](docs/prompts.md)
 

@@ -72,6 +72,21 @@ passing the existing atlas tests establishes that a model works or is balanced.
 
 ## Documentation map
 
+Each model version uses the following internal layout:
+
+```text
+vN/
+  README.md     Model index and open decisions
+  docs/         Model documentation and research
+  genes/        Model-specific gene code
+    docs/       Gene descriptions and research
+```
+
+These paths are relative to each `life/vN/`, not the repository root. Shared
+world documentation stays in the repository's `docs/`. Gene code remains owned
+by its model version; this layout does not create a shared gene implementation.
+The current v1 folders contain documentation only.
+
 - [Common life observations and UI commands](CONTRACT.md)
 - [Life model v1 research and open decisions](v1/README.md)
 - [Provisional rendering brief](../../rendering/LIFE.md)

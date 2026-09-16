@@ -9,19 +9,19 @@ part of the original v6 design; `v6` is the research revision, while the enclosi
 biological and approximation rules without changing the shared physical world.
 Original section numbers are retained for cross-document citations.
 
-[Shared world sections 1–4 and 9](../../../../docs/evolution_simulation_summary_v6.md)
+[Shared world sections 1–4 and 9](../../../../../docs/evolution_simulation_summary_v6.md)
 remain in `docs/`. They supply geography, drainage, climate, moisture, seasons,
-and physical diagnostics. The [architecture record](../../../../docs/ARCHITECTURE.md)
+and physical diagnostics. The [architecture record](../../../../../docs/ARCHITECTURE.md)
 records the adopted physical implementation. No formula here overrides it.
 
 Within this candidate, this summary describes habitats, resources, movement,
 dispersal and daily phases; [evolution mechanics v3](evolution_mechanics_summary_v3.md)
 describes inheritance, mutation and species classification; the
-[starting gene catalogue](evolution_simulation_genes_v1.md) supplies capabilities
+[starting gene catalogue](../genes/docs/evolution_simulation_genes_v1.md) supplies capabilities
 and feeding principles where not superseded by those two summaries.
 [Approximation strategies](evolution_simulation_approximation_strategies_v1.md)
 describe candidate execution techniques, not settled biological coefficients.
-See the [v1 index](README.md) for unresolved decisions.
+See the [v1 index](../README.md) for unresolved decisions.
 
 The original v6 replaced a v5 summary absent from this checkout. Numeric defaults
 are simulation-design proposals, not biological constants or tested balancing

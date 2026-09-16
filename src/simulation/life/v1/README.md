@@ -9,12 +9,16 @@ complete, implemented or balanced. Later candidates belong in sibling `v2/`,
 
 ## Source map and authority
 
+Model documentation lives in `docs/`. `genes/` is reserved for this model's gene
+code, with gene descriptions in `genes/docs/`. No gene code is implemented yet.
+The [common layout](../README.md#documentation-map) also applies to later models.
+
 | Document | V1 responsibility |
 | --- | --- |
-| [Life summary, research v6](evolution_simulation_summary_v6.md) | Habitat and adaptation, barriers as experienced by organisms, offspring dispersal, active movement, energy, feeding integration, daily order and founder proposal |
-| [Evolution mechanics, research v3](evolution_mechanics_summary_v3.md) | Inheritance, valid mutation changes, drift, genetic distance and species branching |
-| [Starting genes, research v1](evolution_simulation_genes_v1.md) | Eight-trait catalogue and earlier feeding proposals where not superseded by the summaries |
-| [Approximation strategies, research v1](evolution_simulation_approximation_strategies_v1.md) | Reference individual model, exact cohorts, batching, optional lossy modes, profiling and validation recommendations |
+| [Life summary, research v6](docs/evolution_simulation_summary_v6.md) | Habitat and adaptation, barriers as experienced by organisms, offspring dispersal, active movement, energy, feeding integration, daily order and founder proposal |
+| [Evolution mechanics, research v3](docs/evolution_mechanics_summary_v3.md) | Inheritance, valid mutation changes, drift, genetic distance and species branching |
+| [Starting genes, research v1](genes/docs/evolution_simulation_genes_v1.md) | Eight-trait catalogue and earlier feeding proposals where not superseded by the summaries |
+| [Approximation strategies, research v1](docs/evolution_simulation_approximation_strategies_v1.md) | Reference individual model, exact cohorts, batching, optional lossy modes, profiling and validation recommendations |
 
 The enclosing `v1/` is the model version; filename suffixes retain their original
 research revisions. Mechanics v3 governs inheritance/classification, and summary
@@ -67,7 +71,7 @@ validation, not a selected default or a shared approximation engine.
   and size to the common display observations, with mixed feeding roles and the
   small-plant threshold left for later instructions.
 
-The [approximation note](evolution_simulation_approximation_strategies_v1.md)
+The [approximation note](docs/evolution_simulation_approximation_strategies_v1.md)
 provides proposed validation cases. Existing atlas tests do not exercise these
 rules. This documentation task does not resolve missing coefficients, authorize
 implementation, add a population limit, or promise a particular evolutionary outcome.
