@@ -21,6 +21,7 @@ export function initWorldUI() {
   const startButton = document.querySelector('#start-workspace');
   const generationStatus = document.querySelector('#generation-status');
   const previewCanvas = document.querySelector('#world-preview');
+  const previewSurface = previewCanvas.parentElement;
   const canvas = document.querySelector('#world-map');
   const workspace = document.querySelector('#workspace');
   const page = document.querySelector('.page-shell');
@@ -196,6 +197,7 @@ export function initWorldUI() {
     if (!form.checkValidity()) {
       generating = false;
       form.removeAttribute('aria-busy');
+      previewSurface.removeAttribute('aria-busy');
       showGenerationStatus('enterSeed');
       return;
     }
@@ -205,10 +207,14 @@ export function initWorldUI() {
     const settings = readSettings();
     // The browser worker owns execution, while the engine remains headless.
     // Replacing settings terminates obsolete work instead of queuing more worlds.
-    const finish = (snapshot) => {
+    const finish = async (snapshot) => {
       if (request !== revision) return;
       generationWorker?.terminate();
       generationWorker = null;
+      // Conceal even fast worker results before replacing the map. CSS owns the
+      // duration (and reduced-motion override); newer input cancels this result.
+      await Promise.all(previewCanvas.getAnimations().map(animation => animation.finished.catch(() => {})));
+      if (request !== revision) return;
       world = snapshot;
       geography = snapshot;
       if (world) {
@@ -221,7 +227,8 @@ export function initWorldUI() {
         resetClock();
         updateDayReadout();
         updateInspector();
-        queueDraw();
+        // Measure after the summary update and paint before revealing the frame.
+        draw();
       } else {
         previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
         updateWorldSummary();
@@ -229,6 +236,7 @@ export function initWorldUI() {
       }
       generating = false;
       form.removeAttribute('aria-busy');
+      previewSurface.removeAttribute('aria-busy');
     };
     try {
       generationWorker = new Worker(new URL('./generation-worker.js', import.meta.url), { type: 'module' });
@@ -248,6 +256,7 @@ export function initWorldUI() {
     form.removeAttribute('aria-busy');
     startButton.disabled = true;
     generating = true;
+    previewSurface.setAttribute('aria-busy', 'true');
     showGenerationStatus('updating');
     generationTimer = setTimeout(generate, delay);
   }

@@ -115,6 +115,13 @@
         <aside class="notebook" aria-label="Field notebook" data-i18n-aria-label="notebook">
           <div class="notebook-heading"><p class="eyebrow" data-i18n="notebook">Field notebook</p></div>
           <section id="hex-panel" aria-label="Hex details" data-i18n-aria-label="hexDetails"><div id="hex-details"><h2 data-i18n="inspectHeading">A world to inspect.</h2><p data-i18n="inspectHelp">Pin a hex to read its terrain, elevation, temperature, and moisture.</p></div></section>
+          <section class="life-panel" aria-labelledby="life-title">
+            <svg class="life-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 3 15 8.5v17L20 37 5 28.5v-17Z"/><circle cx="20" cy="20" r="7"/><circle cx="20" cy="20" r="2"/></svg>
+            <h2 id="life-title" data-i18n="lifeBeginning">A small beginning</h2>
+            <p class="life-introduction" data-i18n="lifeIntroduction">Life will begin in one selected hex. Local conditions will shape what follows.</p>
+            <button id="start-life" class="action-button primary" type="button" aria-describedby="life-availability" data-i18n="startLife">Start life here</button>
+            <p id="life-availability" class="life-availability" data-i18n="lifeUnavailable">Life seeding is not available yet.</p>
+          </section>
         </aside>
       <footer class="workspace-footer">
         <div class="simulation-date"><span id="playback-state" class="readout">Paused</span><div class="day-readout"><span data-i18n="day">Day</span><output id="world-day" aria-label="Simulation day" data-i18n-aria-label="simulationDay" aria-live="off">0</output></div></div>

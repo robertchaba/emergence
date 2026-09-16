@@ -103,6 +103,11 @@ Playback currently changes climate only. A year has 360 days, beginning at the
 northern spring equinox. Hydrology and geographic regions stay fixed while
 temperature and land moisture change; biological simulation is future work.
 
+Below the hex details, the notebook includes a **Start life here** panel with a
+short explanation. Its button is enabled for design review but has no action yet;
+life seeding is not implemented.
+On phones, scroll within the notebook to see the panel.
+
 The preview's land budget counts the non-marine footprint before freshwater
 lakes; dry land is reported separately. Spring discharge and runoff use reference
 flow units. Humidity is a land-moisture index, with no value on sea or lake hexes.

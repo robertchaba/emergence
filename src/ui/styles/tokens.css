@@ -27,6 +27,8 @@
   --color-focus: var(--color-accent);
   --color-selection: var(--color-accent);
   --color-on-selection: var(--color-on-accent);
+  --color-preview-mist: rgb(169 129 64 / 16%);
+  --color-preview-glow: rgb(255 249 228 / 80%);
 
   /* Shared paper treatment for pages and the light atlas. */
   --page-background:
@@ -80,10 +82,12 @@
 
   --font-body: Georgia, 'Times New Roman', serif;
   --font-heading: Georgia, 'Times New Roman', serif;
-  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --font-readout: var(--font-body);
   --text-notebook: 0.8125rem;
   --text-compact: 0.75rem;
   --font-playback-status: var(--font-body);
+  --speed-caption-gap: 4px;
+  --speed-prefix-width: 5ch;
   --text-status: 0.6875rem;
   --text-xs: 0.875rem;
   --text-sm: 1rem;
@@ -137,6 +141,8 @@
   --color-focus: var(--color-accent);
   --color-selection: var(--color-accent);
   --color-on-selection: var(--color-on-accent);
+  --color-preview-mist: rgb(8 22 17 / 74%);
+  --color-preview-glow: rgb(172 207 140 / 18%);
   /* Canvas palette: same physical meanings, tuned for the dark surface. */
   --map-ground: var(--color-ground);
   --map-sea-deep: #183e57;
@@ -176,7 +182,7 @@
 
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --font-readout: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   --text-notebook: 0.8125rem;
   --text-xs: 0.875rem;
   --text-sm: 1rem;
@@ -202,7 +208,9 @@
   --color-button-inset-accent: var(--color-clear);
   --color-control-selected: rgb(196 219 165 / 12%);
   --workspace-background: var(--color-ground);
-  --font-playback-status: var(--font-mono);
+  --font-playback-status: var(--font-readout);
+  --speed-caption-gap: 8px;
+  --speed-prefix-width: 7ch;
   --workspace-texture: none;
   --color-workspace-panel: var(--color-panel);
   --color-playback-active: var(--color-accent);
@@ -237,6 +245,8 @@
     --color-focus: var(--color-accent);
     --color-selection: var(--color-accent);
     --color-on-selection: var(--color-on-accent);
+    --color-preview-mist: rgb(8 22 17 / 74%);
+    --color-preview-glow: rgb(172 207 140 / 18%);
     /* Canvas palette: same physical meanings, tuned for the dark surface. */
     --map-ground: var(--color-ground);
     --map-sea-deep: #183e57;
@@ -276,7 +286,7 @@
 
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+    --font-readout: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
     --text-notebook: 0.8125rem;
     --text-xs: 0.875rem;
     --text-sm: 1rem;
@@ -302,7 +312,9 @@
     --color-button-inset-accent: var(--color-clear);
     --color-control-selected: rgb(196 219 165 / 12%);
     --workspace-background: var(--color-ground);
-    --font-playback-status: var(--font-mono);
+    --font-playback-status: var(--font-readout);
+    --speed-caption-gap: 8px;
+    --speed-prefix-width: 7ch;
     --workspace-texture: none;
     --color-workspace-panel: var(--color-panel);
     --color-playback-active: var(--color-accent);

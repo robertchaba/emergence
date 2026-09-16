@@ -1013,3 +1013,130 @@ frame rates on the user's Linux hardware. Panning, zooming and continuous
 diagnostic layers still require full repaints. No other browser engine or future
 ecological behavior was validated. Original research, artwork, theme tokens,
 licence text, and engine/browser dependency boundaries remain intact.
+
+## 022 — Stable setup preview and regeneration mist — 2026-09-16
+
+**Refines 021's setup presentation.** The preview surface now keeps its own
+1.65 aspect ratio (with the existing 420 px desktop minimum), instead of sharing
+flexible height with the summary and adjacent form. Its panel aligns to the top
+of the grid. Generation status reserves two lines, preventing the common
+ready/generating message change from moving the phone preview. Longer copy can
+still expand naturally; no text is clipped or given a fixed maximum height.
+
+Changing settings immediately fades and softly blurs the old Canvas over 160 ms.
+A drifting radial wash fills the frame while the worker runs: warm parchment in
+light mode and a subdued lichen glow over green in dark mode. The result waits
+for concealment, measures and draws the new world, then reveals it over 420 ms.
+This hides the map replacement without transforming or scaling the actual frame.
+Fast results wait only for concealment; slow generation has no extra fixed delay.
+
+The UI uses the Canvas's CSS animation completion promises and rechecks the
+existing request revision after awaiting them, so superseded results cannot
+replace newer input. Invalid settings restore the prior preview; failure clears
+it and ends the effect. Start retains its existing validity behavior. The preview
+exposes its busy state; the existing translated status remains the announcement.
+Decorations intercept no input. Reduced-motion preferences remove blur, fades,
+and drifting movement, leaving a static wash until the completed map is drawn.
+
+All colours remain root theme tokens, with matching system-dark fallback values.
+Only browser composition and CSS change; the renderer, generation worker,
+headless engine, seasonal pacing, language catalogues, original artwork and
+licence are unchanged. No dependency or usage change requires a README update.
+
+Validation: focused Chromium checks cover a held worker, small/large world swaps,
+stable preview rectangles in both themes at desktop and phone widths, reduced
+motion, invalid input, worker failure and recovery. Both themes were visually
+inspected during generation and after completion at desktop and phone widths.
+`npm run build` and `npm test` passed: 29 headless/renderer checks and 47 Chromium
+checks, with the existing desktop duplicate of the touch test skipped. Existing
+checks also cover keyboard focus, assets, disabled controls, both locales,
+responsive overflow through 320 px, worker cancellation and seasonal playback.
+`git diff --check` passed. Build wiring and usage are unchanged. Validation is
+limited to Chromium and the physical atlas; no other browser engine or future
+ecological behavior was validated.
+
+## 023 — Serif speed readouts in light mode — 2026-09-16
+
+**Supersedes 017's monospace speed outputs for the light theme.** Target and
+actual speed values now use the existing `--font-playback-status` token, matching
+the light theme's body serif while retaining monospace in explicit and system
+dark mode. The reserved character widths and tabular figures remain, keeping
+the slider stable as values change. This is a UI stylesheet change only; pacing,
+measurement, simulation and rendering boundaries are unchanged. Usage is unchanged.
+
+Validation: `npm run build` and `npm test` passed (29 headless/renderer checks,
+47 Chromium checks, one existing desktop touch-test duplicate skipped).
+Computed styles confirmed both readouts resolve to Georgia in light mode and
+monospace in dark mode. Visually inspected both themes at desktop and phone
+widths; existing layout checks cover both locales through 320 px, wrapping,
+overflow and the 9× to 10× slider transition. Existing checks also cover focus,
+assets and disabled controls. Validation remains limited to Chromium.
+
+## 024 — Consistent light-theme serif and tighter speed spacing — 2026-09-16
+
+**Supersedes 005's light-theme monospace labels/readouts and refines 023.** All
+remaining UI readouts and labels now use the semantic `--font-readout` token:
+body serif in light mode, the existing monospace stack in dark mode. This covers
+Field atlas, Field notebook, landing labels, setup values, layer choices, theme
+and language controls, and zoom values. Explicit and system-dark definitions
+match; the no-JavaScript light fallback also receives serif typography.
+
+Light-mode speed rows reduce the label/value grid gap from 8 to 4 px and the
+reserved multiplier column from 7 to 5 character widths. The total output width
+remains fixed so changing speed does not move the slider. Dark-mode spacing is
+preserved through theme tokens. Only UI styles change; engine, renderer, playback,
+localization, original assets, and usage remain unchanged.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer and 47 Chromium
+checks, one existing skip), and `git diff --check` passed. An additional browser
+inspection confirmed all visible text on the light landing, setup, atlas and
+open application menu resolves to Georgia. Computed styles verified each theme's
+speed gaps and readout fonts. Visually inspected the atlas in both themes and
+the light landing/setup at desktop and phone widths. Existing tests cover both
+locales, layouts through 320 px, stable speed controls, focus, assets and disabled
+controls. Browser validation is limited to Chromium.
+
+## 025 — Plain landing introduction label — 2026-09-16
+
+Removed the decorative circle before “An open-ended evolution sandbox” at the
+user's request, along with its unused CSS rule. The paragraph keeps its existing
+translation key and theme typography. This change is limited to landing markup
+and UI styling; usage and layer boundaries are unchanged.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer and 47 Chromium
+checks, one existing skip), and `git diff --check` passed. Visually inspected
+light and dark landing pages at desktop and phone widths; the label has no circle,
+text fits, and original artwork renders correctly. Existing checks cover keyboard
+focus, controls, responsive overflow, and language switching. Browser validation
+remains limited to Chromium.
+
+## 026 — Life introduction panel in the notebook — 2026-09-16
+
+The notebook now includes a bordered, dialog-like panel below the hex details.
+A small line-drawn cell, a heading, a short explanation and a full-width
+**Start life here** button give the future action a clear place in the interface.
+The panel uses existing theme colours and type tokens, including the paper
+theme's double border and dark theme's lichen accent. English and Polish copy
+use the existing catalogue and locale switcher.
+
+At the user's explicit request, the native button is enabled and focusable but
+has no action. A visible note explains that life seeding is not available yet;
+the button references that note for assistive technology. There is no modal,
+event handler, selected-site reservation, biological state or engine API.
+The existing inspector, camera, climate and playback behavior remain intact.
+
+The phone notebook grows from 220 to 300 px to give the panel reading space,
+with a smaller decorative icon and tighter panel padding. Its existing scrolling
+allows access below the facts, while the short-screen rule continues to reserve
+map space. On narrow or short screens the panel can require scrolling. The README
+describes this design-only control. Existing checkout work and original assets
+are preserved; no dependency or build wiring changes were needed.
+
+Validation: `npm run build`, `npm test` (29 headless/renderer checks, 47 Chromium
+checks, one existing desktop touch-test skip), and `git diff --check` passed.
+Visually inspected the panel in both themes at desktop and phone widths.
+Additional browser checks covered both languages, horizontal overflow through
+320 px, keyboard focus, and an enabled button whose click leaves the paused
+world's day, camera, layer and selection unchanged. Existing checks cover assets,
+disabled controls and physical-atlas behavior. Validation is limited to Chromium;
+life simulation remains unimplemented.
