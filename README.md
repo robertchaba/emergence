@@ -125,9 +125,9 @@ completed days of the current life attempt. Extinct species and the percentage
 of all hexes occupied appear as counts only.
 Pinning a hex reveals compact physical readings and all species living there, or
 an explicit empty-hex message. Species receive stable generated names. Click a
-name to open its compact population count (e.g. 21K), present genes, and genome
-portrait, and outline its whole occupied range; click it again to clear the
-highlight. A sole local species opens automatically, with highlighting still
+name to open its genome portrait directly below the name, followed by its compact
+population count (e.g. 21K) and present genes, and outline its whole occupied range;
+click it again to clear the highlight. A sole local species opens automatically, with highlighting still
 requiring a click. Gene expressions
 carried by only part of the species appear in lighter text with their percentage.
 Expressions below 2% of the species population are hidden but remain in the model.
@@ -139,8 +139,9 @@ percentage, without a redundant “Present” label. Selected controls use dark 
 in both themes.
 The portrait uses the most populous complete genome.
 
-Life always appears on the map as plant coverage and coloured dots without dark
-outlines. Mobile groups have subtle motion and small appendages at closer zoom;
+Life always appears on the map as vivid green plant coverage and coloured dots
+without dark outlines. Bare land uses softly warm stone greys in both themes.
+Mobile groups have subtle motion and small appendages at closer zoom;
 this stops while paused, hidden, or using reduced motion. These marks represent
 population groups. On phones, pinning scrolls the local record into view; the
 notebook scrolls independently. Theme and language changes preserve the run and

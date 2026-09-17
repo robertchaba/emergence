@@ -47,13 +47,13 @@
 
   /* Canvas values are resolved by the UI and passed to the renderer. */
   --map-ground: var(--color-clear);
-  --map-sea-deep: #355e79;
-  --map-sea-shallow: #8cb6be;
-  --map-lake: #638e88;
-  --map-land-low: #a19a87;
-  --map-land-high: #d9d2be;
-  --map-relief-shadow: #5e594e;
-  --map-relief-light: #f8efdb;
+  --map-sea-deep: #203f50;
+  --map-sea-shallow: #39758a;
+  --map-lake: #587f88;
+  --map-land-low: #827f77;
+  --map-land-high: #b4b1a8;
+  --map-relief-shadow: #575650;
+  --map-relief-light: #e3e0d7;
   --map-ice: #dfecef;
   --map-frost: #fffefa;
   --map-river: #527c87;
@@ -81,7 +81,7 @@
   --map-region-5: #a8b772;
   --map-region-6: #cca9ad;
   --map-region-7: #7cb9b1;
-  --map-life-producer: #2c7040;
+  --map-life-producer: #199c35;
   --map-life-grazer: #946423;
   --map-life-predator: #a94237;
   --map-life-mixed: #795184;
@@ -161,13 +161,13 @@
   --color-preview-glow: rgb(172 207 140 / 18%);
   /* Canvas palette: same physical meanings, tuned for the dark surface. */
   --map-ground: var(--color-ground);
-  --map-sea-deep: #183e57;
-  --map-sea-shallow: #5b95a4;
-  --map-lake: #518c83;
-  --map-land-low: #85847b;
-  --map-land-high: #bebbb0;
-  --map-relief-shadow: #424640;
-  --map-relief-light: #dedcd2;
+  --map-sea-deep: #193847;
+  --map-sea-shallow: #336d82;
+  --map-lake: #507984;
+  --map-land-low: #7b7971;
+  --map-land-high: #aaa89f;
+  --map-relief-shadow: #464640;
+  --map-relief-light: #d8d6ce;
   --map-ice: #cbdfe4;
   --map-frost: #f5f7f2;
   --map-river: #587f87;
@@ -195,7 +195,7 @@
   --map-region-5: #9caf6a;
   --map-region-6: #bd969f;
   --map-region-7: #65aca4;
-  --map-life-producer: #a6d579;
+  --map-life-producer: #4ccc3b;
   --map-life-grazer: #e6ba6c;
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
@@ -277,13 +277,13 @@
     --color-preview-glow: rgb(172 207 140 / 18%);
     /* Canvas palette: same physical meanings, tuned for the dark surface. */
     --map-ground: var(--color-ground);
-    --map-sea-deep: #183e57;
-    --map-sea-shallow: #5b95a4;
-    --map-lake: #518c83;
-    --map-land-low: #85847b;
-    --map-land-high: #bebbb0;
-    --map-relief-shadow: #424640;
-    --map-relief-light: #dedcd2;
+    --map-sea-deep: #193847;
+    --map-sea-shallow: #336d82;
+    --map-lake: #507984;
+    --map-land-low: #7b7971;
+    --map-land-high: #aaa89f;
+    --map-relief-shadow: #464640;
+    --map-relief-light: #d8d6ce;
     --map-ice: #cbdfe4;
     --map-frost: #f5f7f2;
     --map-river: #587f87;
@@ -311,7 +311,7 @@
     --map-region-5: #9caf6a;
     --map-region-6: #bd969f;
     --map-region-7: #65aca4;
-  --map-life-producer: #a6d579;
+  --map-life-producer: #4ccc3b;
   --map-life-grazer: #e6ba6c;
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;

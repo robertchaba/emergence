@@ -1,5 +1,17 @@
 # Life rendering
 
+## Current portrait and terrain palette — 2026-09-17
+
+Decision 040 places the genome portrait directly below the expanded species name,
+before population and gene details. It still depicts the most populous complete
+living genome. The producer token is a more saturated leaf green in both themes;
+bare land and relief use softly warm stone greys, halfway between the original
+warm palette and the first cooler revision following user feedback. These
+supersede the earlier producer and land palettes, including the
+system-dark fallback. Tint strength, markers, diagnostic colour meanings and
+selection styling retain their existing behavior. All colours remain root tokens
+resolved by UI; neither the renderer nor the simulation gains new life rules.
+
 ## Current notebook highlights — 2026-09-17
 
 Decision 039 supersedes decision 038's teal carrier palette and three-chart

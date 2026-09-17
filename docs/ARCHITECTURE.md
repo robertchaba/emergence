@@ -2,7 +2,10 @@
 
 ## Status
 
-**Current: compact notebook and green highlights — 2026-09-17.** Decision 039
+**Current: reference-inspired land and sea palette — 2026-09-17.** Decision 041
+uses muted warm-grey land and deeper blue seas from the supplied screenshot. Decision 040
+moves the genome portrait above species details and separates vivid plant greens
+from cooler bare ground. Decision 039
 simplifies statistics, gene controls and selection styling. Decision 038
 refines selection, charts, population display and biological cadence. Decision 037 refines startup,
 species inspection, names, and life rendering. Decision 036 implements the first
@@ -1746,3 +1749,71 @@ Limits: a carrier highlight marks whole hexes, including those shared with other
 expressions. The 98% cutoff is a presentation choice, not a biological threshold.
 Browser checks cover Chromium and do not establish ecological calibration or
 cross-browser numerical equivalence.
+
+## 040 — Portrait first and plant-green terrain contrast — 2026-09-17
+
+**Supersedes 037's portrait-after-details order and the previous producer, land
+and relief palette values.** Place the genome portrait directly below the species
+name, before population and gene details, with a smaller top gap. Its existing
+representative-genome source, caption, size and accessible control relationships
+remain intact.
+
+Both themes use a more saturated leaf green for producer coverage and markers.
+Bare land and its relief shading shift toward softly warm stone greys, most
+noticeably in light mode, so vegetation stands apart from unoccupied ground.
+The first cooler revision was too desaturated for the user; it is superseded by
+the midpoint between that revision and the original land/relief RGB values,
+restoring some warmth in both themes. The page keeps
+its paper/ink or green-black identity. All palette changes live in root CSS tokens,
+with the system-dark fallback synchronized. UI passes resolved colours through
+the existing renderer boundary. Terrain geometry, abundance-based tint strength,
+water colours, selections and biological observations remain unchanged. The
+existing relief-shadow token also supplies the subtle shading on region colours;
+region identities and diagnostic meanings are unchanged.
+
+This is a presentation-only adjustment with no engine, timing, dependency or
+state-format changes. README and the life rendering record describe the new
+inspection order and palette.
+
+Validation: `npm run build`, `npm test` (61 headless/renderer checks, 59 Chromium
+checks and one existing skipped desktop touch duplicate), and `git diff --check`
+passed after the palette refinement. Visually inspected both themes at desktop
+and phone widths, including portrait placement, keyboard focus, Polish wrapping
+and the revised ground colours. A dense land-producer display fixture confirmed
+the vegetation contrast on desktop. Additional browser checks confirmed portrait
+ordering and overflow on desktop, and the no-JavaScript system-dark map tokens
+match explicit dark mode. The existing suite covers narrow-screen overflow,
+assets, disabled controls, localization and playback. Diff review confirms all
+code changes remain in UI and theme presentation.
+
+Visual validation is limited to Chromium and does not establish ecological
+fidelity; the dense-colony fixture checks appearance, not attainable populations.
+
+
+## 041 — Reference-inspired land and sea palette — 2026-09-17
+
+**Supersedes 040's land/relief colours and the preceding sea/lake palette.**
+The supplied screenshot guides a narrower warm stone-grey elevation ramp and
+stronger blue seas, with muted blue-teal lakes. Light mode uses slightly lifted
+values beside the paper interface; dark mode uses deeper values beside its
+green-black panels. The system-dark fallback matches explicit dark mode.
+
+All changes are root CSS colour tokens. The existing UI adapter passes them to
+Canvas; depth interpolation, terrain relief, seasonal frost/ice, vegetation
+coverage and selections keep their existing calculations. The relief-shadow
+token also shades geographic regions, so their subtle shading follows the new
+neutral tone. No geography, climate, life rules, commands or dependencies change.
+The screenshot is a visual reference, not a source of additional requirements.
+Usage is unchanged.
+
+Validation: `npm run build` and `npm test` passed (61 headless/renderer checks,
+59 Chromium checks; one existing desktop touch duplicate skipped). Visually
+inspected the atlas in light/dark at desktop and phone sizes. The existing suite
+checks focus, disabled controls, assets, localization and overflow through 320 px.
+A token comparison confirmed explicit-dark and system-dark map values match.
+`git diff --check` passed; diff review confirms this step changes only palette
+tokens and this decision record, preserving earlier workspace edits. Browser
+validation is limited to Chromium.
+
+Limit: this is a palette approximation of the reference; the generated geography,
+current season and zoom determine the actual distribution of colours.

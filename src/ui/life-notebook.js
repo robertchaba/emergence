@@ -36,7 +36,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   const drawing = element('div', 'specimen-drawing');
   const caption = element('figcaption', 'field-note');
   portrait.append(drawing, caption);
-  detail.append(population, heading, traits, portrait);
+  detail.append(portrait, population, heading, traits);
   const buttons = new Map();
   let observation = null;
   let expandedId = null;
