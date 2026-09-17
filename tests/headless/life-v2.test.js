@@ -5,6 +5,8 @@ import { createGrid } from '../../src/simulation/grid.js';
 import { createLifeModel, restoreLifeModel } from '../../src/simulation/life/v2/model.js';
 import { createLifeModel as createV1 } from '../../src/simulation/life/v1/model.js';
 import { founderGenome, deriveGenome } from '../../src/simulation/life/v2/genes/genome.js';
+import { acquisitionSignature } from '../../src/simulation/life/v2/classification.js';
+import { VARIANT_RULES } from '../../src/simulation/life/v2/compaction.js';
 
 function fixture() {
   return assignClimate({ width: 6, height: 7, day: 0, seed: 'v2-fixture', version: 'fixture',
@@ -52,6 +54,7 @@ test('v2 is a separate deterministic model with detached observations and comple
   assert.deepEqual(a.exportState(), stable);
   assert.equal(JSON.stringify(world), before);
   assert.throws(() => restoreLifeModel(world, createV1(world).exportState()), /Incompatible/);
+  assert.throws(() => restoreLifeModel(world, { ...checkpoint, rulesRevision: 'v2-cohorts-1' }), /Incompatible/);
 });
 
 test('waiting barrier carriers retain one physical location and resume their actual delay', () => {
@@ -107,4 +110,39 @@ test('background turnover and baseline mutation remain active without predators'
   assert.ok(snapshot.stats.mutations > 0);
   assert.equal(snapshot.counts.organisms, 20 + snapshot.stats.births - snapshot.stats.deaths);
   reconcile(snapshot);
+});
+
+test('v2 completed populations stay compact and resume exactly after actual reassignment', () => {
+  const world = fixture();
+  const model = createLifeModel(world, { seed: 'baseline-drift' });
+  model.introduce(18);
+  let checkpoint;
+  for (let day = 60; day <= 1800; day += 60) {
+    model.advanceTo(day);
+    const state = model.exportState();
+    const genomes = new Map(state.genomes.map((record) => [record.id, record.genome]));
+    const pools = new Map();
+    for (const cohort of state.cohorts) {
+      const key = JSON.stringify([cohort.speciesId, cohort.hexId, cohort.habitat,
+        acquisitionSignature(genomes.get(cohort.genomeId)), cohort.transit ?? null]);
+      if (!pools.has(key)) pools.set(key, new Set());
+      pools.get(key).add(cohort.genomeId);
+    }
+    assert.ok([...pools.values()].every((variants) => variants.size <= VARIANT_RULES.maximumPerPool));
+    reconcile(model.observe());
+    assert.equal(model.observe().counts.organisms, 20 + state.stats.births - state.stats.deaths);
+    if (!checkpoint && state.stats.variantReassignments > 0) checkpoint = state;
+  }
+  assert.ok(checkpoint, 'the fixture must exercise the approximation before checkpointing');
+  const restored = restoreLifeModel(world, checkpoint);
+  for (let day = checkpoint.day + 1; day <= 1800; day += 1) {
+    restored.advanceTo(day);
+    if (day % 31 === 0) restored.observe();
+  }
+  assert.deepEqual(restored.exportState(), model.exportState());
+  assert.equal(model.observe().approximation.variants, 'local-representatives');
+  assert.equal(model.observe().approximation.maximumVariantsPerPool, 3);
+  assert.equal(model.observe().approximation.maximumRoundingStorageLoss, 1 / 64);
+  assert.equal('maximumDailyStorageLoss' in model.observe().approximation, false,
+    'rounding metadata must not claim to bound reserve loss during phenotype reassignment');
 });

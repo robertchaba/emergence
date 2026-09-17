@@ -5,6 +5,9 @@ V1's historical research. Its numerical coefficients are game-model choices;
 they are not estimates of biological constants. Source modules and focused tests
 make these choices reviewable. Species emerge from inherited variation, local
 resources, survival, reproduction and persistent isolation. No branch is scheduled.
+The current revision is `v2-cohorts-2`. It supersedes the original revision's
+unbounded living-genome representation and isolation waiting periods; the
+original validation panel remains historical evidence for `v2-cohorts-1`.
 
 ## 1. State, time, initialization and accounting
 
@@ -26,15 +29,67 @@ adaptation 2 at least 0.50, and adaptation 3 otherwise; accessible water raises
 effective moisture to at least 0.85. These introduction thresholds are distinct
 from the later 0.80/0.50/0.25 habitat-performance targets. Temperature expression
 maximizes current efficiency, tied in order absent, 0,
-−1, +1, −2, +2. This site matching happens only at introduction. Descendants are
-never rewritten to suit a location.
+−1, +1, −2, +2. This site matching happens only at introduction. Later compacting
+can replace represented genomes as described below; it never searches for the
+genome best suited to a location.
 
 Each cohort contains an exact integer population with identical complete genome,
 species, hex, habitat, component provenance, stored energy and any pending passage.
 One organism is counted once on one physical hex. Transit carriers remain at their
 source until arrival. Observations aggregate the actual cohorts consistently by
 hex, species, variant, gene expression and carrier location. Queries are detached,
-read-only data, without biological random draws. No rare genotype is discarded.
+read-only data, without biological random draws. **Superseded in `v2-cohorts-2`:**
+the original rule that no rare genotype is discarded. Current cohorts represent
+bounded local variation, while conserving every represented organism count.
+
+### Compact local variation
+
+After ecology and newborn establishment, before species classification, each
+pool retains at most three actual complete genomes. A pool is defined by species,
+physical hex, current habitat, acquisition signature and pending passage plan.
+Residents and travellers are separate; passage plans must agree on destination
+hex and habitat, due turn and arrival probability. Different feeding niches,
+locations and species are never folded together. This is three variants **per
+comparable pool**, not three per hex, species or world. Multiple niches and
+pending plans can require many pools. Energy and component provenance remain
+separate cohort records even when they share a representative genome.
+
+Pools with at most three variants retain them all. Larger pools keep the two
+most abundant genomes, breaking ties by earlier establishment and stable genome
+ID. The third slot uses the lowest `−log(1 − U) / population` among the remaining
+genomes. `U` is the first and only draw from a Xoshiro128** substream seeded by
+the serialized tuple of attempt seed, `compact-variants-1`, pool key and genome
+ID. These inputs are checkpointed, so each ticket is reconstructible without
+an additional evolving random stream. The main demographic random state is
+unchanged by ticket selection. Day, iteration order and current abundance do
+not change `U`; abundance changes the priority denominator. Ties use the same
+abundance, establishment and ID order.
+
+The stable weighted slot gives even a singleton a chance to survive compacting
+without rerolling all candidates each turn. Retained genomes can continue to
+mutate, reproduce, compete and diverge. This preserves opportunities, not every
+mutation or candidate: the budget can suppress a useful rare lineage.
+
+Carriers of excess genomes adopt the retained genome with the smallest genetic
+distance; equal distances use the abundance order above. No averaged genome is
+invented. Their integer counts, species IDs, hexes, habitats, component provenance
+and passage plans remain unchanged. Stored energy becomes the smaller of its
+previous value and the target genome's capacity, so no reserve is added. This
+can change body size and trait investment without a construction payment:
+phenotype and embodied body mass are approximate, even though organism counts
+remain exact. It can also alter genetic frequencies, local adaptation and later
+ecological outcomes. It is not an exact optimization or a calibrated measure of
+real biological variation.
+
+Classification then evaluates the compact represented population. A full pool
+does not force speciation, merge species or stop future mutation. Historical
+genome records, including extinct or unestablished variants, are retained;
+compacting bounds active representatives rather than the historical registry.
+`stats.variantReassignments` accumulates the population reassigned at each pass;
+the same carriers can contribute more than once, so it is not a count of unique
+organisms. Observation approximation metadata identifies `local-representatives`,
+the pool definition and the three-slot budget. There is no new UI control or
+setting to switch this representation off.
 
 ## 2. Turn order and energy
 
@@ -45,7 +100,8 @@ read-only data, without biological random draws. No rare genotype is discarded.
 5. Pay maintenance; sample starvation and independent background mortality.
 6. Pay for at most one offspring per surviving eligible parent; choose a mate,
    recombine, mutate and attempt establishment/dispersal.
-7. Join newborns after adult actions, cap/round stored energy, classify species.
+7. Join newborns after adult actions, cap/round stored energy, compact local
+   variants, classify species, and merge identical resulting cohorts.
 
 No newborn feeds, moves or reproduces on its birth turn. A body contains
 `1 + 3 size (size − 1)` cells. Maximum stored energy is its cell count. See the
@@ -62,10 +118,12 @@ turnover even in benign conditions. Surviving hungry organisms have zero reserve
 others keep energy after upkeep and any paid birth cost. Reproduction is energy
 limited; there is no forced global carrying capacity or protected species count.
 
-Stored energy rounds down to a multiple of 1/64 after each turn. Loss per living
-organism is less than 1/64 per turn, but this is **not** a bound on long-run
+Stored energy rounds down to a multiple of 1/64 after each turn. Loss from this
+rounding per living organism is less than 1/64 per turn, but this is **not** a bound on long-run
 population, extinction or branching error. `energyQuantum: 0` is a comparison
-mode with identical rules and unrounded energy. Counts remain exact in both.
+mode with identical rules and unrounded energy. Both modes still compact variants;
+the separate reserve cap during reassignment can lose more than 1/64. Counts
+remain exact for the represented population in both modes.
 
 ## 3. Light competition, size and specialization
 
@@ -189,7 +247,9 @@ child more expensive, that individual also pays the difference from its remainin
 energy. A parent unable to fund the difference loses the initial investment and
 the child never establishes. A cheaper child receives no refund. Parent cohorts
 split by these actual payments, so another parent cannot subsidize an expensive
-mutant. This preserves the body-investment cost of acquiring large/complex traits.
+mutant. This preserves the body-investment cost of acquiring large/complex traits
+during reproduction. The later phenotype replacement used for compacting is a
+separate approximation and does not preserve that body-investment accounting.
 For producers, shared hex light saturation supplies occupancy and established producers supply their
 population-weighted competition score within the same habitat: uncrowded
 photosynthetic surplus divided by per-cell construction cost, multiplied by land
@@ -230,8 +290,11 @@ Xoshiro128** maintains four serialized words. Binomial geometric waiting-time
 sampling retains integer demographic variance; stable cohort/action order and
 explicit tie-breaking are versioned. Complete V2 checkpoints include biological
 turn credit, random state, genomes, species, waiting routes, classification timers,
-world/weather identity and attempts. V1 checkpoints are rejected rather than
-converted. Cosmetic names are deterministic and do not draw biological randomness.
+world/weather identity and attempts. The checkpoint format remains
+`emergence-life-v2-checkpoint-1`, with `rulesRevision: v2-cohorts-2`; older V2
+rules and V1 checkpoints are rejected rather than converted. The fixed compacting
+tickets are reconstructed from saved inputs, not resumed partway through a
+second stream. Cosmetic names are deterministic and do not draw biological randomness.
 The model publishes only completed states; the last 180 day records are bounded
 presentation history, not the full evolutionary record.
 

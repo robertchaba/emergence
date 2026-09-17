@@ -1,6 +1,7 @@
 import { climateAt } from '../../climate.js';
 import { hashSeed } from '../../noise.js';
 import { classify, acquisitionSignature } from './classification.js';
+import { compactVariants, VARIANT_RULES } from './compaction.js';
 import { describeGenome, deriveGenome, founderGenome, genomeKey, mutateGenome, validateGenome, recombineGenome, mutationProbability } from './genes/genome.js';
 import { canCross, chooseHabitat, crossingDifficulty, directWaterAccess, habitatFactor,
   hasLand, hasWater, temperatureFactor } from './habitat.js';
@@ -12,7 +13,7 @@ import { binomial, createRandom, uniformPartitions } from './random.js';
 import { speciesName } from './names.js';
 
 export const MODEL_ID = 'v2';
-export const RULES_REVISION = 'v2-cohorts-1';
+export const RULES_REVISION = 'v2-cohorts-2';
 export const CONTRACT_VERSION = 'life-observations-1';
 const FORMAT = 'emergence-life-v2-checkpoint-1';
 // Three complete biological turns per ten physical days, independent of playback.
@@ -40,7 +41,8 @@ function validateDay(day) {
 
 const FOUNDER_POPULATION = 20;
 const initialStats = () => ({ births: 0, deaths: 0, mutations: 0, failedEstablishments: 0,
-  reproductionAttempts: 0, movements: 0, predationDeaths: 0, speciations: 0, sexualBirths: 0, barrierDepartures: 0, barrierArrivals: 0 });
+  reproductionAttempts: 0, movements: 0, predationDeaths: 0, speciations: 0, sexualBirths: 0, barrierDepartures: 0, barrierArrivals: 0,
+  variantReassignments: 0 });
 
 /** Create one headless life run against a read-only physical world.
  * energyQuantum:0 retains exact floating-point stored-energy cohorts for comparison.
@@ -595,6 +597,9 @@ function buildModel(world, state) {
       if (takeTurn && state.cohorts.length) {
         resources.clear();
         state.cohorts = settle(feed(move(completePassages(state.cohorts))));
+        const compacted = compactVariants(state.cohorts, genomes, { seed: state.seed });
+        state.cohorts = compacted.cohorts;
+        state.stats.variantReassignments += compacted.reassignedPopulation;
         state.classification = classify(state.cohorts, genomes, geography.hexes,
           state.classifier, environmentDay, newSpecies);
         state.cohorts = merge(state.cohorts);
@@ -690,8 +695,10 @@ function buildModel(world, state) {
         ({ ...record, population: 0, locations: [], variants: [] })),
       stats: { ...state.stats }, classification: { ...state.classification }, history: state.history,
       approximation: { mode: state.settings.energyQuantum ? 'energy-bins' : 'exact-energy',
-        energyQuantum: state.settings.energyQuantum, maximumDailyStorageLoss: state.settings.energyQuantum,
+        energyQuantum: state.settings.energyQuantum, maximumRoundingStorageLoss: state.settings.energyQuantum,
         validation: 'experimental-uncalibrated',
+        variants: 'local-representatives', maximumVariantsPerPool: VARIANT_RULES.maximumPerPool,
+        variantPool: 'species-hex-habitat-acquisition-transit',
         counts: 'integer-cohorts', stochasticEvents: 'binomial-geometric',
         grazing: 'trait-weighted-accessible-pools', predation: 'individual-depletion', cohortCount: state.cohorts.length },
     };

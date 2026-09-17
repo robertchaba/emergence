@@ -2037,3 +2037,100 @@ Browser validation remains limited to Chromium.
 
 Limits: 10× is a throughput target, so achieved speed still depends on workload.
 The 98% cutoff is a presentation convention, not an ecological rule.
+
+## 045 — Bounded local variants and earlier species recognition — 2026-09-17
+
+**Supersedes 043's exhaustive living-genome representation and 240/360/420-turn
+qualification waits for active V2.** The user requests substantially less variant
+detail and earlier species recognition, and explicitly approves a compact
+approximation with a representative and a few competing variants per local
+population. V1 and earlier research remain preserved. This is a changed
+biological approximation, not an exact performance optimization or a display
+filter. V2 rules advance to `v2-cohorts-2`; the checkpoint format identifier stays
+at 1, with the existing strict rules-revision check rejecting older trajectories.
+
+### Representation and boundaries
+
+After mortality, reproduction and energy settlement, V2 retains at most three
+living complete genomes per `(species, hex, habitat, acquisition signature,
+pending passage)` pool. Two most-abundant genomes retain their populations;
+older establishment and stable ID resolve abundance ties. A third exploratory
+representative comes from a population-weighted lottery over all other living
+genomes. The fixed ticket is reconstructed from run seed, pool identity and
+genome ID using one draw of a keyed Xoshiro128** stream. No changing day or
+iteration order enters that ticket, no separate partially consumed stream
+exists, and the demographic PRNG is untouched by compaction. This gives a rare
+candidate a chance without rerolling its position every turn or preserving
+every new mutation indefinitely.
+
+Excess carriers use the nearest retained actual genome by existing genetic
+distance, with abundance, establishment and stable ID breaking ties. Their
+integer count, species, hex, habitat, provenance and pending journey remain
+unchanged. Stored energy can only stay equal or decrease to the retained body's
+capacity. No averaged genome, synthetic trait, extra organism, or forced branch
+is created. The next ecological turn uses the represented traits normally.
+Classification follows compaction, so its divergence evidence comes from the
+population that remains represented. Equivalent cohorts then merge as before.
+
+Separate localities retain different adaptations. Different feeding signatures
+and pending route/due-turn/probability combinations stay separate rather than
+erasing a minority niche or modifying an already paid journey. Consequently,
+three is a limit per comparable pool, not per whole species, hex or world;
+different niches and travel plans can require more representatives. The
+historical genome registry remains intact. No population or species-count cap is
+introduced. Earlier branching does not erase a new species' ability to evolve.
+
+### Species recognition and observations
+
+The existing population, genetic-distance and spatial/ecological isolation gates
+remain: 20 organisms per compared deme, two genetic steps behind a barrier or
+three for distance/niche separation. Qualifying persistence becomes 60 barrier,
+90 ecological and 120 distance turns: 200, 300 and 400 physical days. Reconnection,
+insufficient population/divergence and loss of the qualifying niche still reset
+the timer. Filling the variant budget never creates a species. Once named,
+species retain separate identities even after renewed contact or genetic
+convergence; compaction never combines them.
+
+Observations identify `local-representatives`, the pool meaning and its limit
+alongside the existing energy approximation. `maximumRoundingStorageLoss`
+replaces V2's broader `maximumDailyStorageLoss` label: the quantum bounds only
+rounding, not the separate body-capacity clamp. `variantReassignments` counts
+cumulative carrier assignments, potentially counting the same represented
+organism more than once over time. Census totals and carrier locations reconcile
+exactly for the represented population. They do not claim preservation of every
+original rare allele. `energyQuantum: 0` disables energy rounding only; it does
+not disable genome compaction. UI and rendering continue to consume detached
+common observations and implement no biological rules. README, model rules,
+isolation notes and the observation contract describe the new representation.
+
+### Validation and limits
+
+`npm run build` and `npm test` passed: 112 headless/rendering checks and 65
+Chromium checks, with one existing desktop touch duplicate skipped. Focused
+checks cover strict per-pool bounds, population and location conservation,
+minority-niche and transit separation, rare-candidate admission and persistence,
+stable ordering, energy capping, actual compaction followed by checkpoint replay,
+query/day-chunk independence, earlier qualification, timer resets and permanent
+species identities. Existing browser checks cover worker/headless agreement,
+themes/locales and desktop/phone layouts. No authored UI or build wiring changed.
+
+A full-suite rerun exposed an existing browser-test timing assumption: automatic
+10× playback can grow the 20 founders before the test's Pause click completes.
+The theme/language preservation check now compares with the actual paused
+population, retaining its unchanged-day and unchanged-population assertions.
+
+The [V2 validation record](../src/simulation/life/v2/docs/VALIDATION.md) retains the
+old pacing panel as historical and records new seeded experiments. At the same
+day 4,320 in the `emergence` water fixture, living variants decrease from 70 to 39
+and the first branch moves from day 3,817 to 2,054. Population and species
+trajectories differ: cohorts increase from 3,089 to 3,584 and timings are similar.
+Therefore a local bound and lower genetic detail do not establish a universal
+CPU speedup. Full historical registry size is not bounded by this change.
+
+Three representatives are an explicit starting budget, not a scientifically
+established minimum. Consolidation can remove rare adaptations and change trait
+frequencies, drift, body investment and future ecology. It caps stored reserves
+but does not conserve embodied biomass when changing representative body size.
+The earlier waits are experimental pacing choices; neither the software checks
+nor the small seeded panel proves ecological realism or guarantees survival,
+branching time, long-run error bounds or cross-browser numerical equivalence.

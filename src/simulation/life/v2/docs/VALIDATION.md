@@ -3,6 +3,10 @@
 V2 is experimentally balanced, not scientifically calibrated. The checks below
 separate implementation invariants, browser integration and exploratory evolution.
 
+The original sections below record **`v2-cohorts-1`**. Their retained results are
+historical, not measurements of the current compact model. The final section
+records `v2-cohorts-2`, which changes the represented biological trajectory.
+
 ## Software checks
 
 - `npm run build`: successful static production build, including the full licence.
@@ -117,3 +121,71 @@ actual worker and paused successfully without browser errors.
   reports completed days and actual speed rather than skipping biological turns.
 - Browser validation covers Chromium desktop and phone layouts, not numerical
   equivalence across every browser/processor.
+
+## Compact local representation — `v2-cohorts-2`
+
+`npm run build` and `npm test` passed with 112 headless/rendering checks and 65
+Chromium checks; the existing duplicate desktop touch check remains skipped.
+New checks exercise the three-genome budget per comparable pool, stable weighted
+candidate admission/persistence, deterministic ties and input order, minority
+feeding niches, separate pending routes, stored-energy caps and unchanged
+headcounts. An integrated run checkpoints after actual reassignment and resumes
+with daily stepping and extra queries to the exact same complete state. Existing
+checks verify worker/headless equivalence and represented trait/location totals.
+Shorter classification waits retain the divergence/population/isolation gates,
+and a regression confirms established species stay separate after contact and
+genetic convergence. No visual layout, locale, theme or control code changed.
+
+A rerun caught a timing-dependent expectation of exactly 20 organisms after
+automatic 10× playback and Pause. The catalogue preservation test now records
+the paused population and requires it to stay unchanged through theme/language
+switches, alongside the unchanged day. Ordinary growth before Pause is valid.
+
+The same benchmark script and suitable-site selection used above were rerun:
+
+| Seed | Start | First branch day | First branch year | Observed through day | Living species | Living variants |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `emergence` | water | 2054 | 5.71 | 2520 | 2 | 18 |
+| `v2-panel-1` | water | 2630 | 7.31 | 3060 | 22 | 62 |
+| `v2-panel-2` | water | 1730 | 4.81 | 2160 | 11 | 33 |
+| `emergence` | land | 2464 | 6.84 | 2880 | 8 | 55 |
+| `v2-panel-1` | land | 3000 | 8.33 | 3420 | 16 | 38 |
+
+Four first branches precede their earlier-revision counterparts; the second land
+run branches later (8.33 versus 7.00 years). Shorter qualification does not
+guarantee an earlier first branch on a changed biological trajectory. All five
+runs retain living descendants at the follow-up observation. More species can be
+recognized quickly once several demes already qualify. The experiment does not
+establish a general species-count distribution or a universal branching deadline.
+
+A fixed-horizon comparison used `emergence`, small world, water hex 244, default
+model settings, and observations every 360 days through day 4,320:
+
+| Measurement at day 4,320 | Historical exhaustive V2 | Compact V2 |
+| --- | ---: | ---: |
+| First branch day | 3817 | 2054 |
+| Living variants globally | 70 | 39 |
+| Living organisms | 39,306 | 73,925 |
+| Living species | 4 | 12 |
+| Cohort records | 3,089 | 3,584 |
+| Historical registered genomes | 262 | 253 |
+| Median variants per species/hex/habitat | 4 | 2 |
+| Maximum variants per species/hex/habitat | 14 | 5 |
+| Approximate local elapsed seconds | 14.6 | 15.2 |
+
+The larger-than-three local maximum is expected: different acquisition niches
+and pending journeys have separate pools. The 44% reduction in living variants
+does not imply fewer cohorts or faster overall execution; the new trajectory
+supports substantially more organisms and species. Timings are local observations,
+not a controlled hardware benchmark. Both runs reconcile births/deaths and
+represented population totals. Compact assignments total 3,090 through this
+horizon, including repeated assignments of carriers over time.
+
+Limits: this is a three-representative approximation, not a proven minimum for
+realistic speciation. Rare traits can disappear or change frequency on folding.
+Stored reserves never increase, but represented body mass and previous trait
+investment are not conserved by phenotype reassignment. Neither exact integer
+census nor `energyQuantum: 0` removes those biological approximations. The full
+historical genome registry is retained, and no absolute world/species/hex variant
+cap or guaranteed CPU speedup is claimed. The old 5–15-year panel remains evidence
+only for its original rules revision.

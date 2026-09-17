@@ -120,6 +120,9 @@ test('life catalogue preserves state through themes and languages and fits narro
   const world = await openLifeWorld(page);
   await introduce(page, world);
   const before = await page.locator('#world-day').getAttribute('data-day');
+  // Introduction starts 10× playback; a turn may complete before Pause arrives.
+  const populationBefore = await page.locator('.species-population').getAttribute('data-count');
+  expect(Number(populationBefore)).toBeGreaterThan(0);
   for (const locale of ['en', 'pl']) {
     await page.locator(`[data-locale="${locale}"]`).click();
     await expect(page.locator('.gene-expression[data-gene="size"]')).toHaveText(locale === 'pl' ? 'Mały' : 'Small');
@@ -132,7 +135,7 @@ test('life catalogue preserves state through themes and languages and fits narro
       await page.keyboard.press('Tab');
       await expect(page.locator('.species-choice')).toHaveCSS('outline-style', 'solid');
       await expect(page.locator('#species-detail .specimen-svg')).toBeVisible();
-      await expect(page.locator('.species-population')).toHaveAttribute('data-count', '20');
+      await expect(page.locator('.species-population')).toHaveAttribute('data-count', populationBefore);
       await expect(page.locator('#world-day')).toHaveAttribute('data-day', before);
       expect(await page.evaluate(() => {
         const notebook = document.querySelector('.notebook');

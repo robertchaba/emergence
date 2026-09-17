@@ -90,11 +90,11 @@ test('v2 barrier divergence can branch without a majority exact genome and survi
   const branch = (parent) => { parents.push(parent); return `species-${parents.length + 1}`; };
   for (let turn = 0; turn < ISOLATION_RULES.barrierTurns - 1; turn += 1) {
     classify(cohorts, genomes, cells, state, turn * 10 / 3, branch);
-    if (turn === 80) cohorts.push(cohort(2, 'g1', 1));
+    if (turn === Math.floor(ISOLATION_RULES.barrierTurns / 3)) cohorts.push(cohort(2, 'g1', 1));
   }
   assert.equal(parents.length, 0);
   assert.equal(Math.max(...Object.values(state.timers)), ISOLATION_RULES.barrierTurns - 1);
-  classify(cohorts, genomes, cells, state, 800, branch);
+  classify(cohorts, genomes, cells, state, ISOLATION_RULES.barrierTurns * 10 / 3, branch);
   assert.deepEqual(parents, ['species-1']);
   assert.equal(new Set(cohorts.map((value) => value.speciesId)).size, 2);
   assert.equal(cohorts.reduce((sum, value) => sum + value.count, 0), 45, 'classification neither creates nor removes organisms');
@@ -106,11 +106,12 @@ test('v2 nearby ordinary reconnection resets isolation before the branch thresho
   const cohorts = [cohort(0, 'a'), cohort(2, 'b')];
   const state = classifier();
   const neverBranch = () => assert.fail('a newly reconnected lineage must not branch');
-  for (let turn = 0; turn < 100; turn += 1) classify(cohorts, genomes, cells, state, turn, neverBranch);
-  assert.equal(Math.max(...Object.values(state.timers)), 100);
+  const elapsed = ISOLATION_RULES.barrierTurns - 1;
+  for (let turn = 0; turn < elapsed; turn += 1) classify(cohorts, genomes, cells, state, turn, neverBranch);
+  assert.equal(Math.max(...Object.values(state.timers)), elapsed);
   const reconnected = line(3);
   cohorts.push(cohort(1, 'a'));
-  classify(cohorts, genomes, reconnected, state, 101, neverBranch);
+  classify(cohorts, genomes, reconnected, state, elapsed + 1, neverBranch);
   assert.deepEqual(state.timers, {});
   assert.equal(state.groups.length, 2, 'local demes remain bounded after reconnection');
 });
@@ -130,7 +131,7 @@ test('v2 distance alone requires stronger divergence and longer persistence than
   }
   assert.equal(branches, 0);
   assert.ok(Object.keys(state.timers).every((key) => key.endsWith('|distance')));
-  classify(cohorts, genomes, cells, state, 820, branch);
+  classify(cohorts, genomes, cells, state, 400 + ISOLATION_RULES.distanceTurns, branch);
   assert.ok(branches > 0);
 });
 
@@ -178,7 +179,7 @@ test('v2 a persistent minority feeding niche can branch while sharing the founde
   assert.equal(state.groups.length, 2, 'a feeding niche need not outnumber its food');
   assert.equal(Math.max(...Object.values(state.timers)), ISOLATION_RULES.ecologicalTurns - 1);
   assert.ok(Object.keys(state.timers).every((key) => key.endsWith('|ecological')));
-  classify(cohorts, genomes, cells, state, 360, branch);
+  classify(cohorts, genomes, cells, state, ISOLATION_RULES.ecologicalTurns, branch);
   assert.equal(branches, 1);
   assert.equal(cohorts[0].speciesId, 'species-1');
   assert.equal(cohorts[1].speciesId, 'species-2');
@@ -197,16 +198,17 @@ test('v2 ecological isolation needs three changes and resets with a lost niche o
   for (let turn = 0; turn < 400; turn += 1) classify(cohorts, genomes, cells, state, turn, neverBranch);
   assert.deepEqual(state.timers, {}, 'one acquired feeding gene is insufficient');
   cohorts[1].genomeId = 'grazer';
-  for (let turn = 0; turn < 100; turn += 1) classify(cohorts, genomes, cells, state, 400 + turn, neverBranch);
-  assert.equal(Math.max(...Object.values(state.timers)), 100);
+  const elapsed = ISOLATION_RULES.ecologicalTurns - 1;
+  for (let turn = 0; turn < elapsed; turn += 1) classify(cohorts, genomes, cells, state, 400 + turn, neverBranch);
+  assert.equal(Math.max(...Object.values(state.timers)), elapsed);
   cohorts[1].genomeId = 'converged';
-  classify(cohorts, genomes, cells, state, 501, neverBranch);
+  classify(cohorts, genomes, cells, state, 401 + elapsed, neverBranch);
   assert.deepEqual(state.timers, {}, 'loss of feeding-system isolation clears persistence');
   cohorts[1].genomeId = 'grazer';
-  classify(cohorts, genomes, cells, state, 502, neverBranch);
+  classify(cohorts, genomes, cells, state, 402 + elapsed, neverBranch);
   assert.equal(Math.max(...Object.values(state.timers)), 1, 'a returned niche must qualify afresh');
   cohorts[1].count = ISOLATION_RULES.minimumPopulation - 1;
-  classify(cohorts, genomes, cells, state, 503, neverBranch);
+  classify(cohorts, genomes, cells, state, 403 + elapsed, neverBranch);
   assert.deepEqual(state.timers, {});
 });
 
@@ -225,4 +227,26 @@ test('v2 one connected ecological lineage receives one species identity across i
   assert.deepEqual(new Set(cohorts.filter((value) => value.genomeId === 'grazer').map((value) => value.speciesId)),
     new Set(['species-2']));
   assert.ok(cohorts.filter((value) => value.genomeId === 'producer').every((value) => value.speciesId === 'species-1'));
+});
+
+test('v2 established species keep separate identities after contact and genetic convergence', () => {
+  const cells = islands();
+  const genomes = records([['a', genome()], ['b', genome({ size: 4 })]]);
+  const cohorts = [cohort(0, 'a'), cohort(2, 'b')];
+  const state = classifier();
+  let branches = 0;
+  for (let turn = 0; turn < ISOLATION_RULES.barrierTurns; turn += 1) {
+    classify(cohorts, genomes, cells, state, turn, () => `species-${++branches + 1}`);
+  }
+  assert.equal(branches, 1);
+  const species = cohorts.map((row) => row.speciesId);
+  cohorts[1].hexId = 0;
+  cohorts[1].genomeId = 'a';
+  for (let turn = 0; turn < ISOLATION_RULES.distanceTurns; turn += 1) {
+    classify(cohorts, genomes, cells, state, ISOLATION_RULES.barrierTurns + turn,
+      () => assert.fail('contact alone cannot branch either established species'));
+  }
+  assert.deepEqual(cohorts.map((row) => row.speciesId), species);
+  assert.equal(new Set(species).size, 2);
+  assert.equal(cohorts.reduce((sum, row) => sum + row.count, 0), 60);
 });

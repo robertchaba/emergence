@@ -4,6 +4,8 @@ These are V2 rules, written independently of the retained V1 reference. The
 physical atlas remains shared and read-only. Habitat occupancy, biological
 effects of weather, movement capabilities and species identity belong to V2.
 The coefficients below are simulation choices, not measured biological constants.
+This document describes `v2-cohorts-2`; earlier waiting periods are retained below
+as explicitly superseded history.
 
 ## Residence and environmental performance
 
@@ -131,6 +133,10 @@ Signatures come from living genomes; they are not assigned species, ecological
 biomes or predetermined evolutionary stages. The engine's sexual mate pool uses
 the same signature as an approximation of mating within a shared feeding niche.
 A mutation still inherits its parent's species ID when this signature changes.
+The [compact variation step](RULES.md#compact-local-variation) runs before this
+graph is built, so representatives and flow shares describe the final represented
+population. It retains separate pools for distinct signatures and local habitats;
+its three-variant budget never creates a new species by itself.
 
 Normal graph edges join only the same acquisition signature. A normal edge
 requires at least 12% of the living population at **each** end to be capable of
@@ -161,9 +167,13 @@ Three kinds of separation are recognized:
 
 | Separation | Representative genetic distance | Consecutive biological turns |
 | --- | --- | --- |
-| Barrier | At least 2 legal mutation steps | 240 |
-| Distance | At least 3 legal mutation steps | 420 |
-| Different acquisition signatures | At least 3 legal mutation steps | 360 |
+| Barrier | At least 2 legal mutation steps | 60 |
+| Distance | At least 3 legal mutation steps | 120 |
+| Different acquisition signatures | At least 3 legal mutation steps | 90 |
+
+**Superseded waiting periods (`v2-cohorts-1`):** barrier 240, distance 420 and
+ecological 360 turns. Revision 2 recognizes sustained divergence sooner while
+retaining the same minimum population, genetic distances and separation tests.
 
 A barrier comparison uses the same acquisition signature in different
 effective-flow components **and** no normal
@@ -176,7 +186,7 @@ weaker cause of separation: it needs more genetic divergence and persistence.
 
 Different acquisition signatures can qualify as ecological isolation even in
 the same hex. Each niche must independently sustain at least 20 living organisms
-and three mutation steps of representative divergence for 360 turns. A minority
+and three mutation steps of representative divergence for 90 turns. A minority
 feeding lineage can therefore diverge while surrounded by many more organisms
 that it eats. A single gained feeding gene is insufficient. A distinct signature
 does not automatically imply a new species, and changing food preferences without
@@ -185,13 +195,15 @@ of ecological and assortative reproductive isolation, not a claim that feeding
 genes alone determine real biological species.
 
 Timers advance only when the engine performs a biological turn. With three
-turns per ten physical days, 240 turns mean 800 days (about 2.22 360-day years),
-360 turns mean 1,200 days (about 3.33 years), and 420 turns mean 1,400 days
-(about 3.89 years), **after** qualifying divergence is present. Loss of population,
+turns per ten physical days, 60 turns mean 200 days (about 0.56 360-day years),
+90 turns mean 300 days (about 0.83 years), and 120 turns mean 400 days
+(about 1.11 years), **after** qualifying divergence is present. Loss of population,
 insufficient divergence, close spatial reconnection, loss of the distinct feeding
 signature or changing isolation criteria resets the corresponding timer.
-The desired first branch around 5–15 simulated years includes spread and genetic
-change before this interval; it is a calibration target, not a scheduled event.
+The earlier 5–15-year first-branch target and measured pacing panel belong to
+`v2-cohorts-1`. They do not validate timing for the compact revision. Spread and
+genetic change still precede the qualifying interval; no world age schedules a
+branch or guarantees that it will occur.
 
 For barrier/distance qualification, the smaller deme receives a new child-species
 ID. For ecological qualification, compare the total populations of the two
@@ -219,7 +231,11 @@ This is a spatial and ecological lineage classifier, not a biological proof of
 reproductive isolation. Assortative feeding niches are discrete combinations of
 three quantitative model capabilities; they omit many real mating mechanisms.
 Demes have hex-scale resolution, modal representatives can change,
-and strong population shifts can reset timers. Normal physical topology uses
+and strong population shifts can reset timers. Compacting can discard rare
+variants and change represented trait frequencies, affecting both divergence
+and effective flow. The smaller representation and earlier thresholds are model
+choices, not evidence of biological equivalence to the former rules.
+Normal physical topology uses
 static terrain/habitat; temporary weather changes selection and survival rather
 than rebuilding geography. Barrier permeability represents rare passive or active
 transport with a bounded corridor, not explicit rafts, seeds, currents or animal

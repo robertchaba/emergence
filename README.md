@@ -10,8 +10,10 @@ hex worlds, introduce a locally suited plant lineage, and observe resource compe
 inheritance, mutation, dispersal, and species branching. The Field Notebook shows
 living and extinct species, their history, and the present traits of local species. V2 adds
 20 inherited traits, costly defenses and counteradaptations, sexual recombination,
-delayed barrier crossings, persistent spatial/ecological isolation and seeded weather. It is an
-experimental model with documented approximations, not calibrated biology.
+delayed barrier crossings, persistent spatial/ecological isolation and seeded weather.
+It now keeps a small set of local variant representatives and recognizes persistent
+divergence sooner. It is an experimental model with documented approximations,
+not calibrated biology.
 
 ## Run locally
 
@@ -138,7 +140,12 @@ requiring a click. Gene expressions
 carried by less than 98% of the species appear in lighter text with their percentage.
 Traits and expressions at or above 98% retain their normal text colour, including
 values rounded to 100%.
-Expressions below 2% of the species population are hidden but remain in the model.
+Expressions below 2% of the species population are hidden in this view without
+removing their represented carriers. Separately, V2 limits active variation to
+three complete genomes per species/hex/habitat/acquisition-niche/pending-passage
+pool: two abundant representatives and one stable weighted candidate. This is
+not a limit of three per species or hex. Counts stay exact for the represented
+population, while compacting approximates its trait frequencies and phenotypes.
 Expressions covering at least 98% of the population are plain values; partial
 expressions below that threshold can be clicked to highlight their carrier hexes
 in pale green, with a dark-green dashed border inside the light species outline.
@@ -197,12 +204,17 @@ if (result.ok) {
 
 `inspectHex(id)` and `inspectSpecies(id)` expose consistent local counts and
 locations. Checkpoints retain the complete biological PRNG and classification
-state; a world seed alone cannot resume a run. Browser save/load is not provided. V1 checkpoints are intentionally incompatible
-with V2; a new life model starts a separate run. Reproduce the six-seed small-world
+state; a world seed alone cannot resume a run. Browser save/load is not provided.
+Current rules are `v2-cohorts-2`; the format remains
+`emergence-life-v2-checkpoint-1`, but checkpoints from older V2 rules and V1 are
+rejected. The compact representation applies in both ordinary and unrounded-energy
+modes; it adds no browser control or API setting. Run the six-seed small-world
 pacing panel with `node scripts/benchmark-life-v2.js` (optional seed arguments;
 `--land` for terrestrial sites, `--full` for all 15 years).
 See [V2 rules](src/simulation/life/v2/docs/RULES.md) for experimental
-coefficients, cohort representation, energy rounding, and validation limits.
+coefficients, compact variation, energy rounding, and validation limits. Earlier
+5–15-year pacing targets and measurements describe `v2-cohorts-1`, not calibration
+of the current compact revision.
 
 Snapshots record the generator version, settings, selected candidate, hash
 inputs, physical hex fields, drainage basins, regions, and their connections.

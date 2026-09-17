@@ -8,8 +8,8 @@ const habitatIndex = (habitat) => habitat === 'water' ? 0 : 1;
 const topologyCache = new WeakMap();
 export const ISOLATION_RULES = Object.freeze({ minimumPopulation: 20, demeRadius: 1,
   minimumDistance: 4, barrierGeneticDistance: 2, distanceGeneticDistance: 3,
-  ecologicalGeneticDistance: 3, barrierTurns: 240, distanceTurns: 420,
-  ecologicalTurns: 360, minimumFlowShare: 0.12 });
+  ecologicalGeneticDistance: 3, barrierTurns: 60, distanceTurns: 120,
+  ecologicalTurns: 90, minimumFlowShare: 0.12 });
 
 // Geography is read-only. Immediate crossing depends only on land adaptation,
 // so at most four immutable topology arrays are retained per physical atlas.

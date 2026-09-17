@@ -172,3 +172,30 @@ carriers count at their source until arrival and never occupy two hexes at once.
 V2 checkpoints include pending passages and niche/spatial classification timers;
 V1/V2 checkpoints are intentionally incompatible. Shared weather identity belongs
 to world metadata, so life and atlas observe the same explicit-day conditions.
+
+V2 revision `v2-cohorts-2` uses compact local variant representatives. Its
+`countQuality: exact` means an exact census of represented integer populations;
+it does not claim exact genetic frequencies, phenotypes, body investment or
+ecological trajectories. Compaction conserves counts, species identity, physical
+location and pending passage while assigning some carriers to retained complete
+genomes. Traits, variants and their locations describe that completed represented
+state, rather than discarded genetic detail. UI and rendering continue to consume
+these observations without implementing compaction or accessing private genomes.
+
+The optional `approximation.variants: local-representatives`,
+`maximumVariantsPerPool: 3` and `variantPool` fields describe the model's budget.
+It applies per species/hex/habitat/acquisition-signature/pending-passage pool,
+not per species, hex or world. `stats.variantReassignments` is the cumulative
+population reassigned during compaction passes, not unique organisms, births
+or deaths. A full pool does not create a species. These are V2 observations,
+not common biological rules or new commands/settings.
+
+V2's `approximation.maximumRoundingStorageLoss` bounds only storage rounding per
+biological turn. It replaces `maximumDailyStorageLoss`, which cannot bound the
+additional reserve loss when compaction chooses a smaller-body representative.
+
+The format name remains `emergence-life-v2-checkpoint-1`, but continuation also
+requires `rulesRevision: v2-cohorts-2`; checkpoints from older V2 rules are rejected.
+Stable compacting tickets use one-draw seeded substreams reconstructed from saved
+seed, pool and genome identities. The main biological PRNG retains its complete
+serialized state, and observation queries consume neither source of randomness.
