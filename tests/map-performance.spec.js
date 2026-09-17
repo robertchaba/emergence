@@ -8,6 +8,10 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
     contentType: 'text/javascript',
     body: readFileSync(new URL('../src/rendering/map.js', import.meta.url), 'utf8'),
   }));
+  await page.route('**/territory.js', route => route.fulfill({
+    contentType: 'text/javascript',
+    body: readFileSync(new URL('../src/rendering/territory.js', import.meta.url), 'utf8'),
+  }));
   await page.goto('/');
   const geography = generateWorld({ seed: 'seasonal-rendering', size: 'small', waterAbundance: 1 });
   const snapshots = [0, 1, 45, 90, 180, 270, 359, 360].map(day => setDay(geography, day));
@@ -27,7 +31,13 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
         b.resize(width, height, dpr);
         for (const camera of [a.fit(), a.cover(geography), { zoom: 3, x: 71, y: -45 }]) {
           for (const snapshot of snapshots) {
-            const options = { geography, camera, pinnedId: geography.hexes.find(hex => hex.runoff > 0).id };
+            const options = { geography, camera, pinnedId: geography.hexes.find(hex => hex.runoff > 0).id,
+              selectedSpeciesId: 'species-1', selectedVariantHexIds: snapshot.day < 180 ? [100] : [101],
+              life: { runId: 'contour-check', revision: snapshot.day, hexes: [100, 101, 124].map(hexId => ({
+                hexId, population: 100, species: [{ id: 'species-1', population: 100 }],
+                display: [{ role: 'producer', size: 0.1, habitat: 'land', population: 100 }],
+              })) },
+            };
             a.draw(snapshot, options);
             b.setTokens(tokens); // The reference always repaints the entire frame.
             b.draw(snapshot, options);

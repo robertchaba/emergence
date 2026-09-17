@@ -11,6 +11,8 @@
   --color-muted: #70624c;
   --color-accent: #52623c;
   --color-on-accent: #faf5e8;
+  --color-highlight: #254c35;
+  --color-on-highlight: #f1f4df;
   --color-rule: rgb(90 73 43 / 25%);
   --color-rule-strong: rgb(90 73 43 / 42%);
   --color-rule-terminal: rgb(90 73 43 / 30%);
@@ -84,7 +86,11 @@
   --map-life-predator: #a94237;
   --map-life-mixed: #795184;
   --map-life-other: #4a737d;
-  --map-life-selected: #b47727;
+  --map-life-selected: #f5edd0;
+  --map-life-selected-fill: rgb(245 237 208 / 6%);
+  --map-life-selection-halo: rgb(26 55 39 / 70%);
+  --map-life-variant: #245c3c;
+  --map-life-variant-fill: rgb(225 247 202 / 62%);
 
   --font-body: Georgia, 'Times New Roman', serif;
   --font-heading: Georgia, 'Times New Roman', serif;
@@ -133,6 +139,8 @@
   --color-muted: #a2af9f;
   --color-accent: #c4dba5;
   --color-on-accent: #18271e;
+  --color-highlight: #254c35;
+  --color-on-highlight: #f1f4df;
   --color-rule: rgb(196 219 165 / 17%);
   --color-rule-strong: rgb(196 219 165 / 32%);
   --color-rule-terminal: rgb(196 219 165 / 23%);
@@ -193,6 +201,10 @@
   --map-life-mixed: #d0a3d9;
   --map-life-other: #9bcbd1;
   --map-life-selected: #f5edd0;
+  --map-life-selected-fill: rgb(245 237 208 / 6%);
+  --map-life-selection-halo: rgb(17 34 27 / 75%);
+  --map-life-variant: #245c3c;
+  --map-life-variant-fill: rgb(225 247 202 / 62%);
 
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -243,6 +255,8 @@
     --color-muted: #a2af9f;
     --color-accent: #c4dba5;
     --color-on-accent: #18271e;
+    --color-highlight: #254c35;
+    --color-on-highlight: #f1f4df;
     --color-rule: rgb(196 219 165 / 17%);
     --color-rule-strong: rgb(196 219 165 / 32%);
     --color-rule-terminal: rgb(196 219 165 / 23%);
@@ -303,6 +317,10 @@
   --map-life-mixed: #d0a3d9;
   --map-life-other: #9bcbd1;
   --map-life-selected: #f5edd0;
+  --map-life-selected-fill: rgb(245 237 208 / 6%);
+  --map-life-selection-halo: rgb(17 34 27 / 75%);
+  --map-life-variant: #245c3c;
+  --map-life-variant-fill: rgb(225 247 202 / 62%);
 
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

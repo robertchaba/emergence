@@ -1,5 +1,6 @@
 /* Read-only Canvas 2D presentation. UI supplies resolved CSS tokens, the camera,
    and snapshots. No browser style access, events, or simulation imports here. */
+import { territoryContours } from './territory.js';
 const ROOT_THREE = Math.sqrt(3);
 const CORNERS = Array.from({ length: 6 }, (_, index) => {
   const angle = (index * 60 - 30) * Math.PI / 180;
@@ -13,7 +14,7 @@ export const MAP_TOKEN_NAMES = Object.freeze([
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
   'life-producer', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
-  'life-selected',
+  'life-selected', 'life-selected-fill', 'life-selection-halo', 'life-variant', 'life-variant-fill',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
 ].map((name) => `--map-${name}`));
 
@@ -144,6 +145,7 @@ export function createMapRenderer(canvas, { tokens }) {
   const geometryCache = new WeakMap();
   const lifeGeometryCache = new WeakMap();
   let cachedLife = null;
+  let cachedTerritory = null;
   let previousFrame = null;
 
   function setTokens(nextTokens) {
@@ -412,7 +414,7 @@ export function createMapRenderer(canvas, { tokens }) {
   }
 
   function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world,
-    life = null, selectedSpeciesId = null, motionTime = 0 } = {}) {
+    life = null, selectedSpeciesId = null, selectedVariantHexIds = [], motionTime = 0 } = {}) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (!world?.hexes?.length) {
       context.clearRect(0, 0, width, height);
@@ -423,6 +425,14 @@ export function createMapRenderer(canvas, { tokens }) {
       cachedLife = { observation: life, revision: life?.revision, runId: life?.runId, summaries: lifeSummary(life) };
     }
     const lifeHexes = cachedLife.summaries;
+    const speciesHexIds = selectedSpeciesId === null ? [] : [...lifeHexes]
+      .filter(([, summary]) => summary.species.has(selectedSpeciesId)).map(([id]) => id);
+    const territorySignature = JSON.stringify([speciesHexIds, selectedVariantHexIds]);
+    if (!cachedTerritory || cachedTerritory.geography !== geography || cachedTerritory.signature !== territorySignature) {
+      cachedTerritory = { geography, signature: territorySignature,
+        species: territoryContours(world, speciesHexIds),
+        variant: territoryContours(world, selectedVariantHexIds) };
+    }
     const view = transform(world, camera);
     const frozen = layer === 'terrain' ? world.hexes.map((hex) => hex.temperature < 0) : null;
     const stable = previousFrame && previousFrame.geography === geography
@@ -430,9 +440,10 @@ export function createMapRenderer(canvas, { tokens }) {
       && previousFrame.x === camera.x && previousFrame.y === camera.y
       && previousFrame.pinnedId === pinnedId && previousFrame.hoveredId === hoveredId
       && previousFrame.selectedSpeciesId === selectedSpeciesId
+      && previousFrame.territorySignature === territorySignature
       && previousFrame.lifeRunId === life?.runId;
     const frame = { geography, layer, zoom: camera.zoom, x: camera.x, y: camera.y, pinnedId, hoveredId, frozen,
-      lifeHexes, selectedSpeciesId, lifeRunId: life?.runId, motionTime };
+      lifeHexes, selectedSpeciesId, territorySignature, lifeRunId: life?.runId, motionTime };
     let damagedRows = null;
     context.save();
     if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
@@ -611,12 +622,6 @@ export function createMapRenderer(canvas, { tokens }) {
         const x = view.x + position.x * view.scale;
         const y = view.y + position.y * view.scale;
         if (x + view.scale < 0 || x - view.scale > width || y + view.scale < 0 || y - view.scale > height) continue;
-        if (selectedSpeciesId !== null && summary.species.has(selectedSpeciesId)) {
-          polygon(context, x, y, view.scale * 0.77);
-          context.strokeStyle = palette['life-selected'];
-          context.lineWidth = clamp(view.scale * 0.045, 0.8, 2.2);
-          context.stroke();
-        }
         // Diagnostic fills keep their physical meaning; tiny producers get a
         // separate mark there so life stays visible on every map layer.
         const markers = summary.tint > 0 && !['terrain', 'elevation'].includes(layer)
@@ -654,6 +659,28 @@ export function createMapRenderer(canvas, { tokens }) {
     }
 
     context.lineJoin = 'round';
+    for (const [kind, contours] of [['species', cachedTerritory.species], ['variant', cachedTerritory.variant]]) {
+      if (!contours.length) continue;
+      context.beginPath();
+      for (const contour of contours) {
+        contour.forEach((point, index) => context[index ? 'lineTo' : 'moveTo'](
+          view.x + point.x * view.scale, view.y + point.y * view.scale));
+        context.closePath();
+      }
+      const variant = kind === 'variant';
+      context.fillStyle = palette[variant ? 'life-variant-fill' : 'life-selected-fill'];
+      context.fill('evenodd');
+      if (!variant) {
+        context.strokeStyle = palette['life-selection-halo'];
+        context.lineWidth = 5.5;
+        context.stroke();
+      }
+      context.strokeStyle = palette[variant ? 'life-variant' : 'life-selected'];
+      context.lineWidth = variant ? 1.8 : 3;
+      context.setLineDash(variant ? [4, 4] : []);
+      context.stroke();
+      context.setLineDash([]);
+    }
     for (const id of new Set([hoveredId, pinnedId])) {
       if (id === null || !world.hexes[id]) continue;
       const pinned = id === pinnedId;

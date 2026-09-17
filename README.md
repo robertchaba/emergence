@@ -104,8 +104,11 @@ camera, selected layer, and pinned hex. Without JavaScript, static copy is Engli
 
 A year has 360 days, beginning at the northern spring equinox. Hydrology and
 geographic regions stay fixed while temperature and land moisture change. Once
-life is introduced, every completed day also processes biology; higher speed
-requests more days without changing event probabilities.
+life is introduced, v1 executes **three biological turns per ten physical days**.
+At 10×, temperature/calendar playback still targets 20 days/s while biology targets
+6 turns/s (the previous 3× biological pace). This ratio applies at every speed.
+A one-day step advances the climate; biology runs when its next turn is due.
+Higher speed requests more days without changing event probabilities.
 
 Pin a suitable land or water hex and select **Start life here** in the notebook.
 The model introduces a small plant colony and chooses its initial habitat and
@@ -117,14 +120,23 @@ Living populations cannot be reset or replaced. If every organism dies, **Start
 life here** becomes available again for an explicit new beginning on the same
 world at the current day. Life is never introduced or restarted automatically.
 
-The notebook summarizes living and extinct species in the current life attempt,
-charts the last 180 completed days, and shows the percentage of all hexes occupied.
+The notebook shows the living-species count and its chart over the last 180
+completed days of the current life attempt. Extinct species and the percentage
+of all hexes occupied appear as counts only.
 Pinning a hex reveals compact physical readings and all species living there, or
 an explicit empty-hex message. Species receive stable generated names. Click a
-name to open its population, present genes, and genome portrait and highlight all
-its occupied hexes; click it again to clear the highlight. A sole local species
-opens automatically, with highlighting still requiring a click. Gene expressions
+name to open its compact population count (e.g. 21K), present genes, and genome
+portrait, and outline its whole occupied range; click it again to clear the
+highlight. A sole local species opens automatically, with highlighting still
+requiring a click. Gene expressions
 carried by only part of the species appear in lighter text with their percentage.
+Expressions below 2% of the species population are hidden but remain in the model.
+Expressions covering at least 98% of the population are plain values; partial
+expressions below that threshold can be clicked to highlight their carrier hexes
+in pale green, with a dark-green dashed border inside the light species outline.
+Click again to clear only the carrier highlight. Binary traits show their carrier
+percentage, without a redundant “Present” label. Selected controls use dark green
+in both themes.
 The portrait uses the most populous complete genome.
 
 Life always appears on the map as plant coverage and coloured dots without dark
@@ -136,7 +148,9 @@ selection. Returning to setup and starting another world resets to day 1.
 
 The preview's land budget counts the non-marine footprint before freshwater
 lakes; dry land is reported separately. Spring discharge and runoff use reference
-flow units. Humidity is a land-moisture index, with no value on sea or lake hexes.
+flow units. Humidity is a land-moisture index, with no value on sea or lake hexes
+in the physical model. The notebook displays water as **100% (water)**; this
+presentation convention does not change the model's moisture readings.
 Region colours and marked passes are geographic diagnostics; they do not prescribe
 future organisms' movement or species. Neutral areas in the region view indicate
 hard reference barriers such as permanent ice, high ridges, and wide deep ocean.

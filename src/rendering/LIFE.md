@@ -1,6 +1,54 @@
 # Life rendering
 
-## Current presentation — 2026-09-17
+## Current notebook highlights — 2026-09-17
+
+Decision 039 supersedes decision 038's teal carrier palette and three-chart
+notebook. Both themes now use a pale species outline, a dark-green dashed
+carrier outline, and a substantially lighter green carrier fill. Selected
+notebook controls use a separate dark-green surface with pale text, keeping
+control contrast independent from the translucent Canvas fill. Geometry, the
+contrast halo, pin ordering and read-only rendering boundary stay the same.
+
+The notebook renders only the living-species trend; extinct species and
+occupied-hex percentage retain their text counts. The generic SVG metric
+renderer remains available. UI shows expressions covering at least 98% as plain
+values and clears a carrier selection that reaches that threshold. Binary traits
+show percentages without “Present”; UI still filters expressions below 2%.
+These are presentation cutoffs only. The source observations and biology retain
+every carrier. A selected carrier hex may also contain other expressions.
+
+## Earlier territory and trend presentation — 2026-09-17
+
+**Palette, chart count and universal-expression interaction superseded by 039.**
+
+Decision 038 supersedes decision 037's per-hex selection strokes and combined
+chart. Selecting a species fills its occupied range lightly and outlines the
+union with a continuous, rounded stroke and contrast halo. Shared hex edges are
+removed using exact integer vertex keys; disconnected patches and internal holes
+retain their boundaries. At the cylindrical map cut each side closes locally,
+with no line across the atlas. Geometry follows occupied hexes, without claiming
+sub-hex organism positions or inventing an ecological boundary.
+
+Selecting a notebook gene expression supplies its observed carrier hex IDs as
+`selectedVariantHexIds`. The renderer adds a teal fill and narrower dashed contour
+while retaining the species outline. This is an additional selection layer, not a
+biological classification. It remains distinguishable even when both ranges match.
+Pin/hover outlines still render above it. Changed range membership invalidates the
+frame; stable contours are cached across climate, animation and population changes.
+The five selection tokens are resolved from CSS by UI, including both themes
+and the system fallback.
+
+`createLifeTrendSvg` renders one metric per chart with its own zero-based scale:
+living species, extinct species, and occupied-hex counts. Every chart uses the
+same last 180 completed physical days, discrete step paths, current-count text,
+axis ticks and a translated accessible description. The occupied-hex summary
+remains a percentage; its chart plots the actual hex count. Extinction keeps its
+dashed line. Compact population formatting and the 2% expression visibility filter
+belong to UI, leaving exact observations unchanged.
+
+## Earlier species-centered presentation — 2026-09-17
+
+**Selection and chart details superseded by decision 038 above.**
 
 Decision 037 supersedes the optional overlay, outlined markers, automatic species
 highlight, and population chart below. Life always renders. Small stationary

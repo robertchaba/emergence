@@ -14,14 +14,18 @@ import { createLifeModel, restoreLifeModel } from './model.js';
 const life = createLifeModel(world, { runId: 'world-session-1' });
 const result = life.introduce(selectedHexId);
 // Inspect result.ok / result.reason; rejected commands do not alter the run.
-life.advanceTo(world.day + 1);
+life.advanceTo(world.day + 10); // Three complete biological turns.
 const snapshot = life.observe();
 const local = life.inspectHex(selectedHexId);
 const checkpoint = life.exportState();
 const continued = restoreLifeModel(world, checkpoint);
 ```
 
-Advancement is headless and explicit. The model never calls browser services or
+Advancement is headless and explicit. Rules revision `v1-cohorts-2` executes three
+complete biological turns per ten physical days; climate still uses the physical
+day. Introduction resets integer turn credit, so the first turns occur after
+4, 7, and 10 days. Checkpoint format 2 retains this credit and the turn counter;
+format 1 checkpoints are rejected rather than silently changing their trajectory. The model never calls browser services or
 changes the shared world. Observations and checkpoints are detached serializable
 data; complete checkpoints include the random stream, genomes, cohorts, species
 and classification timers. Queries do not advance the model. A checkpoint is a

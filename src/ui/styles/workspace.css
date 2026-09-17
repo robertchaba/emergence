@@ -164,46 +164,47 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
 .notebook-heading { padding-bottom: 6px; }
 .notebook-heading h2 { margin: 0; }
 .life-overview { margin: 0 24px 16px; }
-.life-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 10px 0; }
-.life-counts > div { display: flex; flex-direction: column-reverse; gap: 5px; min-width: 0; }
+.life-counts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 10px 0; }
+.life-counts > div { min-width: 0; }
 .life-counts dt { color: var(--color-muted); font-size: var(--text-notebook); line-height: 1.35; }
 .life-counts dd { margin: 0; font-family: var(--font-heading); font-size: var(--text-title); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 #life-message { margin-top: 14px; font-size: var(--text-xs); }
 .hex-life-summary { margin-top: 14px; }
 .species-panel { margin-top: 18px; }
-.species-panel h3 { color: var(--color-muted); font-size: var(--text-notebook); font-weight: normal; }
-.hex-species-list { padding: 0; margin: 8px 0 0; list-style: none; }
+.hex-species-list { padding: 0; margin: 0; list-style: none; }
 .hex-species-list > li + li { margin-top: 6px; }
 .species-choice { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 8px 10px; text-align: left; border: 0; border-radius: var(--panel-radius); color: var(--color-text); background: var(--color-clear); font-family: var(--font-heading); font-style: italic; font-size: var(--text-base); cursor: pointer; overflow-wrap: anywhere; }
 .species-choice::after { content: '◎'; flex: none; color: var(--color-muted); font-family: var(--font-body); font-style: normal; }
 .species-choice[aria-expanded='true'] { background: var(--color-panel); }
-.species-choice[aria-pressed='true'] { color: var(--color-accent); background: var(--color-control-selected); }
-.species-choice[aria-pressed='true']::after { content: '✓'; color: var(--color-accent); }
+.species-choice[aria-pressed='true'] { color: var(--color-on-highlight); background: var(--color-highlight); }
+.species-choice[aria-pressed='true']::after { content: '✓'; color: inherit; }
 .species-detail { padding: 0 10px 12px; }
 #hex-panel .species-population { margin: 12px 0 18px; color: var(--color-text); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .gene-heading { font-size: var(--text-notebook); font-weight: normal; margin: 0 0 4px; }
 .gene-list { margin: 0; }
-.gene-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 5px 12px; padding: 7px 0; border-bottom: 1px solid var(--color-rule); font-size: var(--text-notebook); }
+.gene-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; gap: 5px 12px; padding: 7px 0; border-bottom: 1px solid var(--color-rule); font-size: var(--text-notebook); }
 .gene-row dt { color: var(--color-text); }
 .gene-row dd { margin: 0; text-align: right; overflow-wrap: anywhere; color: var(--color-accent); }
-.gene-row dd span { display: block; }
-.gene-row dd span + span { margin-top: 5px; }
+.gene-expression { display: flex; align-items: center; justify-content: flex-end; width: 100%; min-height: 36px; padding: 5px 7px; border: 1px solid var(--color-clear); border-radius: var(--panel-radius); text-align: right; font: inherit; color: inherit; background: var(--color-clear); overflow-wrap: anywhere; }
+.gene-expression + .gene-expression { margin-top: 4px; }
+button.gene-expression { cursor: pointer; }
+button.gene-expression:hover { background: var(--color-control-selected); }
+.gene-expression[aria-pressed='true'] { color: var(--color-on-highlight); background: var(--color-highlight); }
+button.gene-expression[aria-pressed='true']:hover { background: var(--color-highlight); }
+.gene-expression:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .gene-row.is-partial dt, .gene-expression-partial { color: var(--color-muted); }
 .specimen-portrait { margin: 18px 0 0; text-align: center; color: var(--color-accent); background: radial-gradient(ellipse at center, var(--color-control-selected), var(--color-clear) 72%); }
 .specimen-drawing svg { display: block; width: 100%; height: 150px; }
 .specimen-portrait figcaption { font-size: var(--text-compact); padding-bottom: 10px; }
 .specimen-guide { opacity: 0.45; }
 .specimen-scale { opacity: 0.6; }
-.species-trend { margin: 12px 0 0; color: var(--color-muted); }
-.species-trend svg { display: block; width: 100%; height: 80px; }
-.species-trend figcaption { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-compact); }
-.species-trend figcaption span::before { content: ''; display: inline-block; width: 16px; margin: 0 6px 3px 0; border-top: 2px solid currentColor; }
+.life-metric { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; }
+.life-counts .life-metric > dd { margin: 0; color: inherit; }
+.life-metric .life-trend-drawing { grid-column: 1 / -1; }
+.life-trend-drawing svg { display: block; width: 100%; height: 58px; }
 .trend-living { color: var(--color-accent); }
-.trend-extinct { color: var(--color-muted); }
-.trend-extinct .life-trend-line { stroke-dasharray: 4 3; }
-.species-trend figcaption .trend-extinct::before { border-top-style: dashed; }
-.trend-axis { font-size: var(--text-compact); font-family: var(--font-readout); }
-.life-trend-baseline { opacity: 0.35; }
+.trend-axis { font-size: var(--text-compact); font-family: var(--font-readout); color: var(--color-muted); }
+.life-trend-baseline { opacity: 0.25; color: var(--color-muted); }
 .day-readout #step-world { min-width: 32px; min-height: 32px; margin-left: 3px; padding: 4px; }
 .day-readout #step-world .control-icon { width: 17px; height: 17px; }
 @media (max-width: 760px) {
@@ -211,5 +212,4 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
   .life-overview { margin: 0 16px 14px; }
   .life-counts { gap: 10px; }
   .life-counts dt { font-size: var(--text-compact); }
-  .species-trend svg { height: 68px; }
 }

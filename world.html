@@ -117,17 +117,15 @@
           <div class="notebook-heading"><h2 class="eyebrow" data-i18n="notebook">Field notebook</h2></div>
           <section class="life-overview" aria-label="Species summary" data-i18n-aria-label="lifeCensus">
             <dl class="life-counts">
-              <div><dt data-i18n="extantSpecies">Living species</dt><dd id="species-count">0</dd></div>
-              <div><dt data-i18n="extinctSpecies">Extinct species</dt><dd id="extinct-species-count">0</dd></div>
-              <div><dt data-i18n="occupiedHexes">Occupied hexes</dt><dd id="occupied-count">0%</dd></div>
+              <div class="life-metric trend-living"><dt data-i18n="extantSpecies">Living species</dt><dd id="species-count">0</dd><dd class="life-trend-drawing" data-metric="species"></dd></div>
+              <div class="life-metric"><dt data-i18n="extinctSpecies">Extinct species</dt><dd id="extinct-species-count">0</dd></div>
+              <div class="life-metric"><dt data-i18n="occupiedHexes">Occupied hexes</dt><dd id="occupied-count">0%</dd></div>
             </dl>
-            <figure id="life-species-trend" class="species-trend"><div class="species-trend-drawing"></div><figcaption><span class="trend-living" data-i18n="extantSpecies">Living species</span><span class="trend-extinct" data-i18n="extinctSpecies">Extinct species</span></figcaption></figure>
           </section>
           <section id="hex-panel" aria-label="Hex details" data-i18n-aria-label="hexDetails">
             <div id="hex-details"><h2 data-i18n="inspectHeading">A world to inspect.</h2><p data-i18n="inspectHelp">Pin a hex to read its terrain, elevation, temperature, and moisture.</p></div>
             <p id="hex-life-empty" class="hex-life-summary" hidden data-i18n="lifeNoLocal">No life in this hex.</p>
-            <section id="species-panel" class="species-panel" aria-labelledby="species-title" hidden>
-              <h3 id="species-title" data-i18n="localSpecies">Species in this hex</h3>
+            <section id="species-panel" class="species-panel" aria-label="Species in this hex" data-i18n-aria-label="localSpecies" hidden>
               <ul id="species-list" class="hex-species-list"></ul>
             </section>
           </section>

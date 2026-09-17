@@ -1,7 +1,10 @@
 import { t, formatNumber } from './locale.js';
-import { createSpecimenSvg, createSpeciesTrendSvg } from '../rendering/specimen.js';
+import { createSpecimenSvg, createLifeTrendSvg } from '../rendering/specimen.js';
 
 const integer = value => formatNumber(value, 'integer');
+// Presentation cutoffs only; all carrier observations remain intact.
+const minimumExpressionShare = 0.02;
+const universalExpressionShare = 1 - minimumExpressionShare;
 const geneKeys = {
   size: 'geneSize', photosynthesis: 'genePhotosynthesis', trunk: 'geneTrunk',
   temperatureTolerance: 'geneTemperatureTolerance', landAdaptation: 'geneLandAdaptation',
@@ -21,7 +24,7 @@ function element(tag, className, text) {
 }
 
 /** Common observations only: the model supplies names and carrier summaries. */
-export function createLifeNotebook({ onSpeciesSelect }) {
+export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   const speciesPanel = document.querySelector('#species-panel');
   const list = document.querySelector('#species-list');
   const detail = element('div', 'species-detail');
@@ -38,7 +41,11 @@ export function createLifeNotebook({ onSpeciesSelect }) {
   let observation = null;
   let expandedId = null;
   let highlightedId = null;
-  let traitSignature = '';
+  let traitSpeciesId = null;
+  let portraitSignature = '';
+  let selectedVariant = null;
+  const traitRows = new Map();
+  const expressionNodes = new Map();
   let messageKey = '';
   let failed = false;
   let retryAvailable = false;
@@ -49,40 +56,93 @@ export function createLifeNotebook({ onSpeciesSelect }) {
   function highlight(id) {
     if (highlightedId === id) return;
     highlightedId = id;
+    selectedVariant = null;
+    onVariantSelect(null);
     onSpeciesSelect(id);
   }
 
   function geneValue(trait) {
     if (trait.key === 'size') return t('geneBodySize', { value: integer(trait.value), cells: integer(trait.cells) });
-    if (trait.key === 'landAdaptation') return t(['geneAquatic', 'geneAmphibious', 'geneTerrestrial', 'geneDryLand'][trait.value] || 'genePresent');
+    if (trait.key === 'landAdaptation') return t(['geneAquatic', 'geneAmphibious', 'geneTerrestrial', 'geneDryLand'][trait.value] || 'geneLevel', { value: integer(trait.value) });
     if (trait.key === 'temperatureTolerance' && trait.temperatureRange) {
       const [minimum, maximum] = trait.temperatureRange;
       return t('geneTemperatureRange', { minimum: integer(minimum), maximum: integer(maximum) });
     }
     if (trait.max > 1) return t('geneLevel', { value: integer(trait.value) });
-    return t('genePresent');
+    return '';
   }
 
   function renderTraits(species) {
-    const signature = JSON.stringify([species.traits, species.population, species.variants?.[0]?.traits, document.documentElement.lang]);
-    if (signature === traitSignature) return;
-    traitSignature = signature;
-    drawing.innerHTML = createSpecimenSvg(species.variants?.[0]?.traits ?? []);
-    traits.replaceChildren();
-    for (const trait of species.traits ?? []) {
-      const partial = trait.population < species.population;
-      const row = element('div', `gene-row${partial ? ' is-partial' : ''}`);
-      const term = element('dt', '', geneKeys[trait.key] ? t(geneKeys[trait.key]) : trait.label ?? trait.key.replace(/([a-z])([A-Z])/g, '$1 $2'));
-      const values = element('dd');
-      for (const expression of trait.expressions) {
-        const share = formatNumber(expression.population / species.population, 'percent');
-        const text = expression.population < species.population
-          ? t('geneCarrierShare', { value: geneValue(expression), share }) : geneValue(expression);
-        values.append(element('span', expression.population < species.population ? 'gene-expression-partial' : '', text));
-      }
-      row.append(term, values);
-      traits.append(row);
+    const portraitTraits = species.variants?.[0]?.traits ?? [];
+    const signature = JSON.stringify(portraitTraits);
+    if (portraitSignature !== signature) {
+      drawing.innerHTML = createSpecimenSvg(portraitTraits);
+      portraitSignature = signature;
     }
+    if (traitSpeciesId !== species.id) {
+      traits.replaceChildren(); traitRows.clear(); expressionNodes.clear();
+      traitSpeciesId = species.id;
+    }
+    const visibleTraits = new Set();
+    const visibleExpressions = new Set();
+    let selectedExpression = null;
+    for (const trait of species.traits ?? []) {
+      const expressions = trait.expressions.filter(expression => expression.population / species.population >= minimumExpressionShare);
+      if (!expressions.length) continue;
+      visibleTraits.add(trait.key);
+      const partial = trait.population < species.population;
+      let row = traitRows.get(trait.key);
+      if (!row) {
+        row = element('div'); row.append(element('dt'), element('dd'));
+        traits.append(row); traitRows.set(trait.key, row);
+      }
+      row.className = `gene-row${partial ? ' is-partial' : ''}`;
+      const [term, values] = row.children;
+      const geneName = geneKeys[trait.key] ? t(geneKeys[trait.key]) : trait.label ?? trait.key.replace(/([a-z])([A-Z])/g, '$1 $2');
+      term.textContent = geneName;
+      for (const expression of expressions) {
+        const id = JSON.stringify([trait.key, expression.value]);
+        visibleExpressions.add(id);
+        const fraction = expression.population / species.population;
+        const share = formatNumber(fraction, 'percent');
+        const value = geneValue(expression);
+        const text = value ? (fraction < 1 ? t('geneCarrierShare', { value, share }) : value) : share;
+        const selectable = fraction < universalExpressionShare && expression.locations?.length > 0;
+        const tag = selectable ? 'button' : 'span';
+        let node = expressionNodes.get(id);
+        if (!node || node.localName !== tag) {
+          const previous = node;
+          const wasFocused = previous === document.activeElement;
+          node = element(tag);
+          node.dataset.gene = trait.key; node.dataset.expression = String(expression.value);
+          if (selectable) {
+            node.type = 'button';
+            node.addEventListener('click', () => {
+              highlight(species.id);
+              selectedVariant = selectedVariant === id ? null : id;
+              renderSpecies();
+            });
+          }
+          if (previous) previous.replaceWith(node);
+          else values.append(node);
+          expressionNodes.set(id, node);
+          if (wasFocused) buttons.get(species.id)?.focus({ preventScroll: true });
+        }
+        node.className = `gene-expression${fraction < 1 ? ' gene-expression-partial' : ''}`;
+        node.textContent = text;
+        const selected = selectedVariant === id && selectable;
+        if (selectable) {
+          node.setAttribute('aria-pressed', String(selected));
+          node.setAttribute('aria-label', t(selected ? 'clearGeneHighlight' : 'highlightGene', { gene: geneName, value: text }));
+          node.title = node.getAttribute('aria-label');
+        }
+        if (selected) selectedExpression = { id, hexIds: expression.locations.map(location => location.hexId) };
+      }
+    }
+    for (const [key, row] of traitRows) if (!visibleTraits.has(key)) { row.remove(); traitRows.delete(key); }
+    for (const [id, node] of expressionNodes) if (!visibleExpressions.has(id)) { node.remove(); expressionNodes.delete(id); }
+    if (!selectedExpression) selectedVariant = null;
+    onVariantSelect(selectedExpression);
   }
 
   function renderSpecies() {
@@ -121,7 +181,7 @@ export function createLifeNotebook({ onSpeciesSelect }) {
       if (expandedId === species.id) {
         button.setAttribute('aria-controls', detail.id);
         if (detail.parentElement !== button.parentElement) button.parentElement.append(detail);
-        population.textContent = t('speciesPopulation', { population: integer(species.population) });
+        population.textContent = t('speciesPopulation', { population: formatNumber(species.population, 'compact') });
         population.dataset.count = String(species.population);
         heading.textContent = t('geneHeading');
         caption.textContent = t('specimenCaption');
@@ -155,10 +215,11 @@ export function createLifeNotebook({ onSpeciesSelect }) {
     const key = failed ? retryAvailable ? 'lifeInitializationError' : 'lifeError' : messageKey;
     message.textContent = key ? t(key) : '';
     message.hidden = !key;
-    const history = observation?.history?.length ? observation.history : [{ day: observation?.day ?? 1, species: 0, extinctSpecies: 0 }];
-    document.querySelector('.species-trend-drawing').innerHTML = createSpeciesTrendSvg(history, {
-      label: t('speciesTrendLabel', { first: integer(history[0].day), last: integer(history.at(-1).day), living: integer(counts.species), extinct: integer(counts.extinctSpecies) }),
-      format: integer,
+    const history = observation?.history?.length ? observation.history : [{ day: observation?.day ?? 1, species: 0, extinctSpecies: 0, occupiedHexes: 0 }];
+    document.querySelector('.life-trend-drawing').innerHTML = createLifeTrendSvg(history, {
+      metric: 'species',
+      label: t('lifeTrendLabel', { metric: t('extantSpecies'), first: integer(history[0].day), last: integer(history.at(-1).day), count: integer(counts.species) }),
+      format: value => formatNumber(value, 'compact'), formatDay: integer,
     });
     renderControls();
     renderSpecies();
@@ -191,7 +252,7 @@ export function createLifeNotebook({ onSpeciesSelect }) {
     message(key) { messageKey = rejectionKeys[key] || 'lifeError'; render(); },
     fail({ canRetry = false } = {}) { failed = true; busy = false; retryAvailable = canRetry; render(); },
     reset() {
-      failed = false; retryAvailable = false; expandedId = null; traitSignature = '';
+      failed = false; retryAvailable = false; expandedId = null; traitSpeciesId = null;
       messageKey = ''; observation = null; pinnedId = null; totalHexes = 0;
       highlight(null); render();
     },

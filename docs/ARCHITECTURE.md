@@ -2,7 +2,9 @@
 
 ## Status
 
-**Current: species-centered notebook — 2026-09-17.** Decision 037 refines startup,
+**Current: compact notebook and green highlights — 2026-09-17.** Decision 039
+simplifies statistics, gene controls and selection styling. Decision 038
+refines selection, charts, population display and biological cadence. Decision 037 refines startup,
 species inspection, names, and life rendering. Decision 036 implements the first
 life model, browser execution, and live notebook/atlas observations. Model choices
 and approximation limits are recorded in
@@ -1622,3 +1624,125 @@ Limitations: the chart retains the last 180 completed days of the current attemp
 and the portrait depicts one representative genome. Cosmetic motion represents
 mobile groups rather than individual trajectories. Browser validation is limited
 to Chromium; no ecological coefficients or calibration claims change here.
+
+
+## 038 — Territory contours, carrier selection and slower biology — 2026-09-17
+
+**Supersedes 037's per-hex species outlines, combined chart and unfiltered gene
+expressions, plus 036's one biological turn per physical day.** This implements
+the user's request for a calmer map selection, independent chart scales, compact
+population counts, minor-variant filtering, optional carrier highlighting, and
+biology at 30% of its former speed while temperature continues as before.
+
+The renderer outlines the union of a selected species' occupied hexes, with a
+subtle fill, rounded joins and a contrast halo. Integer lattice vertices remove
+all internal shared edges, preserving holes and disconnected patches. At the
+cylindrical map cut the two visible portions close independently. No smoothed
+boundary invents occupied land. A second teal fill and narrower dashed outline
+marks carriers of a clicked gene expression while the species outline remains.
+Overlapping contours remain distinguishable. Pin and hover remain above both.
+Cached contour geometry is presentation-only; membership changes repaint the
+frame, while unchanged ranges use the existing damage repaint path. All colours
+are root theme tokens, including their alpha and system fallback definitions.
+
+Three compact notebook charts separately show living species, extinct species,
+and occupied-hex counts. Each has its own zero-based scale and the same 180-day
+physical history window, with step lines, numeric ticks and localized accessible
+text. The occupied-hex summary remains a percentage of all physical hexes. Species
+population uses locale-aware compact notation (e.g. 21K / 21 tys.); exact model
+counts and observation quality remain intact.
+
+Gene expressions below 2% of the selected species' global population are omitted
+from the notebook, with the threshold applied before display rounding. Exactly
+2% remains visible. A row with no visible expressions disappears. Every rare
+variant continues to live, mutate, reproduce and contribute to totals normally.
+The existing expression list also serves as carrier selection, without adding
+a second genome catalogue. Clicking an expression enables the species outline
+if needed and toggles its additional carrier range. Switching species/hexes,
+starting a new attempt, or dropping below 2% clears the carrier selection. Theme,
+locale and ordinary count updates preserve it and stable buttons retain focus.
+V1 provides detached per-variant and per-expression carrier locations/counts;
+UI/rendering consume observations and never infer occupancy from private genomes.
+
+Biological cadence belongs entirely to v1. Rules revision `v1-cohorts-2` accrues
+three integer credits per physical day, takes one complete turn per ten credits,
+and keeps the remainder. Introduction resets credit; turns first fall at offsets
+4, 7 and 10 physical days. All biological phases and classification run at that
+cadence and sample the current physical day's climate. The classifier now waits
+100 biological turns. The world calendar, 360-day seasons, 2–20 days/s speed scale,
+worker completion boundary and one-day step retain their shared meanings. A 10×
+target therefore executes six biological turns/s, the former 3× rate, with the
+same ratio at every speed. No frame timing, view option or floating accumulation
+selects biological events. Checkpoint format 2 stores credit and turn count;
+format 1 is rejected explicitly rather than silently changing old continuation.
+See the v1 decision record for rule ownership and historical benchmark limits.
+
+Validation: `npm run build` and `npm test` passed: 61 headless/renderer checks,
+59 Chromium checks, and the existing desktop touch-test duplicate skipped.
+New checks cover integer cadence and fractional checkpoint continuation, exact
+carrier-location accounting, internal-edge removal, holes/islands/map-cut closure,
+independent chart scales, layered selections, and partial-repaint equivalence to
+fresh Canvas frames in both themes. Browser checks cover the exact 2% cutoff,
+rare-carrier retention, compact counts, keyboard selection/focus across updates,
+clearing a now-minor expression, and selection persistence across locales/themes.
+Visually inspected territory/carrier contours, charts and controls in both themes
+at desktop and phone widths; checked Polish wrapping and 320 px overflow.
+Existing checks cover climate playback, assets, disabled controls and storage
+failure. All 168 EN/PL translation keys match; layer-boundary review, 43 links in
+touched documents, built-licence equality, empty runtime dependencies and
+`git diff --check` passed.
+
+Limits: territory boundaries have hex resolution; a carrier highlight marks all
+hexes containing that expression, including hexes shared with other variants.
+Separate charts retain only the current attempt's last 180 physical days. Slowing
+biology relative to seasons changes ecological trajectories and does not establish
+calibrated balance or future performance with greater diversity. Old headless
+checkpoints are incompatible with the revised cadence. Browser checks cover
+Chromium, not cross-browser numerical equivalence.
+
+## 039 — Compact notebook and green highlights — 2026-09-17
+
+**Supersedes 038's three-chart notebook, teal carrier highlight and clickable
+universal expressions, plus 037's ochre light-theme species outline.** The user's
+eight UI refinements retain the living-species count and its 180-day chart, while
+extinct species and occupied-hex percentage become text counts only. The visible
+“Species in this hex” heading is removed; the section retains its translated
+accessible name. Water moisture displays a localized **100% (water)**. The shared
+physical model still uses `null` for water's inapplicable land-moisture index.
+
+Both themes use a pale species contour. Carrier hexes have a much lighter green
+fill with a dark-green dashed contour. Notebook selections use dark green with
+contrasting pale text, without changing their borders on hover or selection.
+All colours remain root CSS tokens, including the system-dark fallback; Canvas
+continues to receive resolved tokens through UI. Geographic diagnostic colours,
+territory geometry, contours and biological rules are unchanged.
+
+Gene expressions with at least 98% of a species' population are static values,
+not buttons. This UI interpretation of “almost all” complements the existing
+2% visibility cutoff, applied to unrounded fractions. Expressions from 2% to
+below 98% remain carrier-selection buttons when locations are available. A
+selected expression reaching 98% clears its carrier highlight while preserving
+the species outline; keyboard focus moves to the species control if its focused
+expression becomes static. Stable buttons retain focus across ordinary updates.
+Binary traits display only the carrier percentage instead of “Present”, and
+other partial expressions keep their value plus a compact percentage. The same
+spacing is reserved for static and selectable values, avoiding line/border jumps.
+
+The scope is UI and theme presentation. Complete observations, retained rare
+variants, counts, seeded state, climate, biological cadence and history remain
+unchanged. README and the rendering record describe the revised inspection flow.
+
+Validation: `npm run build` and `npm test` passed: 61 headless/renderer checks,
+59 Chromium checks, and the existing desktop touch-test duplicate skipped.
+Updated browser checks cover the single chart, EN/PL water labels, absence of
+redundant headings/labels, static universal values, the exact 98% boundary,
+selection clearing and focus transfer, return to a selectable partial expression,
+and stable dimensions when toggling selection. Both themes were visually inspected
+on desktop and phone, including the lighter carrier region, compact counts,
+keyboard focus and Polish labels; the suite also checks 320 px overflow, disabled
+controls, assets and storage failures. Diff and layer-boundary review passed.
+
+Limits: a carrier highlight marks whole hexes, including those shared with other
+expressions. The 98% cutoff is a presentation choice, not a biological threshold.
+Browser checks cover Chromium and do not establish ecological calibration or
+cross-browser numerical equivalence.

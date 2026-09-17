@@ -9,9 +9,12 @@ import { binomial, createRandom, uniformPartitions } from './random.js';
 import { speciesName } from './names.js';
 
 export const MODEL_ID = 'v1';
-export const RULES_REVISION = 'v1-cohorts-1';
+export const RULES_REVISION = 'v1-cohorts-2';
 export const CONTRACT_VERSION = 'life-observations-1';
-const FORMAT = 'emergence-life-v1-checkpoint-1';
+const FORMAT = 'emergence-life-v1-checkpoint-2';
+// Three complete biological turns per ten physical days, independent of playback.
+const TURN_CREDIT = 3;
+const CREDIT_PER_TURN = 10;
 const PHOTOSYNTHESIS_MULTIPLIER = 2.4;
 const MUTATION_PROBABILITY = 0.0001;
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -53,7 +56,7 @@ export function createLifeModel(world, { seed = `${world.seed}:life-v1`,
     runId: runId === undefined ? `${identity.id}:${hashSeed(seed).toString(16)}:${world.day}` : String(runId),
     seed: String(seed), baseSeed: String(seed), attempt: 1, previousAttempts: [],
     settings: { energyQuantum }, startDay: world.day,
-    day: world.day, revision: 0, introduced: false,
+    day: world.day, revision: 0, introduced: false, biologicalTurns: 0, turnCredit: 0,
     genomes: [], species: [], cohorts: [], nextGenome: 1, nextSpecies: 1, nextEstablished: 1,
     classifier: { groups: [], timers: {}, nextGroup: 1 },
     classification: { groups: 0, qualifyingPairs: 0, longestIsolation: 0 },
@@ -70,6 +73,10 @@ export function restoreLifeModel(world, checkpoint) {
     || checkpoint.worldId !== worldIdentity(world).id) throw new TypeError('Incompatible life checkpoint.');
   const state = copy(checkpoint);
   validateDay(state.day);
+  if (!Number.isSafeInteger(state.biologicalTurns) || state.biologicalTurns < 0
+    || !Number.isInteger(state.turnCredit) || state.turnCredit < 0 || state.turnCredit >= CREDIT_PER_TURN) {
+    throw new TypeError('Invalid checkpoint biological clock.');
+  }
   if (!Number.isFinite(state.settings.energyQuantum) || state.settings.energyQuantum < 0
     || state.settings.energyQuantum > 1 / 64) {
     throw new TypeError('Invalid checkpoint settings.');
@@ -371,7 +378,7 @@ function buildModel(world, state) {
       }
       adults.push({ ...cohort, energy: remainder });
     }
-    // Newborns join only after all adult actions; their first active turn is tomorrow.
+    // Newborns join only after all adult actions; newborns first act on the next biological turn.
     return merge([...adults, ...newborns], true);
   }
 
@@ -436,6 +443,8 @@ function buildModel(world, state) {
       genomes.clear(); genomeIds.clear();
     }
     state.startDay = state.day;
+    state.biologicalTurns = 0;
+    state.turnCredit = 0;
     const genomeId = registerGenome(genome);
     established(genomeId);
     const speciesId = newSpecies();
@@ -460,12 +469,18 @@ function buildModel(world, state) {
     while (state.day < day) {
       environmentDay = state.day + 1;
       climate.clear();
-      if (state.cohorts.length) {
+      state.turnCredit += TURN_CREDIT;
+      const takeTurn = state.turnCredit >= CREDIT_PER_TURN;
+      if (takeTurn) {
+        state.turnCredit -= CREDIT_PER_TURN;
+        state.biologicalTurns += 1;
+      }
+      if (takeTurn && state.cohorts.length) {
         state.cohorts = settle(feed(move(state.cohorts)));
         state.classification = classify(state.cohorts, genomes, geography.hexes,
           state.classifier, environmentDay, newSpecies);
         state.cohorts = merge(state.cohorts);
-      } else {
+      } else if (takeTurn) {
         state.classifier.groups = []; state.classifier.timers = {};
         state.classification = { groups: 0, qualifyingPairs: 0, longestIsolation: 0 };
       }
@@ -489,7 +504,10 @@ function buildModel(world, state) {
       const record = species.get(cohort.speciesId);
       record.population += cohort.count;
       record.locations.set(cohort.hexId, (record.locations.get(cohort.hexId) ?? 0) + cohort.count);
-      record.variants.set(cohort.genomeId, (record.variants.get(cohort.genomeId) ?? 0) + cohort.count);
+      if (!record.variants.has(cohort.genomeId)) record.variants.set(cohort.genomeId, { population: 0, locations: new Map() });
+      const variant = record.variants.get(cohort.genomeId);
+      variant.population += cohort.count;
+      variant.locations.set(cohort.hexId, (variant.locations.get(cohort.hexId) ?? 0) + cohort.count);
       if (!hexes.has(cohort.hexId)) hexes.set(cohort.hexId,
         { hexId: cohort.hexId, population: 0, species: new Map(), display: new Map(), variants: new Set() });
       const hex = hexes.get(cohort.hexId);
@@ -503,12 +521,13 @@ function buildModel(world, state) {
     }
     const speciesRows = [...species.values()].map((record) => ({ ...record,
       locations: [...record.locations].map(([hexId, population]) => ({ hexId, population })).sort((a, b) => a.hexId - b.hexId),
-      variants: [...record.variants].map(([id, population]) => {
+      variants: [...record.variants].map(([id, { population, locations }]) => {
         const variant = genomes.get(id);
         return { id, population, parentId: variant.parentGenomeId, originDay: variant.originDay,
           role: variant.derived.role, size: variant.derived.size, cells: variant.derived.cells,
           temperatureRange: [...variant.derived.temperatureRange],
-          habitats: [...variant.derived.habitats], traits: describeGenome(variant.genome) };
+          habitats: [...variant.derived.habitats], traits: describeGenome(variant.genome),
+          locations: [...locations].map(([hexId, count]) => ({ hexId, population: count })).sort((a, b) => a.hexId - b.hexId) };
       }).sort((a, b) => b.population - a.population || order(a.id, b.id)),
     })).sort((a, b) => b.population - a.population || order(a.id, b.id));
     for (const record of speciesRows) {
@@ -520,13 +539,19 @@ function buildModel(world, state) {
           summary.population += variant.population;
           let expression = summary.expressions.find(item => item.value === trait.value);
           if (!expression) {
-            expression = { ...trait, population: 0, cells: variant.cells, temperatureRange: variant.temperatureRange };
+            expression = { ...trait, population: 0, cells: variant.cells, temperatureRange: variant.temperatureRange, locations: new Map() };
             summary.expressions.push(expression);
           }
           expression.population += variant.population;
+          for (const { hexId, population } of variant.locations) {
+            expression.locations.set(hexId, (expression.locations.get(hexId) ?? 0) + population);
+          }
         }
       }
       record.traits = [...traits.values()];
+      for (const trait of record.traits) for (const expression of trait.expressions) {
+        expression.locations = [...expression.locations].map(([hexId, population]) => ({ hexId, population })).sort((a, b) => a.hexId - b.hexId);
+      }
     }
     const hexRows = [...hexes.values()].map((hex) => ({ ...hex, speciesCount: hex.species.size, variants: hex.variants.size,
       species: [...hex.species].map(([id, population]) => ({ id, population })).sort((a, b) => b.population - a.population || order(a.id, b.id)),
@@ -536,7 +561,7 @@ function buildModel(world, state) {
       runId: state.runId, worldId: state.worldId, worldIdentity: state.worldIdentity,
       generatorVersion: state.worldIdentity.generatorVersion, modelId: MODEL_ID,
       rulesRevision: RULES_REVISION, contractVersion: CONTRACT_VERSION,
-      day: state.day, startDay: state.startDay, revision: state.revision,
+      day: state.day, startDay: state.startDay, revision: state.revision, biologicalTurns: state.biologicalTurns,
       attempt: state.attempt, previousAttempts: state.previousAttempts,
       status: !state.introduced ? 'not-introduced' : organisms ? 'living' : 'extinct',
       counts: { organisms, species: speciesRows.length,

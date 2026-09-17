@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { territoryContours } from '../src/rendering/territory.js';
+import { createGrid } from '../src/simulation/grid.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../src/rendering/map.js';
-import { createSpecimenSvg, createSpeciesTrendSvg } from '../src/rendering/specimen.js';
+import { createSpecimenSvg, createLifeTrendSvg } from '../src/rendering/specimen.js';
 
 const style = readFileSync(new URL('../src/ui/styles/tokens.css', import.meta.url), 'utf8');
 const tokenValue = (name) => {
@@ -382,18 +384,42 @@ test('specimen illustrations are deterministic, read-only, and escape accessible
   assert.equal(JSON.stringify(traits), before);
 });
 
-test('species plots show living and extinct counts at recorded days without mutating samples', () => {
-  const samples = freezeDeep([{ day: 2, species: 0, extinctSpecies: 0 }, { day: 3, species: 2, extinctSpecies: 0 }, { day: 6, species: 1, extinctSpecies: 1 }]);
+test('independent trend scales retain small living counts alongside large extinct counts and occupied areas', () => {
+  const samples = freezeDeep([{ day: 2, species: 0, extinctSpecies: 0, occupiedHexes: 0 },
+    { day: 3, species: 2, extinctSpecies: 400, occupiedHexes: 1000 },
+    { day: 6, species: 1, extinctSpecies: 900, occupiedHexes: 2000 }]);
   const before = JSON.stringify(samples);
-  const svg = createSpeciesTrendSvg(samples, { label: 'Species "history"' });
-  assert.match(svg, /d="M24 58H96V10H312V34"/);
-  assert.match(svg, /d="M24 58H96V58H312V34"/);
+  const svg = createLifeTrendSvg(samples, { label: 'Species "history"' });
+  assert.match(svg, /d="M48 38H114V8H312V23"/);
   assert.match(svg, /aria-label="Species &quot;history&quot;"/);
+  assert.match(svg, />2<\/text>/);
+  assert.match(createLifeTrendSvg(samples, { metric: 'extinctSpecies' }), />900<\/text>/);
+  assert.match(createLifeTrendSvg(samples, { metric: 'occupiedHexes' }), />2000<\/text>/);
   assert.equal(JSON.stringify(samples), before);
-  const long = Array.from({ length: 1000 }, (_, day) => ({ day, species: day % 100, extinctSpecies: day }));
-  assert.equal(createSpeciesTrendSvg(long), createSpeciesTrendSvg(long.slice(-180)));
-  assert.match(createSpeciesTrendSvg([{ day: 1, species: 0, extinctSpecies: 0 }]), /cx="24" cy="58"/);
-  assert.equal(/NaN|Infinity|undefined/.test(createSpeciesTrendSvg([{ day: NaN, species: Infinity }])), false);
+  const long = Array.from({ length: 1000 }, (_, day) => ({ day, species: day % 100 }));
+  assert.equal(createLifeTrendSvg(long), createLifeTrendSvg(long.slice(-180)));
+  assert.match(createLifeTrendSvg([{ day: 1, species: 0 }]), /cx="48" cy="38"/);
+  assert.equal(/NaN|Infinity|undefined/.test(createLifeTrendSvg([{ day: NaN, species: Infinity }])), false);
+});
+
+test('territory contours remove internal edges, preserve holes and islands, and close the map cut', () => {
+  const world = freezeDeep({ width: 7, height: 7, hexes: createGrid(7, 7) });
+  const contours = ids => territoryContours(world, ids);
+  assert.deepEqual(contours([]), []);
+  assert.equal(contours([24])[0].length, 6);
+  assert.equal(contours([24, 25])[0].length, 10, 'adjacent hexes lose their two shared edges');
+  for (const neighbor of world.hexes[24].neighbors) {
+    assert.equal(contours([24, neighbor])[0].length, 10, 'every hex direction joins');
+  }
+  const ring = contours(world.hexes[24].neighbors);
+  assert.equal(ring.length, 2, 'an unoccupied hole has its own inner boundary');
+  assert.deepEqual(ring.map(loop => loop.length).sort((a, b) => a - b), [6, 18]);
+  const disk = contours([24, ...world.hexes[24].neighbors]);
+  assert.equal(disk.length, 1);
+  assert.equal(disk[0].length, 18);
+  assert.equal(contours([0, 48]).length, 2, 'separate patches stay separate');
+  assert.equal(contours([21, 27]).length, 2, 'longitude seam is closed on each side of the atlas');
+  assert.deepEqual(contours([24, 24, -1]), contours([24]));
 });
 
 test('species highlighting covers every occupied hex and cosmetic movement leaves observations intact', () => {
@@ -408,7 +434,7 @@ test('species highlighting covers every occupied hex and cosmetic movement leave
   const before = JSON.stringify(life);
   const camera = map.fit();
   map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1' });
-  assert.equal(strokes.filter(color => color === tokens['--map-life-selected']).length, 2);
+  assert.equal(strokes.filter(color => color === tokens['--map-life-selected']).length, 1);
   assert.ok(strokes.includes(tokens['--map-life-grazer']), 'legs use the body colour');
   const first = calls.filter(([method]) => method === 'arc');
   calls.length = 0;
@@ -420,4 +446,24 @@ test('species highlighting covers every occupied hex and cosmetic movement leave
   map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1', motionTime: 0.5 });
   assert.equal(calls.some(([method]) => method === 'arc'), false, 'paused motion reuses the frame');
   assert.equal(JSON.stringify(life), before);
+});
+
+test('carrier overlay adds to the species outline and repaints when carriers move or clear', () => {
+  const { map, calls, fills, strokes } = renderer();
+  const world = fixture();
+  const one = lifeFixture().hexes[0];
+  const life = freezeDeep({ runId: 'carriers', revision: 1, hexes: [one, { ...one, hexId: 11 }] });
+  const options = { geography: world, life, selectedSpeciesId: 'species-1', selectedVariantHexIds: [10] };
+  map.draw(world, options);
+  assert.ok(strokes.includes(tokens['--map-life-selected']));
+  assert.ok(strokes.includes(tokens['--map-life-variant']));
+  assert.ok(fills.includes(tokens['--map-life-variant-fill']));
+  assert.ok(calls.some(([method, dash]) => method === 'setLineDash' && dash.length === 2));
+  calls.length = 0;
+  map.draw(world, { ...options, selectedVariantHexIds: [11] });
+  assert.ok(calls.some(([method]) => method === 'clearRect'), 'carrier movements repaint even when the species range stays the same');
+  strokes.length = 0;
+  map.draw(world, { ...options, selectedVariantHexIds: [] });
+  assert.ok(strokes.includes(tokens['--map-life-selected']));
+  assert.equal(strokes.includes(tokens['--map-life-variant']), false);
 });

@@ -3,7 +3,9 @@
 The user authorized implementation and judgement on unresolved choices, including
 performance approximations. This record resolves the open items in the preserved
 research; numerical values are model choices, not measured biological constants.
-The implemented identity is `v1`, rules revision `v1-cohorts-1`.
+The implemented identity is `v1`, rules revision `v1-cohorts-2`. Revision 1's
+one-turn-per-day schedule is superseded by decision 12 below; its per-turn
+coefficients and preserved research remain unchanged.
 
 1. **Introduction — revised by the user's subsequent direction.** Begin with
    one plant lineage of 20 size-3 photosynthetic founders; colony count and body
@@ -146,6 +148,32 @@ The implemented identity is `v1`, rules revision `v1-cohorts-1`.
     species totals and the existing 180-day history count the current attempt;
     previous attempts retain their existing separate archive.
 
+12. **Slower biological cadence — 2026-09-17.** At the user's request, biology
+    now runs at 30% of its former pace while the physical calendar, climate,
+    and 1×–10× speed meanings remain unchanged. V1 adds three integer credits
+    per elapsed physical day and executes a complete turn at ten credits, keeping
+    the remainder. After each accepted introduction, the first turns fall at
+    offsets 4, 7, and 10 days, then repeat. No credit accumulates before introduction;
+    an explicit post-extinction attempt resets it. All biological phases, including
+    classification, run together; classification's 100-day threshold from decision
+    6 is now 100 consecutive biological turns. Founding/extinction dates still use
+    physical days. The completed physical day is always the observation's `day`.
+    A turn samples the climate of its due physical day. Intermediate days change
+    climate and advance history without feeding, upkeep, births or random draws.
+    Per-turn coefficients and phase order are unchanged. This deliberately changes
+    seasonal exposure relative to reproduction, so trajectories differ from the
+    previous rules; it is not an equivalent ecological shortcut or a calibration.
+    Rules revision 2 and checkpoint format 2 store `turnCredit` and
+    `biologicalTurns`; older checkpoints are explicitly incompatible. Batched,
+    stepped and resumed execution retain the same schedule and random stream.
+
+13. **Carrier locations — 2026-09-17.** Observations retain every living genome,
+    including rare variants, and expose per-species variant locations plus
+    aggregated per-expression locations/counts. Each carrier contributes once per
+    expression to its actual physical hex. The notebook's 2% visibility threshold
+    is presentation only; it never prunes cohorts, variants or mutations. The UI
+    can select an expression's carriers without reading genomes or cohorts.
+
 ## Validation and measured limitations
 
 Focused headless checks cover mutation graphs and temperature absence, hard
@@ -154,6 +182,8 @@ sampling, rejected-command atomicity, newborn activation, exact accounting and
 detached snapshots, ordinary and exact-energy replay/checkpoint continuation,
 rare-genotype retention, extinction, predator depletion, persistent branching,
 component movement, and a one-day reconnection resetting classification.
+
+**Historical measurements below used rules revision 1, before the cadence change.**
 
 Final local Node measurements over 360 days were approximately 65 ms small,
 420 ms medium and 986 ms large (respective populations 5,060, 54,217, 130,793).

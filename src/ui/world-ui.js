@@ -66,12 +66,14 @@ export function initWorldUI() {
   let lifePendingCommand = null;
   let lifeFailed = false;
   let selectedSpeciesId = null;
+  let selectedVariant = null;
   let motionTime = 0;
   let lastMotionFrame = 0;
   let hasMobileLife = false;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const notebook = createLifeNotebook({
     onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
+    onVariantSelect(variant) { selectedVariant = variant; queueDraw(); },
   });
 
   function updateLifeInteraction() {
@@ -176,13 +178,15 @@ export function initWorldUI() {
         previewCanvas.dataset.zoom = String(previewCamera.zoom);
       }
     } else if (resizeRenderer(map, canvas)) {
-      map.draw(world, { camera, layer, pinnedId, geography, life, selectedSpeciesId, motionTime });
+      map.draw(world, { camera, layer, pinnedId, geography, life, selectedSpeciesId,
+        selectedVariantHexIds: selectedVariant?.hexIds ?? [], motionTime });
       canvas.dataset.zoom = String(camera.zoom);
       canvas.dataset.panX = String(camera.x);
       canvas.dataset.panY = String(camera.y);
       canvas.dataset.pinnedId = pinnedId === null ? '' : String(pinnedId);
       canvas.dataset.layer = layer;
       canvas.dataset.selectedSpeciesId = selectedSpeciesId ?? '';
+      canvas.dataset.selectedVariantId = selectedVariant?.id ?? '';
       document.querySelector('#zoom-level').value = `${number.format(camera.zoom)}×`;
       document.querySelector('#zoom-out').disabled = camera.zoom <= 1;
       document.querySelector('#zoom-in').disabled = camera.zoom >= 32;
@@ -235,7 +239,7 @@ export function initWorldUI() {
     addFact(facts, t('terrain'), terrain);
     addFact(facts, t('elevation'), `${integer.format(hex.bedElevation)} m`);
     addFact(facts, t('temperature'), `${number.format(hex.temperature)} °C`);
-    addFact(facts, t('humidity'), hex.humidity === null ? t('waterMoisture') : percent.format(hex.humidity));
+    addFact(facts, t('humidity'), hex.humidity === null ? t('waterMoisture', { value: percent.format(1) }) : percent.format(hex.humidity));
     details.append(facts);
     if (announce) document.querySelector('#map-status').textContent = t('pinned', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1), surface: surface.toLowerCase(), temperature: number.format(hex.temperature) });
   }

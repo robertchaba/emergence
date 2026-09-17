@@ -82,6 +82,14 @@ The species population is the denominator for carrier percentages. Display group
 optionally declare `mobile`; only the model decides whether mobility is enabled.
 Cosmetic motion supplied to rendering never changes biological position.
 
+V1's optional `species[].variants[].locations` and each trait expression's
+`locations` contain exact carrier populations by physical hex, scoped to that
+species and observation revision. Their populations sum to the variant/expression
+population. These are detached observations, not cohort access. UI may hide rare
+expressions or round displayed counts without removing carriers from observations,
+changing count quality, or altering biological state. Carrier highlights use these
+supplied locations; consumers must not infer them from genome internals.
+
 If useful, models can also expose parent IDs, trait descriptions, habitat
 breakdowns or organism inspection. These are optional, explicitly described
 extensions with units/availability; generic UI must not depend on v1's gene names

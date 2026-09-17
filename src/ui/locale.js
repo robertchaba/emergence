@@ -24,6 +24,7 @@ export function initLocale() {
     formats = {
       number: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
       integer: new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }),
+      compact: new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 0 }),
       percent: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }),
     };
     for (const element of document.querySelectorAll('[data-i18n]')) {

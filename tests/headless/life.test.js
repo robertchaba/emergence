@@ -43,8 +43,50 @@ function reconcile(snapshot) {
   for (const species of snapshot.species) {
     assert.equal(species.population, species.locations.reduce((sum, row) => sum + row.population, 0));
     assert.equal(species.population, species.variants.reduce((sum, row) => sum + row.population, 0));
+    for (const variant of species.variants) {
+      assert.equal(variant.population, variant.locations.reduce((sum, row) => sum + row.population, 0));
+    }
+    for (const trait of species.traits) for (const expression of trait.expressions) {
+      assert.equal(expression.population, expression.locations.reduce((sum, row) => sum + row.population, 0));
+      for (const location of expression.locations) {
+        const carriers = species.variants.filter(variant => variant.traits.some(value => value.key === trait.key && value.value === expression.value && value.active));
+        assert.equal(location.population, carriers.reduce((sum, variant) => sum + (variant.locations.find(row => row.hexId === location.hexId)?.population ?? 0), 0));
+      }
+    }
   }
 }
+
+test('biology takes three turns per ten physical days, retaining fractional credit through checkpoints', () => {
+  const world = freeze(fixture());
+  const model = seed(world);
+  const initial = model.exportState();
+  model.advanceTo(3);
+  assert.equal(model.observe().day, 3);
+  assert.equal(model.observe().biologicalTurns, 0);
+  assert.equal(model.exportState().turnCredit, 9);
+  assert.deepEqual(model.exportState().cohorts, initial.cohorts);
+  assert.deepEqual(model.exportState().randomState, initial.randomState);
+  const resumed = restoreLifeModel(world, model.exportState());
+  for (const [day, turns, credit] of [[4, 1, 2], [6, 1, 8], [7, 2, 1], [10, 3, 0], [100, 30, 0]]) {
+    model.advanceTo(day); resumed.advanceTo(day);
+    assert.equal(model.observe().day, day);
+    assert.equal(model.observe().biologicalTurns, turns);
+    assert.equal(model.exportState().turnCredit, credit);
+    assert.deepEqual(resumed.exportState(), model.exportState());
+  }
+  const delayed = createLifeModel(world);
+  delayed.advanceTo(23);
+  assert.equal(delayed.introduce(6).ok, true);
+  delayed.advanceTo(26);
+  assert.equal(delayed.observe().biologicalTurns, 0, 'introduction starts its own cadence');
+  delayed.advanceTo(27);
+  assert.equal(delayed.observe().biologicalTurns, 1);
+  const invalid = model.exportState();
+  invalid.turnCredit = 10;
+  assert.throws(() => restoreLifeModel(world, invalid), /biological clock/);
+  invalid.rulesRevision = 'v1-cohorts-1';
+  assert.throws(() => restoreLifeModel(world, invalid), /Incompatible/);
+});
 
 test('v1 introduction is explicit, validates habitat, and rejected commands are atomic', () => {
   const world = freeze(fixture());
@@ -78,7 +120,7 @@ test('daily advancement preserves geography, exact observations and newborn acti
   const world = freeze(fixture());
   const physicalBefore = JSON.stringify(world);
   const model = seed(world);
-  model.advanceTo(1);
+  model.advanceTo(4);
   assert.equal(model.observe().stats.reproductionAttempts, 20);
   assert.ok(model.observe().stats.births <= 20, 'newborns cannot reproduce on their birthday');
   const snapshot = model.observe();
@@ -109,7 +151,7 @@ test('same commands replay across pacing, query frequency and complete checkpoin
     for (let day = 1; day <= 180; day += 1) { stepped.advanceTo(day); stepped.observe(); }
     assert.deepEqual(stepped.exportState(), uninterrupted.exportState());
     const checkpointed = seed(world, { energyQuantum });
-    checkpointed.advanceTo(70);
+    checkpointed.advanceTo(71);
     const checkpoint = JSON.parse(JSON.stringify(checkpointed.exportState()));
     const resumed = restoreLifeModel(world, checkpoint);
     resumed.advanceTo(180);
@@ -129,7 +171,7 @@ test('stored energies are individually bounded and binning never removes a livin
   const rare = restoreLifeModel(world, checkpoint);
   assert.equal(rare.observe().counts.organisms, 21);
   assert.equal(rare.observe().counts.variants, 2);
-  rare.advanceTo(1);
+  rare.advanceTo(4);
   assert.ok(rare.observe().species[0].variants.some((variant) => variant.id === 'variant-2'));
   for (const cohort of rare.exportState().cohorts) {
     assert.ok(cohort.energy >= 0 && cohort.energy <= 19);
@@ -145,13 +187,13 @@ test('loss of all energy systems permits extinction, with historical identity an
   checkpoint.genomes[0].genome.photosynthesis = 0;
   checkpoint.cohorts[0].energy = 0;
   const model = restoreLifeModel(world, checkpoint);
-  model.advanceTo(1);
+  model.advanceTo(4);
   assert.equal(model.observe().status, 'extinct');
   assert.deepEqual(model.observe().counts, { organisms: 0, species: 0, extinctSpecies: 1, occupiedHexes: 0, variants: 0 });
   assert.equal(model.observe().stats.deaths, 20);
   const history = model.observe().extinctSpecies[0];
   assert.equal(history.population, 0);
-  assert.equal(model.inspectSpecies(history.id).extinctDay, 1);
+  assert.equal(model.inspectSpecies(history.id).extinctDay, 4);
   model.advanceTo(5);
   assert.equal(model.observe().status, 'extinct');
   assert.equal(model.observe().day, 5);
@@ -165,7 +207,7 @@ test('loss of all energy systems permits extinction, with historical identity an
   assert.notEqual(model.observe().runId, extinct.runId);
   assert.equal(model.observe().stats.deaths, 0);
   assert.equal(model.observe().previousAttempts[0].stats.deaths, 20);
-  assert.equal(model.observe().previousAttempts[0].species[0].extinctDay, 1);
+  assert.equal(model.observe().previousAttempts[0].species[0].extinctDay, 4);
   assert.equal(model.observe().counts.organisms, 20);
   const continued = restoreLifeModel(world, model.exportState());
   model.advanceTo(20); continued.advanceTo(20);
@@ -211,7 +253,7 @@ test('predation is habitat-local, consumes each prey once and respects smaller-a
     { ...checkpoint.cohorts[0], genomeId: 'prey', count: 100, energy: 1 },
   ];
   const model = restoreLifeModel(world, checkpoint);
-  model.advanceTo(1);
+  model.advanceTo(4);
   const snapshot = model.observe();
   assert.ok(snapshot.stats.predationDeaths > 0);
   assert.ok(snapshot.stats.predationDeaths <= 80, 'at most one prey per hunter');
@@ -232,13 +274,13 @@ test('river banks and channels have separate feeding even when both occupy one p
     plantFeeding: 1, landAdaptation: 1 }, establishedOrder: 2, parentGenomeId: 'variant-1', originDay: 0 });
   saved.cohorts.push({ ...saved.cohorts[0], genomeId: 'land-grazer', habitat: 'land', count: 30, energy: 0 });
   const model = restoreLifeModel(world, saved);
-  model.advanceTo(1);
+  model.advanceTo(4);
   assert.equal(model.observe().stats.deaths, 30, 'bank grazers cannot eat channel producers');
   assert.ok(model.observe().species[0].variants.every((variant) => variant.id !== 'land-grazer'));
   reconcile(model.observe());
 });
 
-test('active movement commits once per day and trunks suppress it without deleting the gene', () => {
+test('active movement commits once per biological turn and trunks suppress it without deleting the gene', () => {
   const world = fixture();
   const baseline = seed(world).exportState();
   baseline.genomes[0].genome.movement = 1;
@@ -246,7 +288,7 @@ test('active movement commits once per day and trunks suppress it without deleti
   baseline.cohorts[0].count = 1000;
   const source = baseline.cohorts[0].hexId;
   const model = restoreLifeModel(world, baseline);
-  model.advanceTo(1);
+  model.advanceTo(4);
   assert.ok(model.observe().stats.movements > 0);
   assert.equal(model.observe().stats.births, 0);
   assert.ok(model.observe().hexes.every((hex) => hex.hexId === source || world.hexes[source].neighbors.includes(hex.hexId)));
@@ -254,7 +296,7 @@ test('active movement commits once per day and trunks suppress it without deleti
   trunk.genomes[0].genome.photosynthesis = 1;
   trunk.genomes[0].genome.trunk = 1;
   const stationary = restoreLifeModel(world, trunk);
-  stationary.advanceTo(1);
+  stationary.advanceTo(4);
   assert.equal(stationary.observe().stats.movements, 0);
   assert.equal(stationary.observe().species[0].variants[0].traits.find((trait) => trait.key === 'movement').value, 1);
 });
