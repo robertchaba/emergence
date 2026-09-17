@@ -84,8 +84,7 @@
   --map-life-predator: #a94237;
   --map-life-mixed: #795184;
   --map-life-other: #4a737d;
-  --map-life-outline: #f7f0df;
-  --map-life-selected: #402e18;
+  --map-life-selected: #b47727;
 
   --font-body: Georgia, 'Times New Roman', serif;
   --font-heading: Georgia, 'Times New Roman', serif;
@@ -193,7 +192,6 @@
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
   --map-life-other: #9bcbd1;
-  --map-life-outline: #14251c;
   --map-life-selected: #f5edd0;
 
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -304,7 +302,6 @@
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
   --map-life-other: #9bcbd1;
-  --map-life-outline: #14251c;
   --map-life-selected: #f5edd0;
 
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

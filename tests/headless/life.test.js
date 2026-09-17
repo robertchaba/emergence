@@ -147,7 +147,7 @@ test('loss of all energy systems permits extinction, with historical identity an
   const model = restoreLifeModel(world, checkpoint);
   model.advanceTo(1);
   assert.equal(model.observe().status, 'extinct');
-  assert.deepEqual(model.observe().counts, { organisms: 0, species: 0, occupiedHexes: 0, variants: 0 });
+  assert.deepEqual(model.observe().counts, { organisms: 0, species: 0, extinctSpecies: 1, occupiedHexes: 0, variants: 0 });
   assert.equal(model.observe().stats.deaths, 20);
   const history = model.observe().extinctSpecies[0];
   assert.equal(history.population, 0);
@@ -308,4 +308,26 @@ test('a one-day reconnection resets separation timers; regions do not decide con
   hexes[0].neighbors.pop(); hexes[7].neighbors.pop();
   classify(cohorts, genomes, hexes, state, 62, branch);
   assert.equal(Object.values(state.timers)[0], 1);
+});
+
+test('species observations aggregate present gene carriers across every living variant', () => {
+  const world = fixture();
+  const checkpoint = seed(world).exportState();
+  const original = checkpoint.genomes[0];
+  checkpoint.genomes.push({ ...original, id: 'rare', genome: { ...original.genome, movement: 1, size: 4 }, establishedOrder: 2 });
+  checkpoint.cohorts.push({ ...checkpoint.cohorts[0], genomeId: 'rare', count: 5 });
+  const model = restoreLifeModel(world, checkpoint);
+  const before = model.exportState();
+  const snapshot = model.observe();
+  const species = snapshot.species[0];
+  assert.equal(species.population, 25);
+  assert.equal(species.traits.find(trait => trait.key === 'movement').population, 5);
+  assert.equal(species.traits.find(trait => trait.key === 'photosynthesis').population, 25);
+  assert.equal(species.traits.find(trait => trait.key === 'size').expressions.length, 2);
+  assert.ok(species.traits.every(trait => trait.expressions.every(expression => expression.active)));
+  assert.equal(species.traits.some(trait => trait.key === 'animalFeeding'), false);
+  assert.equal(snapshot.hexes[0].display.find(group => group.mobile).population, 5);
+  assert.deepEqual(model.exportState(), before, 'inspection and names never consume biological randomness');
+  assert.equal(restoreLifeModel(world, before).observe().species[0].name, species.name);
+  assert.equal(snapshot.history.at(-1).extinctSpecies, 0);
 });

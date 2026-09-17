@@ -19,8 +19,9 @@ Repeated-start policy and extinction behavior must be documented by each model.
 World setup's **Start** continues to open the atlas. **Play/Pause** and speed
 remain shared browser controls. They must not implicitly seed, replace or reseed
 life. **Start life here** is the separate biological intent described above;
-whether successful introduction also requests playback is a later UI decision.
-The implemented v1 UI introduces life separately and leaves playback paused.
+the implemented UI requests playback after successful introduction. Entering a
+new atlas starts at day 1, paused; preview time is separate. This supersedes the
+original UI choice to leave introduction paused (architecture decision 037).
 
 Future advancement supplies explicit simulated days and the matching shared
 environment. Each model completes its own required biological updates before
@@ -55,7 +56,7 @@ later engine work from silently changing an earlier observation.
 | --- | --- |
 | Has life been introduced? | Distinguish not introduced, living population present, and extinct after introduction. This is separate from Running/Paused playback. |
 | How many organisms and species exist now? | Global living-organism total, extant-species total, and occupied-hex count, with count quality as defined below. |
-| Which species exist? | Extant species records with stable IDs and current population totals. Any historical/extinct list is explicitly separate. |
+| Which species exist? | Extant species records with stable IDs, display names and current population totals. Historical/extinct records and their total are explicitly separate. |
 | What lives on this hex? | Total living population and one row per present species with its local population; include a separate unclassified population if applicable. |
 | Where does this species live? | All occupied physical hex IDs for that species and its population on each hex. |
 | How much of this species is on a given hex? | The same local count used by both the hex query and species-location query. |
@@ -67,6 +68,19 @@ array positions or translated names. A species may span many hexes and many
 genomes; a hex may contain many species. IDs from different runs/models must not
 be treated as the same species. Each model owns the criteria for creating,
 changing or retiring a species identity, and documents them.
+
+Species display names are locale-independent cosmetic labels, separate from opaque
+IDs and biological classification. V1 stores deterministic generated names without
+consuming biological randomness. Its `counts.extinctSpecies` and completed-day
+`history[].extinctSpecies` count retired identities in the current life attempt.
+Explicit restart begins a new attempt; older attempts remain archived separately.
+
+V1 additionally exposes `species[].traits`: present trait keys, carrier totals,
+and each present expression with its carrier count and model-derived units/ranges.
+Consumers can show shared versus partial expression without inspecting genomes.
+The species population is the denominator for carrier percentages. Display groups
+optionally declare `mobile`; only the model decides whether mobility is enabled.
+Cosmetic motion supplied to rendering never changes biological position.
 
 If useful, models can also expose parent IDs, trait descriptions, habitat
 breakdowns or organism inspection. These are optional, explicitly described

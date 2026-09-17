@@ -2,7 +2,8 @@
 
 ## Status
 
-**Current: v1 life simulation — 2026-09-16.** Decision 036 implements the first
+**Current: species-centered notebook — 2026-09-17.** Decision 037 refines startup,
+species inspection, names, and life rendering. Decision 036 implements the first
 life model, browser execution, and live notebook/atlas observations. Model choices
 and approximation limits are recorded in
 [`v1/docs/DECISIONS.md`](../src/simulation/life/v1/docs/DECISIONS.md).
@@ -1541,3 +1542,83 @@ There is no independent individual reference, calibrated ecological balance,
 rare-lineage accuracy guarantee, or validated long-term trajectory error bound.
 Exact counts mean exact counts of the represented state. Browser validation is
 limited to Chromium, and no cross-browser numerical equivalence is claimed.
+
+## 037 — Species-centered notebook and day-one startup — 2026-09-17
+
+**Supersedes preview-day carryover in 014–015 and the paused introduction,
+optional life overlay, automatic species highlighting, population/variant census,
+and detailed model panels in 036.** The user's requested inspection flow starts
+from world species totals, then the selected hex and its inhabitants.
+
+Opening a new atlas explicitly applies physical day 1 before initializing life,
+and starts paused. The setup preview retains its independent seasonal playback.
+A successful introduction starts playback automatically; rejection keeps it paused
+and displays the model's reason. Extinction still pauses, and another introduction
+requires an explicit action. The simulation's calendar, daily rules, seeded stream,
+worker completion boundary and speed meanings are unchanged.
+
+The notebook heading loses its version badge and separator. Its summary contains
+living species, extinct species, and occupied hexes as a percentage of every
+physical hex, including water and ice. A two-series SVG chart uses the existing
+180-completed-day model history with added extinct-species counts. Counts and
+history describe the current life attempt; explicitly starting after extinction
+begins another attempt, with the existing prior-attempt archive retained. The
+chart uses distinct solid/dashed lines, ticks, a translated legend and accessible
+text. It replaces the UI's sampled population history, so faster worker batches
+do not omit daily species events. The footer remains the sole current-day readout.
+
+Hex facts now occupy a compact two-column definition list. An empty pinned hex
+explicitly says it has no life, including before introduction. Otherwise its
+species appear as native buttons in a list, retaining focus across observations.
+Clicking a name opens its details and highlights every current occupied hex;
+clicking it again clears that highlight. Switching hexes clears the highlight.
+A sole occupant opens automatically, without requesting map highlighting. Pinning
+scrolls the local record into view when needed in the phone notebook. Theme and
+locale changes preserve the current selection and biology.
+
+Species details contain the global population, present gene expressions and
+retained genome portrait. Model-owned observations aggregate all living variants'
+carrier totals; partial genes/expressions use lighter text and explicit population
+percentages. Absent traits are omitted, and iteration is not limited to eight
+genes. The portrait uses the most populous complete living genome, rather than
+inventing a composite genome. Variant/location selects, ancestry, derived-role
+notes, life-event panels and approximation disclaimers are removed from the UI;
+model decisions and limitations remain in the model's documentation.
+
+V1 assigns each species a persisted, deterministic cosmetic name from its seed
+and ordinal. A versioned fixed-width syllable encoding grows with the ordinal
+instead of exhausting a finite dictionary, with uniqueness within each attempt.
+Names do not depend on genes or consume biological randomness, and remain stable
+across locale changes and checkpoint continuation. Older unnamed checkpoint
+records receive deterministic names on restoration. Naming and gene aggregation
+stay within `life/v1/`; shared consumers read observations only.
+
+Life always appears on the map. Tiny stationary producers retain a separate
+colour mark on diagnostic layers whose physical fills cannot be tinted. Dots
+lose their dark outlines. Model-provided
+mobility enables same-colour appendages at close zoom and small cosmetic local
+motion at at most eight updates per second. UI controls animation time, stops it
+while paused/hidden and honors reduced motion; the renderer cannot change any
+biological position. The existing damaged-cell repaint path includes animated
+cells, retaining the twelve-marker budget per hex. Explicit species highlights
+remain separate from organism marks, using ochre in light mode and the existing
+pale token in dark mode. All authored colours and type sizes remain root tokens.
+
+Validation: `npm run build` and `npm test` passed: 58 headless/renderer checks,
+57 Chromium checks, and the existing desktop touch-test duplicate skipped.
+Checks cover day-one reset after preview playback, auto-start, explicit highlight
+versus automatic detail expansion, local-only species lists, partial gene carriers,
+empty hexes, extinction/reintroduction, 100,000 unique generated names, checkpoint
+continuation, bounded motion rendering, visibility on every map layer, and occupied-range
+highlighting. Browser checks also confirm motion stops on pause and with reduced
+motion. Real
+worker playback still agrees with headless results at equal completed days.
+Both themes were visually inspected on desktop and phone, including partial-gene
+styling, keyboard focus and notebook scrolling. Existing checks cover both locales,
+320 px overflow, assets, disabled controls and storage failures. Translation-key,
+layer-boundary, runtime-dependency and `git diff --check` checks passed.
+
+Limitations: the chart retains the last 180 completed days of the current attempt,
+and the portrait depicts one representative genome. Cosmetic motion represents
+mobile groups rather than individual trajectories. Browser validation is limited
+to Chromium; no ecological coefficients or calibration claims change here.

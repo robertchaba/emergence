@@ -6,6 +6,7 @@ import { canCross, chooseHabitat, crossingDifficulty, directWaterAccess, habitat
   hasLand, hasWater, temperatureFactor } from './habitat.js';
 import { allocateLight } from './light.js';
 import { binomial, createRandom, uniformPartitions } from './random.js';
+import { speciesName } from './names.js';
 
 export const MODEL_ID = 'v1';
 export const RULES_REVISION = 'v1-cohorts-1';
@@ -85,6 +86,10 @@ export function restoreLifeModel(world, checkpoint) {
 }
 
 function buildModel(world, state) {
+  // Older checkpoints acquire cosmetic names without changing their random state.
+  for (const [index, record] of state.species.entries()) {
+    record.name ??= speciesName(state.seed, index + 1);
+  }
   // Geography is copied once; subsequent atlas setDay/inspection cannot mutate this run.
   const geography = { width: world.width, height: world.height,
     hexes: world.hexes.map((hex) => ({ ...hex, neighbors: [...hex.neighbors] })) };
@@ -132,8 +137,9 @@ function buildModel(world, state) {
   }
 
   function newSpecies(parentId = null) {
-    const id = `species-${state.nextSpecies++}`;
-    state.species.push({ id, parentId, originDay: environmentDay, extinctDay: null });
+    const ordinal = state.nextSpecies++;
+    const id = `species-${ordinal}`;
+    state.species.push({ id, name: speciesName(state.seed, ordinal), parentId, originDay: environmentDay, extinctDay: null });
     if (parentId) state.stats.speciations += 1;
     return id;
   }
@@ -375,6 +381,7 @@ function buildModel(world, state) {
     for (const record of state.species) if (!livingSpecies.has(record.id) && record.extinctDay === null) record.extinctDay = state.day;
     if (state.introduced) {
       state.history.push({ day: state.day, population, species: livingSpecies.size,
+        extinctSpecies: state.species.filter(record => record.extinctDay !== null).length,
         variants: new Set(state.cohorts.map((cohort) => cohort.genomeId)).size,
         occupiedHexes: new Set(state.cohorts.map((cohort) => cohort.hexId)).size });
       if (state.history.length > 180) state.history.splice(0, state.history.length - 180);
@@ -473,7 +480,7 @@ function buildModel(world, state) {
     const hexes = new Map();
     const globalVariants = new Set();
     for (const cohort of state.cohorts) {
-      const { derived } = genomes.get(cohort.genomeId);
+      const { derived, genome } = genomes.get(cohort.genomeId);
       globalVariants.add(cohort.genomeId);
       if (!species.has(cohort.speciesId)) {
         const identity = state.species.find((record) => record.id === cohort.speciesId);
@@ -489,8 +496,9 @@ function buildModel(world, state) {
       hex.population += cohort.count;
       hex.species.set(cohort.speciesId, (hex.species.get(cohort.speciesId) ?? 0) + cohort.count);
       hex.variants.add(cohort.genomeId);
-      const key = `${derived.role}|${derived.size}|${cohort.habitat}`;
-      if (!hex.display.has(key)) hex.display.set(key, { role: derived.role, size: derived.size, habitat: cohort.habitat, population: 0 });
+      const mobile = genome.movement > 0 && genome.trunk === 0;
+      const key = `${derived.role}|${derived.size}|${cohort.habitat}|${mobile}`;
+      if (!hex.display.has(key)) hex.display.set(key, { role: derived.role, size: derived.size, mobile, habitat: cohort.habitat, population: 0 });
       hex.display.get(key).population += cohort.count;
     }
     const speciesRows = [...species.values()].map((record) => ({ ...record,
@@ -503,6 +511,23 @@ function buildModel(world, state) {
           habitats: [...variant.derived.habitats], traits: describeGenome(variant.genome) };
       }).sort((a, b) => b.population - a.population || order(a.id, b.id)),
     })).sort((a, b) => b.population - a.population || order(a.id, b.id));
+    for (const record of speciesRows) {
+      const traits = new Map();
+      for (const variant of record.variants) {
+        for (const trait of variant.traits.filter(trait => trait.active)) {
+          if (!traits.has(trait.key)) traits.set(trait.key, { key: trait.key, population: 0, expressions: [] });
+          const summary = traits.get(trait.key);
+          summary.population += variant.population;
+          let expression = summary.expressions.find(item => item.value === trait.value);
+          if (!expression) {
+            expression = { ...trait, population: 0, cells: variant.cells, temperatureRange: variant.temperatureRange };
+            summary.expressions.push(expression);
+          }
+          expression.population += variant.population;
+        }
+      }
+      record.traits = [...traits.values()];
+    }
     const hexRows = [...hexes.values()].map((hex) => ({ ...hex, speciesCount: hex.species.size, variants: hex.variants.size,
       species: [...hex.species].map(([id, population]) => ({ id, population })).sort((a, b) => b.population - a.population || order(a.id, b.id)),
       display: [...hex.display.values()] })).sort((a, b) => a.hexId - b.hexId);
@@ -514,7 +539,9 @@ function buildModel(world, state) {
       day: state.day, startDay: state.startDay, revision: state.revision,
       attempt: state.attempt, previousAttempts: state.previousAttempts,
       status: !state.introduced ? 'not-introduced' : organisms ? 'living' : 'extinct',
-      counts: { organisms, species: speciesRows.length, occupiedHexes: hexRows.length, variants: globalVariants.size },
+      counts: { organisms, species: speciesRows.length,
+        extinctSpecies: state.species.filter(record => record.extinctDay !== null).length,
+        occupiedHexes: hexRows.length, variants: globalVariants.size },
       countQuality: 'exact', species: speciesRows, hexes: hexRows,
       extinctSpecies: state.species.filter((record) => record.extinctDay !== null).map((record) =>
         ({ ...record, population: 0, locations: [], variants: [] })),

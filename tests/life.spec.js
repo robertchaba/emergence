@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { generateWorld, setDay } from '../src/simulation/world.js';
-import { createLifeModel } from '../src/simulation/life/v1/model.js';
+import { createLifeModel, restoreLifeModel } from '../src/simulation/life/v1/model.js';
 import { chooseTheme } from './ui-helpers.js';
 
 const settings = { seed: 'life-browser-check', size: 'small' };
@@ -41,8 +41,10 @@ async function introduce(page, world) {
   expect(site).toBeTruthy();
   await pinHex(page, site, world.width, world.height);
   await page.locator('#start-life').click();
-  await expect(page.locator('#organism-count')).toHaveText('20');
   await expect(page.locator('#species-count')).toHaveText('1');
+  await expect(page.locator('#play-world')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#pause-world').click();
+  await expect(page.locator('#playback-state')).toHaveText('Paused');
   return site;
 }
 
@@ -50,24 +52,35 @@ test('plant introduction validates sites, advances completed biology, and preven
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const world = await openLifeWorld(page);
-  await expect(page.locator('#organism-count')).toHaveText('0');
+  await expect(page.locator('#species-count')).toHaveText('0');
   await expect(page.locator('#start-life')).toBeDisabled();
+  await expect(page.locator('#world-day')).toHaveAttribute('data-day', '1');
+  await expect(page.locator('#pause-world')).toHaveAttribute('aria-pressed', 'true');
   const ice = world.hexes.find(hex => hex.permanentIce);
   await pinHex(page, ice, world.width);
   await page.locator('#start-life').click();
   await expect(page.locator('#life-message')).toContainText(/ice/i);
-  await expect(page.locator('#organism-count')).toHaveText('0');
+  await expect(page.locator('#species-count')).toHaveText('0');
   const site = await introduce(page, world);
-  await expect(page.locator('#variant-count')).toHaveText('1');
-  await expect(page.locator('#occupied-count')).toHaveText('1');
+  await expect(page.locator('#variant-count')).toHaveCount(0);
+  await expect(page.locator('#occupied-count')).toHaveText('0.3%');
   await expect(page.locator('#pause-world')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#species-panel')).toBeVisible();
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+  const choice = page.locator('#species-list button');
+  await expect(choice).toHaveAttribute('aria-expanded', 'true');
+  await choice.click();
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
+  await choice.click();
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+  await expect(page.locator('#show-life, #organism-count, #variant-select, #life-processes, .model-badge')).toHaveCount(0);
+  await expect(page.locator('.notebook')).not.toContainText(/Life introduced|Life is present|approximated|upkeep cost/);
   await expect(page.locator('#species-detail')).toContainText('Photosynthesis');
   const day = Number(await page.locator('#world-day').getAttribute('data-day'));
   await page.locator('#step-world').click();
   await expect(page.locator('#world-day')).toHaveAttribute('data-day', String(day + 1));
-  await expect.poll(async () => Number((await page.locator('#organism-count').textContent()).replace(/\D/g, ''))).toBeGreaterThan(20);
-  await expect(page.locator('#life-census-day')).toContainText(String(day + 1));
+  await expect.poll(async () => Number((await page.locator('.species-population').textContent()).replace(/\D/g, ''))).toBeGreaterThan(20);
+  await expect(page.locator('#life-census-day')).toHaveCount(0);
   await expect(page.locator('#world-map')).toHaveAttribute('data-pinned-id', String(site.id));
   await expect(page.locator('#reset-life')).toHaveCount(0);
   await expect(page.locator('#founder-population')).toHaveCount(0);
@@ -83,11 +96,13 @@ test('life catalogue preserves state through themes and languages and fits narro
     await page.locator(`[data-locale="${locale}"]`).click();
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
-      await page.locator('#species-select').scrollIntoViewIfNeeded();
-      await page.locator('#species-select').focus();
-      await expect(page.locator('#species-select')).toHaveCSS('outline-style', 'solid');
+      await page.locator('#species-list button').scrollIntoViewIfNeeded();
+      await page.locator('#species-list button').focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
+      await expect(page.locator('#species-list button')).toHaveCSS('outline-style', 'solid');
       await expect(page.locator('#species-detail .specimen-svg')).toBeVisible();
-      await expect(page.locator('#organism-count')).toHaveText('20');
+      await expect(page.locator('.species-population')).toHaveAttribute('data-count', '20');
       await expect(page.locator('#world-day')).toHaveAttribute('data-day', before);
       expect(await page.evaluate(() => {
         const notebook = document.querySelector('.notebook');
@@ -121,7 +136,8 @@ test('worker playback matches headless biology at the same completed day despite
   expect(reference.introduce(site.id).ok).toBe(true);
   reference.advanceTo(completedDay);
   const counts = reference.observe().counts;
-  for (const [selector, key] of [['#organism-count', 'organisms'], ['#species-count', 'species'], ['#variant-count', 'variants'], ['#occupied-count', 'occupiedHexes']]) {
+  await expect(page.locator('.species-population')).toHaveAttribute('data-count', String(reference.observe().species.find(row => row.id === 'species-1').population));
+  for (const [selector, key] of [['#species-count', 'species'], ['#extinct-species-count', 'extinctSpecies'], ['#occupied-count', 'occupiedHexes']]) {
     await expect(page.locator(selector)).toHaveAttribute('data-count', String(counts[key]));
   }
   await page.evaluate(() => {
@@ -146,20 +162,86 @@ test('plants adapt to a land site and a new introduction is available only after
   expect(site).toBeTruthy();
   await pinHex(page, site, world.width, world.height);
   await page.locator('#start-life').click();
-  await expect(page.locator('#organism-count')).toHaveText('20');
+  await expect(page.locator('.species-population')).toHaveAttribute('data-count', '20');
   await expect(page.locator('.gene-row').filter({ hasText: 'Land adaptation' })).not.toContainText('Aquatic');
   await expect(page.locator('.gene-row').filter({ hasText: 'Temperature tolerance' })).not.toContainText('Absent');
   await expect(page.locator('#start-life')).toBeHidden();
   await expect(page.locator('#reset-life')).toHaveCount(0);
   await page.locator('#simulation-speed').fill('10');
   await page.locator('#play-world').click();
-  await expect(page.locator('#life-state')).toHaveAttribute('data-status', 'extinct', { timeout: 12000 });
+  await expect(page.locator('.life-panel')).toHaveAttribute('data-status', 'extinct', { timeout: 12000 });
+  await expect(page.locator('#extinct-species-count')).toHaveText('1');
   await expect(page.locator('#playback-state')).toHaveText('Paused');
-  await expect(page.locator('#organism-count')).toHaveText('0');
+  await expect(page.locator('#species-count')).toHaveText('0');
   await expect(page.locator('#start-life')).toBeVisible();
   const day = Number(await page.locator('#world-day').getAttribute('data-day'));
+  await page.locator('#simulation-speed').fill('1');
   await introduce(page, setDay(world, day));
-  await expect(page.locator('#world-day')).toHaveAttribute('data-day', String(day));
-  await expect(page.locator('#life-state')).toHaveAttribute('data-status', 'living');
+  expect(Number(await page.locator('#world-day').getAttribute('data-day'))).toBeGreaterThanOrEqual(day);
+  await expect(page.locator('.life-panel')).toHaveAttribute('data-status', 'living');
   await expect(page.locator('#start-life')).toBeHidden();
+});
+
+test('local species list excludes distant species and shows partial gene carriers with explicit highlights', async ({ page }, testInfo) => {
+  const world = setDay(generateWorld(settings), 1);
+  const site = suitable(world);
+  const model = createLifeModel(world);
+  model.introduce(site.id);
+  const saved = model.exportState();
+  const original = saved.genomes[0];
+  saved.genomes.push({ ...original, id: 'rare-mobile', genome: { ...original.genome, movement: 1 }, establishedOrder: 2 });
+  saved.cohorts.push({ ...saved.cohorts[0], genomeId: 'rare-mobile', count: 5 });
+  saved.species.push({ id: 'species-2', name: 'Veladora mirena', originDay: 1, parentId: 'species-1', extinctDay: null });
+  saved.species.push({ id: 'species-3', name: 'Selathe arolina', originDay: 1, parentId: 'species-1', extinctDay: null });
+  saved.cohorts.push({ ...saved.cohorts[0], speciesId: 'species-2', count: 8 });
+  saved.cohorts.push({ ...saved.cohorts[0], speciesId: 'species-3', hexId: site.neighbors[0], count: 4 });
+  saved.history = [{ day: 1, population: 37, species: 3, extinctSpecies: 0, variants: 2, occupiedHexes: 2 }];
+  const snapshot = restoreLifeModel(world, saved).observe();
+  // The browser receives a real model observation via a fixed worker fixture.
+  await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
+    body: `self.onmessage = ({data}) => self.postMessage({command: data.command, observation: ${JSON.stringify(snapshot)}});`,
+  }));
+  await openLifeWorld(page);
+  await pinHex(page, site, world.width, world.height);
+  await expect(page.locator('#species-count')).toHaveText('3');
+  const choices = page.locator('#species-list button');
+  await expect(choices).toHaveText([snapshot.species.find(row => row.id === 'species-1').name, 'Veladora mirena']);
+  await expect(page.locator('#species-detail')).toHaveCount(0);
+  await choices.first().click();
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
+  await expect(page.locator('.species-population')).toHaveAttribute('data-count', '25');
+  await expect(page.locator('.gene-row.is-partial')).toContainText('Movement');
+  await expect(page.locator('.gene-row.is-partial')).toContainText('20% of population');
+  await expect(page.locator('.gene-list')).not.toContainText(/Animal feeding|Trunk|Absent/);
+  for (const theme of ['light', 'dark']) {
+    await chooseTheme(page, theme);
+    await page.locator('#species-detail').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath(`mixed-genes-${theme}.png`) });
+  }
+  const map = page.locator('#world-map');
+  const still = await map.screenshot();
+  await page.locator('#play-world').click();
+  await page.waitForTimeout(350);
+  expect((await map.screenshot()).equals(still)).toBe(false);
+  await page.locator('#pause-world').click();
+  const paused = await map.screenshot();
+  await page.waitForTimeout(300);
+  expect((await map.screenshot()).equals(paused)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#play-world').click();
+  const reduced = await map.screenshot();
+  await page.waitForTimeout(300);
+  expect((await map.screenshot()).equals(reduced)).toBe(true);
+  await page.locator('#pause-world').click();
+  await choices.nth(1).click();
+  await expect(page.locator('.species-population')).toHaveAttribute('data-count', '8');
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-2');
+  await page.locator('[data-locale="pl"]').click();
+  await expect(choices.nth(1)).toHaveText('Veladora mirena');
+  await expect(choices.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  const empty = world.hexes.find(hex => !snapshot.hexes.some(row => row.hexId === hex.id));
+  await pinHex(page, empty, world.width, world.height);
+  await expect(page.locator('#hex-life-empty')).toHaveText('Brak życia w tym heksie.');
+  await expect(page.locator('#species-panel')).toBeHidden();
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
 });

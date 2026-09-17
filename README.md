@@ -8,7 +8,7 @@ There are no predefined species or scripted outcomes.
 **Current stage: working v1 life simulation.** Generate deterministic cylindrical
 hex worlds, introduce a locally suited plant lineage, and observe resource competition,
 inheritance, mutation, dispersal, and species branching. The Field Notebook shows
-living populations, species, genetic variants, and all eight traits. V1 is an
+living and extinct species, their history, and the present traits of local species. V1 is an
 experimental model with documented approximations, not calibrated biology.
 
 ## Run locally
@@ -79,7 +79,7 @@ camera, selected layer, and pinned hex. Without JavaScript, static copy is Engli
    60 × 40, and 120 × 80. The water slider increases spring abundance; actual
    rivers and lakes follow drainage and basins rather than an exact count.
 3. The map previews the seasons automatically at 20 days per second. Select
-   **Start** to open the atlas at the current day, initially paused. Both views
+   **Start** to open the atlas on **day 1**, paused. Both views
    start zoomed to fill their frame.
 4. Drag to pan, scroll or pinch to zoom from the fitted world to 32×, and click to
    pin a hex. Focus the map and use arrows to inspect neighboring cells, `+` / `−`
@@ -110,19 +110,29 @@ requests more days without changing event probabilities.
 Pin a suitable land or water hex and select **Start life here** in the notebook.
 The model introduces a small plant colony and chooses its initial habitat and
 temperature traits from the selected location. There is no population-size input.
-An unsuitable site receives an explanation. Introduction leaves playback paused;
-use **Play** or the one-day step control to observe descendants.
+An unsuitable site receives an explanation. Successful introduction starts playback
+automatically; **Pause** and the one-day step control let you inspect descendants.
 
 Living populations cannot be reset or replaced. If every organism dies, **Start
 life here** becomes available again for an explicit new beginning on the same
 world at the current day. Life is never introduced or restarted automatically.
 
-The notebook reports actual population, species, variants, occupied hexes, births,
-deaths, and mutations. Select a species and variant to inspect its derived feeding
-role, specimen illustration, and eight-gene profile. Map tints and dots aggregate
-life; they are not individual organism counts. On phones, scroll the notebook to
-reach the species and gene sections. Theme, language, and display changes preserve
-the run.
+The notebook summarizes living and extinct species in the current life attempt,
+charts the last 180 completed days, and shows the percentage of all hexes occupied.
+Pinning a hex reveals compact physical readings and all species living there, or
+an explicit empty-hex message. Species receive stable generated names. Click a
+name to open its population, present genes, and genome portrait and highlight all
+its occupied hexes; click it again to clear the highlight. A sole local species
+opens automatically, with highlighting still requiring a click. Gene expressions
+carried by only part of the species appear in lighter text with their percentage.
+The portrait uses the most populous complete genome.
+
+Life always appears on the map as plant coverage and coloured dots without dark
+outlines. Mobile groups have subtle motion and small appendages at closer zoom;
+this stops while paused, hidden, or using reduced motion. These marks represent
+population groups. On phones, pinning scrolls the local record into view; the
+notebook scrolls independently. Theme and language changes preserve the run and
+selection. Returning to setup and starting another world resets to day 1.
 
 The preview's land budget counts the non-marine footprint before freshwater
 lakes; dry land is reported separately. Spring discharge and runoff use reference

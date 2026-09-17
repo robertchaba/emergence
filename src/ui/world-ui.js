@@ -66,10 +66,12 @@ export function initWorldUI() {
   let lifePendingCommand = null;
   let lifeFailed = false;
   let selectedSpeciesId = null;
-  let showLife = true;
+  let motionTime = 0;
+  let lastMotionFrame = 0;
+  let hasMobileLife = false;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const notebook = createLifeNotebook({
     onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
-    onLocate(id) { pin(id, true); canvas.focus({ preventScroll: true }); },
   });
 
   function updateLifeInteraction() {
@@ -83,6 +85,8 @@ export function initWorldUI() {
     lifeWorker?.terminate();
     lifeWorker = null;
     life = null;
+    hasMobileLife = false;
+    motionTime = 0;
     lifeBusy = false;
     lifePendingCommand = null;
     lifeFailed = false;
@@ -115,10 +119,14 @@ export function initWorldUI() {
         updatePlaybackState();
         const previousDay = world.day;
         life = data.observation;
+        hasMobileLife = life.hexes.some(hex => hex.display.some(group => group.mobile));
         if (life.day !== world.day) world = setDay(world, life.day);
         measuredDays += Math.max(0, world.day - previousDay);
-        notebook.update(life, { busy: false, pinnedId });
-        if (data.command === 'introduce') notebook.message(data.result?.ok ? 'lifeIntroduced' : data.result?.reason || 'lifeError');
+        notebook.update(life, { busy: false, pinnedId, totalHexes: world.hexes.length });
+        if (data.command === 'introduce') {
+          if (data.result?.ok) setPlaying(true);
+          else notebook.message(data.result?.reason || 'lifeError');
+        }
         updateDayReadout();
         updateInspector(false);
         updateLifeInteraction();
@@ -168,12 +176,13 @@ export function initWorldUI() {
         previewCanvas.dataset.zoom = String(previewCamera.zoom);
       }
     } else if (resizeRenderer(map, canvas)) {
-      map.draw(world, { camera, layer, pinnedId, geography, life, showLife, selectedSpeciesId });
+      map.draw(world, { camera, layer, pinnedId, geography, life, selectedSpeciesId, motionTime });
       canvas.dataset.zoom = String(camera.zoom);
       canvas.dataset.panX = String(camera.x);
       canvas.dataset.panY = String(camera.y);
       canvas.dataset.pinnedId = pinnedId === null ? '' : String(pinnedId);
       canvas.dataset.layer = layer;
+      canvas.dataset.selectedSpeciesId = selectedSpeciesId ?? '';
       document.querySelector('#zoom-level').value = `${number.format(camera.zoom)}×`;
       document.querySelector('#zoom-out').disabled = camera.zoom <= 1;
       document.querySelector('#zoom-in').disabled = camera.zoom >= 32;
@@ -228,31 +237,6 @@ export function initWorldUI() {
     addFact(facts, t('temperature'), `${number.format(hex.temperature)} °C`);
     addFact(facts, t('humidity'), hex.humidity === null ? t('waterMoisture') : percent.format(hex.humidity));
     details.append(facts);
-    if (life?.status !== 'not-introduced' && life !== null) {
-      const localLife = document.createElement('p');
-      localLife.className = 'hex-life-summary';
-      localLife.textContent = notebook.localSummary(pinnedId);
-      details.append(localLife);
-      const occupants = life.hexes.find(row => row.hexId === pinnedId)?.species ?? [];
-      if (occupants.length) {
-        const list = document.createElement('ul');
-        list.className = 'hex-species-list';
-        for (const species of occupants) {
-          const row = document.createElement('li');
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = t('speciesOption', { id: species.id, population: integer.format(species.population) });
-          button.addEventListener('click', () => {
-            notebook.selectSpecies(species.id);
-            document.querySelector('#species-panel').scrollIntoView({ block: 'start', behavior: 'instant' });
-            document.querySelector('#species-select').focus({ preventScroll: true });
-          });
-          row.append(button);
-          list.append(row);
-        }
-        details.append(list);
-      }
-    }
     if (announce) document.querySelector('#map-status').textContent = t('pinned', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1), surface: surface.toLowerCase(), temperature: number.format(hex.temperature) });
   }
 
@@ -404,10 +388,6 @@ export function initWorldUI() {
     setPlaying(false);
     initializeLife();
   });
-  document.querySelector('#show-life').addEventListener('change', (event) => {
-    showLife = event.target.checked;
-    queueDraw();
-  });
   speedInput.addEventListener('input', () => {
     targetSpeed = Math.max(1, Math.min(10, Number(speedInput.value)));
     updateTargetSpeed();
@@ -418,6 +398,12 @@ export function initWorldUI() {
   // Every biological day executes; only completed observations reach the map.
   // The engine never reads this clock, and hidden tabs do not catch up.
   function animateClimate(timestamp) {
+    if (!workspace.hidden && !document.hidden && playing && hasMobileLife && !reducedMotion.matches
+      && timestamp - lastMotionFrame >= 125) {
+      motionTime += Math.min(0.125, (timestamp - lastMotionFrame) / 1000);
+      lastMotionFrame = timestamp;
+      queueDraw();
+    }
     const active = !document.hidden && (workspace.hidden || playing);
     if (!active || generating || startButton.disabled || !world) {
       clockTimestamp = null;
@@ -450,6 +436,7 @@ export function initWorldUI() {
 
   startButton.addEventListener('click', () => {
     if (!world || startButton.disabled) return;
+    world = setDay(world, 1);
     setPlaying(false);
     updateDayReadout();
     savedScroll = window.scrollY;
@@ -528,6 +515,10 @@ export function initWorldUI() {
   function pin(id, reveal = false) {
     pinnedId = id;
     updateInspector();
+    // Pinning brings the local record into the scrolling phone notebook.
+    const localRecord = document.querySelector('#species-list button')
+      ?? (id !== null ? document.querySelector('#hex-life-empty') : details);
+    localRecord.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     if (reveal && id !== null) {
       const point = map.cellCenter(world, id, camera);
       const bounds = canvas.getBoundingClientRect();

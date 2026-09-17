@@ -133,6 +133,19 @@ The implemented identity is `v1`, rules revision `v1-cohorts-1`.
     IDs stay locale-independent. The last 180 completed-day history points are a
     bounded display history; lifetime birth/death/mutation counters remain exact.
 
+11. **Species presentation — 2026-09-17.** Names use a versioned, seeded syllable
+    encoding of the monotonically assigned species ordinal, independent of genes,
+    classification, and the biological random stream. The fixed-width syllables
+    provide an unambiguous, collision-free encoding within an attempt, growing
+    beyond three syllables as needed. Names are stored with living/extinct identity
+    and checkpoints; older unnamed records acquire them deterministically when
+    restored. Names are cosmetic, not a taxonomic grouping or predefined species.
+    Observations aggregate every present gene expression and its carrier count
+    across all living genomes; there is no fixed UI gene-count limit. Display
+    groups include enabled mobility (movement present and trunk absent). Extinct
+    species totals and the existing 180-day history count the current attempt;
+    previous attempts retain their existing separate archive.
+
 ## Validation and measured limitations
 
 Focused headless checks cover mutation graphs and temperature absence, hard

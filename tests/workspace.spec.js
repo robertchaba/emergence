@@ -242,6 +242,7 @@ test('preview stays live and the atlas has measured playback from 1× to 10×', 
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   const day = () => page.locator('#world-day').getAttribute('data-day').then(Number);
   const paused = await day();
+  expect(paused).toBe(1);
   await expect(page.locator('#playback-state')).toHaveText('Paused');
   await page.clock.runFor(1000);
   expect(await day()).toBe(paused);

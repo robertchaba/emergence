@@ -71,25 +71,23 @@ export function createSpecimenSvg(traits = [], { label } = {}) {
   return `<svg class="specimen-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" ${accessibility} focusable="false">${parts.join('')}</svg>`;
 }
 
-/** A bounded plot of observed population samples. Days supply the horizontal
- * spacing; the vertical scale includes zero. No interpolation drives biology. */
-export function createPopulationTrendSvg(samples = [], { label } = {}) {
-  const points = samples.slice(-120).filter(sample => Number.isFinite(sample.day)
-    && Number.isFinite(sample.population) && sample.population >= 0)
-    .map(sample => ({ day: sample.day, population: sample.population }))
-    .sort((a, b) => a.day - b.day);
-  const firstDay = points[0]?.day ?? 0;
-  const daySpan = Math.max(1, (points.at(-1)?.day ?? 0) - firstDay);
-  const maximum = Math.max(1, ...points.map(sample => sample.population));
-  const positions = points.map(sample => ({
-    x: number(6 + ((sample.day - firstDay) / daySpan) * 308),
-    y: number(64 - (sample.population / maximum) * 56),
-  }));
-  const path = positions.map(({ x, y }, index) => `${index ? 'L' : 'M'}${x} ${y}`).join('');
-  const last = positions.at(-1);
-  const plot = last ? `<path class="life-trend-area" d="${path}L${last.x} 64L${positions[0].x} 64Z" fill="currentColor" stroke="none"/>`
-    + `<path class="life-trend-line" d="${path}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
-    + `<circle class="life-trend-tip" cx="${last.x}" cy="${last.y}" r="2.7" fill="currentColor"/>` : '';
+/** Completed-day species counts; no smoothing or display sampling invents events. */
+export function createSpeciesTrendSvg(samples = [], { label, format = String } = {}) {
+  const points = samples.slice(-180).filter(sample => Number.isFinite(sample.day)
+    && Number.isFinite(sample.species) && Number.isFinite(sample.extinctSpecies))
+    .map(sample => ({ ...sample })).sort((a, b) => a.day - b.day);
+  const firstDay = points[0]?.day ?? 1;
+  const lastDay = points.at(-1)?.day ?? firstDay;
+  const span = Math.max(1, lastDay - firstDay);
+  const maximum = Math.max(1, ...points.flatMap(sample => [sample.species, sample.extinctSpecies]));
+  const plots = ['species', 'extinctSpecies'].map(key => {
+    const positions = points.map(sample => ({ x: number(24 + (sample.day - firstDay) / span * 288), y: number(58 - sample[key] / maximum * 48) }));
+    // Step paths preserve discrete daily counts, including abrupt extinctions.
+    const path = positions.map(({ x, y }, index) => index ? `H${x}V${y}` : `M${x} ${y}`).join('');
+    const last = positions.at(-1);
+    return last ? `<g class="${key === 'species' ? 'trend-living' : 'trend-extinct'}"><path class="life-trend-line" d="${path}" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="${last.x}" cy="${last.y}" r="2.5" fill="currentColor"/></g>` : '';
+  }).join('');
   const accessibility = label === undefined ? 'aria-hidden="true"' : `role="img" aria-label="${escapeAttribute(label)}"`;
-  return `<svg class="life-trend-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" ${accessibility} focusable="false"><path class="life-trend-baseline" d="M6 64H314" fill="none" stroke="currentColor" stroke-width="0.6"/>${plot}</svg>`;
+  const text = value => escapeAttribute(format(value));
+  return `<svg class="life-trend-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" ${accessibility} focusable="false"><path class="life-trend-baseline" d="M24 8V58H312" fill="none" stroke="currentColor" stroke-width="0.6"/><g class="trend-axis" fill="currentColor"><text x="17" y="14" text-anchor="end">${text(maximum)}</text><text x="17" y="61" text-anchor="end">${text(0)}</text><text x="24" y="76">${text(firstDay)}</text>${lastDay !== firstDay ? `<text x="312" y="76" text-anchor="end">${text(lastDay)}</text>` : ''}</g>${plots}</svg>`;
 }

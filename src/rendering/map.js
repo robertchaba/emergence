@@ -13,7 +13,7 @@ export const MAP_TOKEN_NAMES = Object.freeze([
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
   'life-producer', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
-  'life-outline', 'life-selected',
+  'life-selected',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
 ].map((name) => `--map-${name}`));
 
@@ -44,19 +44,20 @@ function lifeSummary(observation) {
       if (!(display.population > 0)) continue;
       const size = clamp(Number(display.size) || 0);
       const role = LIFE_ROLES.includes(display.role) ? display.role : 'other';
-      if (role === 'producer' && size <= 0.25) {
+      const mobile = display.mobile === true;
+      if (role === 'producer' && size <= 0.25 && !mobile) {
         if (display.habitat === 'water') smallWater += display.population;
         else smallLand += display.population;
         continue;
       }
-      const key = `${role}:${display.habitat === 'water' ? 'water' : 'land'}`;
-      const group = groups.get(key) ?? { key, role, population: 0, weightedSize: 0 };
+      const key = `${role}:${display.habitat === 'water' ? 'water' : 'land'}:${mobile}`;
+      const group = groups.get(key) ?? { key, role, mobile, population: 0, weightedSize: 0 };
       group.population += display.population;
       group.weightedSize += size * display.population;
       groups.set(key, group);
     }
-    // At most ten role/habitat groups; one representative each is allocated
-    // before adding extra abundance samples. A dot never means one organism.
+    // At most twenty role/habitat/mobility groups share a twelve-marker budget.
+    // Allocate representatives before extra abundance samples. A dot never means one organism.
     const ordered = [...groups.values()].sort((a, b) => a.key.localeCompare(b.key, 'en'));
     for (const group of ordered) {
       group.size = group.weightedSize / group.population;
@@ -65,7 +66,7 @@ function lifeSummary(observation) {
     const markers = [];
     for (let sample = 0; sample < 4 && markers.length < LIFE_MARKER_LIMIT; sample += 1) {
       for (const group of ordered) {
-        if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, size: group.size });
+        if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, size: group.size, mobile: group.mobile });
       }
     }
     const tint = Math.min(0.48, Math.min(0.44, Math.log1p(smallLand) / 26) + Math.min(0.20, Math.log1p(smallWater) / 40));
@@ -411,7 +412,7 @@ export function createMapRenderer(canvas, { tokens }) {
   }
 
   function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world,
-    life = null, showLife = true, selectedSpeciesId = null } = {}) {
+    life = null, selectedSpeciesId = null, motionTime = 0 } = {}) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (!world?.hexes?.length) {
       context.clearRect(0, 0, width, height);
@@ -421,21 +422,24 @@ export function createMapRenderer(canvas, { tokens }) {
     if (!cachedLife || cachedLife.observation !== life || cachedLife.revision !== life?.revision || cachedLife.runId !== life?.runId) {
       cachedLife = { observation: life, revision: life?.revision, runId: life?.runId, summaries: lifeSummary(life) };
     }
-    const lifeHexes = showLife ? cachedLife.summaries : null;
+    const lifeHexes = cachedLife.summaries;
     const view = transform(world, camera);
     const frozen = layer === 'terrain' ? world.hexes.map((hex) => hex.temperature < 0) : null;
     const stable = previousFrame && previousFrame.geography === geography
       && previousFrame.layer === layer && previousFrame.zoom === camera.zoom
       && previousFrame.x === camera.x && previousFrame.y === camera.y
       && previousFrame.pinnedId === pinnedId && previousFrame.hoveredId === hoveredId
-      && previousFrame.showLife === showLife && previousFrame.selectedSpeciesId === selectedSpeciesId
+      && previousFrame.selectedSpeciesId === selectedSpeciesId
       && previousFrame.lifeRunId === life?.runId;
     const frame = { geography, layer, zoom: camera.zoom, x: camera.x, y: camera.y, pinnedId, hoveredId, frozen,
-      lifeHexes, showLife, selectedSpeciesId, lifeRunId: life?.runId };
+      lifeHexes, selectedSpeciesId, lifeRunId: life?.runId, motionTime };
     let damagedRows = null;
     context.save();
     if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
       const changed = new Set(frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : []);
+      if (motionTime !== previousFrame.motionTime) {
+        for (const [id, summary] of lifeHexes) if (summary.markers.some(marker => marker.mobile)) changed.add(id);
+      }
       if (lifeHexes !== previousFrame.lifeHexes) {
         for (const id of new Set([...(lifeHexes?.keys() ?? []), ...(previousFrame.lifeHexes?.keys() ?? [])])) {
           if (world.hexes[id] && lifeHexes?.get(id)?.signature !== previousFrame.lifeHexes?.get(id)?.signature) changed.add(id);
@@ -613,21 +617,38 @@ export function createMapRenderer(canvas, { tokens }) {
           context.lineWidth = clamp(view.scale * 0.045, 0.8, 2.2);
           context.stroke();
         }
-        if (!summary.markers.length) continue;
+        // Diagnostic fills keep their physical meaning; tiny producers get a
+        // separate mark there so life stays visible on every map layer.
+        const markers = summary.tint > 0 && !['terrain', 'elevation'].includes(layer)
+          ? [{ role: 'producer', size: 0, mobile: false }, ...summary.markers] : summary.markers;
+        if (!markers.length) continue;
         if (!geometry.has(id)) geometry.set(id, lifeMarkerPositions(id));
         const positions = geometry.get(id);
         const markerLimit = view.scale < 7 ? 3 : view.scale < 15 ? 6 : LIFE_MARKER_LIMIT;
-        for (let index = 0; index < Math.min(markerLimit, summary.markers.length); index += 1) {
-          const marker = summary.markers[index];
+        for (let index = 0; index < Math.min(markerLimit, markers.length); index += 1) {
+          const marker = markers[index];
           const point = positions[index];
           const radius = clamp(view.scale * (0.055 + marker.size * 0.11), 0.65, 8);
+          const phase = motionTime * 1.8 + id * 0.7 + index * 2.4;
+          const drift = marker.mobile ? view.scale * 0.045 : 0;
+          const cx = x + point.x * view.scale + Math.cos(phase) * drift;
+          const cy = y + point.y * view.scale + Math.sin(phase * 0.8) * drift;
+          // Appendages use the body's own colour, without an enclosing outline.
+          if (marker.mobile && view.scale >= 12) {
+            context.beginPath();
+            for (let leg = 0; leg < 6; leg += 1) {
+              const angle = leg * Math.PI / 3 + Math.sin(phase * 3 + leg) * 0.18;
+              context.moveTo(cx + Math.cos(angle) * radius * 0.6, cy + Math.sin(angle) * radius * 0.6);
+              context.lineTo(cx + Math.cos(angle + 0.2) * radius * 1.7, cy + Math.sin(angle + 0.2) * radius * 1.7);
+            }
+            context.strokeStyle = palette[`life-${marker.role}`];
+            context.lineWidth = clamp(radius * 0.2, 0.5, 1.1);
+            context.stroke();
+          }
           context.beginPath();
-          context.arc(x + point.x * view.scale, y + point.y * view.scale, radius, 0, Math.PI * 2);
+          context.arc(cx, cy, radius, 0, Math.PI * 2);
           context.fillStyle = palette[`life-${marker.role}`];
           context.fill();
-          context.strokeStyle = palette['life-outline'];
-          context.lineWidth = clamp(radius * 0.26, 0.35, 1.2);
-          context.stroke();
         }
       }
     }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../src/rendering/map.js';
-import { createSpecimenSvg, createPopulationTrendSvg } from '../src/rendering/specimen.js';
+import { createSpecimenSvg, createSpeciesTrendSvg } from '../src/rendering/specimen.js';
 
 const style = readFileSync(new URL('../src/ui/styles/tokens.css', import.meta.url), 'utf8');
 const tokenValue = (name) => {
@@ -295,6 +295,10 @@ test('small producer coverage tints land more than water and preserves diagnosti
   const distance = value => Math.hypot(...channels(value).map((channel, index) => channel - channels(baseline)[index]));
   assert.ok(distance(landColor) > distance(waterColor));
   assert.equal(capture(land, 'temperature'), capture(null, 'temperature'));
+  for (const layer of ['temperature', 'humidity', 'regions']) {
+    capture(land, layer);
+    assert.ok(fills.includes(tokens['--map-life-producer']), `small plants remain visible on ${layer}`);
+  }
   assert.equal(JSON.stringify([world, land, water]), before);
 });
 
@@ -321,8 +325,8 @@ test('life revisions and extinction repaint affected hexes without stale markers
   assert.ok(fills.includes(tokens['--map-pin-fill']), 'physical selection remains above life');
   fills.length = 0;
   strokes.length = 0;
-  map.draw(world, { geography: world, life, showLife: false, selectedSpeciesId: 'species-1' });
-  assert.equal(fills.includes(tokens['--map-life-grazer']), false);
+  map.draw(world, { geography: world, life, selectedSpeciesId: null });
+  assert.ok(fills.includes(tokens['--map-life-grazer']));
   assert.equal(strokes.includes(tokens['--map-life-selected']), false);
   assert.equal(JSON.stringify(life), before);
 });
@@ -378,15 +382,42 @@ test('specimen illustrations are deterministic, read-only, and escape accessible
   assert.equal(JSON.stringify(traits), before);
 });
 
-test('population plots use recorded day spacing, preserve zero and bound retained samples', () => {
-  const samples = freezeDeep([{ day: 2, population: 0 }, { day: 3, population: 50 }, { day: 6, population: 100 }]);
+test('species plots show living and extinct counts at recorded days without mutating samples', () => {
+  const samples = freezeDeep([{ day: 2, species: 0, extinctSpecies: 0 }, { day: 3, species: 2, extinctSpecies: 0 }, { day: 6, species: 1, extinctSpecies: 1 }]);
   const before = JSON.stringify(samples);
-  const svg = createPopulationTrendSvg(samples, { label: 'Population "history"' });
-  assert.match(svg, /d="M6 64L83 36L314 8"/);
-  assert.match(svg, /aria-label="Population &quot;history&quot;"/);
+  const svg = createSpeciesTrendSvg(samples, { label: 'Species "history"' });
+  assert.match(svg, /d="M24 58H96V10H312V34"/);
+  assert.match(svg, /d="M24 58H96V58H312V34"/);
+  assert.match(svg, /aria-label="Species &quot;history&quot;"/);
   assert.equal(JSON.stringify(samples), before);
-  const long = Array.from({ length: 1000 }, (_, day) => ({ day, population: day % 100 }));
-  assert.equal(createPopulationTrendSvg(long), createPopulationTrendSvg(long.slice(-120)));
-  assert.match(createPopulationTrendSvg([{ day: 0, population: 0 }]), /cx="6" cy="64"/);
-  assert.equal(/NaN|Infinity|undefined/.test(createPopulationTrendSvg([{ day: NaN, population: Infinity }])), false);
+  const long = Array.from({ length: 1000 }, (_, day) => ({ day, species: day % 100, extinctSpecies: day }));
+  assert.equal(createSpeciesTrendSvg(long), createSpeciesTrendSvg(long.slice(-180)));
+  assert.match(createSpeciesTrendSvg([{ day: 1, species: 0, extinctSpecies: 0 }]), /cx="24" cy="58"/);
+  assert.equal(/NaN|Infinity|undefined/.test(createSpeciesTrendSvg([{ day: NaN, species: Infinity }])), false);
+});
+
+test('species highlighting covers every occupied hex and cosmetic movement leaves observations intact', () => {
+  const { map, calls, fills, strokes } = renderer();
+  const world = fixture();
+  const one = lifeFixture({ role: 'grazer', size: 0.7 }).hexes[0];
+  const life = freezeDeep({ runId: 'moving', revision: 1, hexes: [
+    { ...one, display: one.display.map(group => ({ ...group, mobile: true })) },
+    { ...one, hexId: 11 },
+    { ...one, hexId: 12, species: [{ id: 'other', population: 800 }] },
+  ] });
+  const before = JSON.stringify(life);
+  const camera = map.fit();
+  map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1' });
+  assert.equal(strokes.filter(color => color === tokens['--map-life-selected']).length, 2);
+  assert.ok(strokes.includes(tokens['--map-life-grazer']), 'legs use the body colour');
+  const first = calls.filter(([method]) => method === 'arc');
+  calls.length = 0;
+  fills.length = 0;
+  map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1', motionTime: 0.5 });
+  assert.ok(fills.length > 0, 'motion repaints the affected area even at the same biological day');
+  assert.notDeepEqual(calls.filter(([method]) => method === 'arc'), first);
+  calls.length = 0;
+  map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1', motionTime: 0.5 });
+  assert.equal(calls.some(([method]) => method === 'arc'), false, 'paused motion reuses the frame');
+  assert.equal(JSON.stringify(life), before);
 });

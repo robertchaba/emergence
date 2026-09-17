@@ -1,6 +1,33 @@
 # Life rendering
 
-## Implemented presentation — 2026-09-16
+## Current presentation — 2026-09-17
+
+Decision 037 supersedes the optional overlay, outlined markers, automatic species
+highlight, and population chart below. Life always renders. Small stationary
+producers tint physical terrain and have a small colour mark on diagnostic layers;
+other groups use filled colour markers without
+an enclosing outline. Optional model-supplied `mobile` groups have same-colour
+appendages at close zoom and a small local cosmetic drift. UI supplies `motionTime`
+at at most eight animation updates per second during visible playback, honoring
+reduced motion. Rendering never infers mobility from genes or advances biology.
+Changed mobile cells participate in the existing damage repaint path. At most
+12 marks are drawn per hex, from at most 20 role/habitat/mobility groups.
+
+Only clicking a species enables `selectedSpeciesId`; every currently occupied hex
+is highlighted using the theme's selected colour. A sole local species may open
+its notebook details without highlighting. Default world geometry and stationary
+marks remain stable, and all observations remain read-only. The removed outline
+token leaves six life palette tokens. Explicit light selection uses ochre rather
+than the earlier dark brown.
+
+`createSpeciesTrendSvg` replaces the population chart with living and extinct
+species series over up to 180 actual completed days. Discrete step paths, a shared
+zero-based scale, dashed extinct series, numerical ticks, a text legend and an
+accessible description distinguish the series without colour alone. UI formats
+ticks and labels in the selected locale. The genome portrait is retained and
+uses the most populous complete living genome of the selected species.
+
+## Earlier implemented presentation — 2026-09-16 (superseded above)
 
 The v1 implementation consumes completed common life observations through
 `map.draw(world, { life, showLife, selectedSpeciesId, ... })`. `life.hexes` carries
