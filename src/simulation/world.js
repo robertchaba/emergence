@@ -3,10 +3,11 @@ import { coordinateHash, elevationNoise, hashSeed } from './noise.js';
 import { deriveHydrology } from './hydrology.js';
 import { assignClimate } from './climate.js';
 import { partitionRegions } from './regions.js';
+import { WEATHER_VERSION } from './weather.js';
 
 export { WORLD_SIZES } from './grid.js';
 export { setDay } from './climate.js';
-export const GENERATOR_VERSION = 'physical-world-2';
+export const GENERATOR_VERSION = 'physical-world-3';
 const MAX_CANDIDATES = 12;
 
 function applyElevation(world, seed) {
@@ -78,6 +79,7 @@ export function generateWorld({ seed = 'emergence', size = 'medium', geography =
       version: GENERATOR_VERSION, seed: String(seed), size, ...dimensions,
       geography, landFraction, waterAbundance, day: 0, candidate,
       randomState: { algorithm: 'coordinate-hash-v1', seedHash, candidateSeed },
+      climateVariability: { version: WEATHER_VERSION, seed: coordinateHash(seedHash, 0, 0, 887) },
       hexes: createGrid(dimensions.width, dimensions.height),
       regions: [], passes: [],
     };

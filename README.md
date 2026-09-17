@@ -5,10 +5,12 @@ hex, and observe how resources, inheritance, mutation, and seasons shape its
 descendants. Geography supplies physical conditions; ecology emerges from life.
 There are no predefined species or scripted outcomes.
 
-**Current stage: working v1 life simulation.** Generate deterministic cylindrical
+**Current stage: V2 life simulation; V1 preserved as a backup.** Generate deterministic cylindrical
 hex worlds, introduce a locally suited plant lineage, and observe resource competition,
 inheritance, mutation, dispersal, and species branching. The Field Notebook shows
-living and extinct species, their history, and the present traits of local species. V1 is an
+living and extinct species, their history, and the present traits of local species. V2 adds
+20 inherited traits, costly defenses and counteradaptations, sexual recombination,
+delayed barrier crossings, persistent spatial/ecological isolation and seeded weather. It is an
 experimental model with documented approximations, not calibrated biology.
 
 ## Run locally
@@ -46,7 +48,8 @@ world.html               World setup and accessible workspace controls
 src/
   simulation/            Headless generation, drainage, climate, and regions
     life/                Common life-model boundary and observation contract
-      v1/                First life model, genes, research, and implementation decisions
+      v1/                Preserved first life model and historical research
+      v2/                Active life model, 20 genes, rules and validation
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -103,18 +106,21 @@ camera, selected layer, and pinned hex. Without JavaScript, static copy is Engli
    **Back to Emergence** to return to the landing page.
 
 A year has 360 days, beginning at the northern spring equinox. Hydrology and
-geographic regions stay fixed while temperature and land moisture change. Once
-life is introduced, v1 executes **three biological turns per ten physical days**.
+geographic regions stay fixed while temperature, land moisture, water surfaces and
+ice cover respond to seasons and bounded seeded weather. The coastline remains fixed. Once
+life is introduced, V2 executes **three biological turns per ten physical days**.
 At 10×, temperature/calendar playback still targets 20 days/s while biology targets
 6 turns/s (the previous 3× biological pace). This ratio applies at every speed.
 A one-day step advances the climate; biology runs when its next turn is due.
 Higher speed requests more days without changing event probabilities.
 
-Pin a suitable land or water hex and select **Start life here** in the notebook.
+Pin any hex and select **Start life here** in the notebook.
 The model introduces a small plant colony and chooses its initial habitat and
 temperature traits from the selected location. There is no population-size input.
-An unsuitable site receives an explanation. Successful introduction starts playback
-automatically; **Pause** and the one-day step control let you inspect descendants.
+Ice, high mountains and energy-poor sites also accept founders; normal habitat
+and energy rules determine whether they survive. Successful introduction sets the
+speed to **10×** and starts playback automatically; **Pause** and the one-day step
+control let you inspect descendants.
 
 Living populations cannot be reset or replaced. If every organism dies, **Start
 life here** becomes available again for an explicit new beginning on the same
@@ -129,7 +135,9 @@ name to open its genome portrait directly below the name, followed by its compac
 population count (e.g. 21K) and present genes, and outline its whole occupied range;
 click it again to clear the highlight. A sole local species opens automatically, with highlighting still
 requiring a click. Gene expressions
-carried by only part of the species appear in lighter text with their percentage.
+carried by less than 98% of the species appear in lighter text with their percentage.
+Traits and expressions at or above 98% retain their normal text colour, including
+values rounded to 100%.
 Expressions below 2% of the species population are hidden but remain in the model.
 Expressions covering at least 98% of the population are plain values; partial
 expressions below that threshold can be clicked to highlight their carrier hexes
@@ -137,12 +145,15 @@ in pale green, with a dark-green dashed border inside the light species outline.
 Click again to clear only the carrier highlight. Binary traits show their carrier
 percentage, without a redundant “Present” label. Selected controls use dark green
 in both themes.
+Body size uses words only, from tiny to enormous, in both languages.
 The portrait uses the most populous complete genome.
 
 Life always appears on the map as vivid green plant coverage and coloured dots
 without dark outlines. Bare land uses softly warm stone greys in both themes.
-Mobile groups have subtle motion and small appendages at closer zoom;
-this stops while paused, hidden, or using reduced motion. These marks represent
+Dots are smaller and more numerous, with softer translucent marks for stationary
+plants. Plant marks fade and reappear in scattered positions; mobile groups travel
+smoothly within each hex and have small appendages at closer zoom. Animation
+stops while paused, hidden, or using reduced motion. These marks represent
 population groups. On phones, pinning scrolls the local record into view; the
 notebook scrolls independently. Theme and language changes preserve the run and
 selection. Returning to setup and starting another world resets to day 1.
@@ -172,7 +183,7 @@ const serialized = JSON.stringify(summer);
 Life is a separate model with its own explicit commands:
 
 ```js
-import { createLifeModel, restoreLifeModel } from './src/simulation/life/v1/model.js';
+import { createLifeModel, restoreLifeModel } from './src/simulation/life/v2/model.js';
 
 const life = createLifeModel(world);
 const result = life.introduce(selectedHexId);
@@ -186,8 +197,11 @@ if (result.ok) {
 
 `inspectHex(id)` and `inspectSpecies(id)` expose consistent local counts and
 locations. Checkpoints retain the complete biological PRNG and classification
-state; a world seed alone cannot resume a run. Browser save/load is not provided.
-See [v1 decisions](src/simulation/life/v1/docs/DECISIONS.md) for experimental
+state; a world seed alone cannot resume a run. Browser save/load is not provided. V1 checkpoints are intentionally incompatible
+with V2; a new life model starts a separate run. Reproduce the six-seed small-world
+pacing panel with `node scripts/benchmark-life-v2.js` (optional seed arguments;
+`--land` for terrestrial sites, `--full` for all 15 years).
+See [V2 rules](src/simulation/life/v2/docs/RULES.md) for experimental
 coefficients, cohort representation, energy rounding, and validation limits.
 
 Snapshots record the generator version, settings, selected candidate, hash
@@ -215,8 +229,9 @@ Shared world rules and the decision record stay in **`docs/`**, despite the
 original brief's `/documents` path. Life/evolution and approximation research is
 now under **`src/simulation/life/v1/docs/`**, with gene descriptions in
 **`src/simulation/life/v1/genes/docs/`** and gene code in the enclosing
-**`genes/`** directory. Later models will use the same layout in sibling version
-folders while keeping the same physical world and common UI data contract.
+**`genes/`** directory. Active V2 has newly written rules in
+**`src/simulation/life/v2/docs/`** and a complete gene catalogue in
+**`src/simulation/life/v2/genes/docs/GENES.md`**, while keeping the same physical world and common UI data contract.
 Research filename suffixes retain their original revisions; they are separate
 from the enclosing life-model version.
 
@@ -225,6 +240,10 @@ from the enclosing life-model version.
 - [Shared world, climate, and playback rules](docs/evolution_simulation_summary_v6.md)
 - [Life-model ownership and versioning](src/simulation/life/README.md)
 - [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
+- [Active V2 model](src/simulation/life/v2/README.md)
+- [V2 rules](src/simulation/life/v2/docs/RULES.md)
+- [V2 genes](src/simulation/life/v2/genes/docs/GENES.md)
+- [V2 validation and pacing](src/simulation/life/v2/docs/VALIDATION.md)
 - [Life model v1 implementation and research](src/simulation/life/v1/README.md)
 - [V1 habitats, movement, energy, and initialization](src/simulation/life/v1/docs/evolution_simulation_summary_v6.md)
 - [V1 inheritance and species classification](src/simulation/life/v1/docs/evolution_mechanics_summary_v3.md)
@@ -236,6 +255,7 @@ from the enclosing life-model version.
 
 The combined v6 summary has been split by ownership, retaining original section
 numbers for traceability. The architecture record identifies adopted physical and integration
-rules; v1's `DECISIONS.md` records biological defaults and approximation limits.
+rules; V2's rules and validation record describe current biological defaults and limits.
+V1's `DECISIONS.md` and implementation remain preserved unchanged by the V2 step.
 The original research remains preserved. The common contract defines consistent
 world/species/hex counts without fixing another model's biology.

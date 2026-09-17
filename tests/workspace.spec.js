@@ -1,8 +1,9 @@
 import { chooseTheme } from './ui-helpers.js';
 import { test, expect } from '@playwright/test';
 
-async function openWorld(page) {
+async function openWorld(page, seed) {
   await page.goto('/world.html');
+  if (seed) await page.getByLabel('Seed', { exact: true }).fill(seed);
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   const map = page.getByRole('application', { name: 'World map' });
   await expect(map).toBeFocused();
@@ -99,7 +100,9 @@ test('keyboard wraps the seam, stops at poles and opens the brand menu', async (
 
 test('playback updates climate while physical readings and menu layers stay stable', async ({ page }) => {
   await page.clock.install();
-  const map = await openWorld(page);
+  // Weather can cancel seasonal warming at a randomly chosen site. Use a
+  // reproducible site with a visible change at the notebook's 0.1 °C precision.
+  const map = await openWorld(page, 'playback-climate-v2');
   await page.keyboard.press('ArrowRight');
   for (let i = 0; i < 6; i += 1) await page.keyboard.press('ArrowUp');
   const elevationReading = page.locator('.hex-facts > div').filter({ hasText: 'Elevation' }).locator('dd');

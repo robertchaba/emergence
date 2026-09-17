@@ -32,10 +32,12 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
         for (const camera of [a.fit(), a.cover(geography), { zoom: 3, x: 71, y: -45 }]) {
           for (const snapshot of snapshots) {
             const options = { geography, camera, pinnedId: geography.hexes.find(hex => hex.runoff > 0).id,
+              motionTime: snapshot.day * 0.4,
               selectedSpeciesId: 'species-1', selectedVariantHexIds: snapshot.day < 180 ? [100] : [101],
               life: { runId: 'contour-check', revision: snapshot.day, hexes: [100, 101, 124].map(hexId => ({
                 hexId, population: 100, species: [{ id: 'species-1', population: 100 }],
-                display: [{ role: 'producer', size: 0.1, habitat: 'land', population: 100 }],
+                display: [{ role: 'producer', size: 0.1, habitat: 'land', population: 100 },
+                  { role: 'grazer', size: 0.6, habitat: 'land', population: 100, mobile: true }],
               })) },
             };
             a.draw(snapshot, options);

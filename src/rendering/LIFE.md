@@ -1,5 +1,41 @@
 # Life rendering
 
+## Stable near-universal gene appearance — 2026-09-17
+
+Decision 044 supersedes the earlier dimming of every non-universal gene. Notebook
+trait labels and expression values keep their normal theme colour when their
+carrier share is at least 98%, using the existing interaction cutoff before
+rounding. Only shares below 98% use muted text. Thus small carrier fluctuations
+that still display as 100% no longer change colour. The 2% visibility cutoff,
+percentages and carrier selection retain their existing meanings; the observations
+and biological rules are unchanged.
+
+## Smaller scattered marks and local movement — 2026-09-17
+
+Decision 042 supersedes the twelve-marker budget, fixed stationary geometry,
+diagnostic-only tiny-plant marks and small orbital mobile drift described below.
+All groups now receive dots, including tiny stationary producers, whose existing
+terrain tint remains. Abundance gives up to ten samples per role/habitat/mobility
+group, bounded to 30 per hex (six or fifteen at lower zoom). Radii are reduced,
+with a 3.5 CSS-pixel cap. Stationary producers use a separate translucent
+`--map-life-plant` colour in both themes and the synchronized system fallback.
+Coverage retains the stronger existing producer token.
+
+Each slot uses a reproducible cosmetic hash of hex, slot and animation interval.
+Stationary marks fade out and reappear at new positions every twelve visible
+playback seconds, with staggered phases. They do not crawl. Mobile marks smoothly
+interpolate scattered waypoints every 3.5 seconds, retaining appendages at close
+zoom. Paths stay within the occupied hex; these are representative marks, not
+tracked individual organisms or inferred biological journeys. UI supplies the
+clock at at most eight updates per second, stopping on pause, hidden tabs and
+reduced motion. Changed marks participate in damage repainting; observations,
+biological randomness and counts remain untouched.
+
+Notebook body-size expressions use ten localized word labels across the supplied
+trait range (tiny through enormous), without numeric size or cell counts. Carrier
+percentages and gene selection retain their existing meanings. Neither size
+labels nor marker styling changes biological body size.
+
 ## Current portrait and terrain palette — 2026-09-17
 
 Decision 040 places the genome portrait directly below the expanded species name,

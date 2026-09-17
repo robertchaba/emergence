@@ -1,3 +1,5 @@
+import { weatherAt, WEATHER_VERSION, MAX_TEMPERATURE_ANOMALY, MAX_MOISTURE_ANOMALY } from './weather.js';
+
 /** Provisional climate coefficients from the research summary, section 4. */
 export const DAYS_PER_YEAR = 360;
 const SEASONS = Array.from({ length: DAYS_PER_YEAR }, (_, day) =>
@@ -22,7 +24,7 @@ function landHumidity(hex, width, temperature, seasonalSignal) {
   );
 }
 
-function readingsAt(world, hex, season, result = {}) {
+function readingsAt(world, hex, season, day, result = {}) {
   const latitude = 90 - 180 * hex.row / (world.height - 1);
   const water = hex.waterType !== 'none';
   const surfaceHeight = water ? hex.waterLevel : hex.bedElevation;
@@ -31,14 +33,19 @@ function readingsAt(world, hex, season, result = {}) {
   const seasonalAmplitude = water ? 4 : 12;
   const annualSignal = Math.abs(latitude) / 90;
   const seasonalSignal = latitude / 90 * season;
-  const annualMaximumTemperature = clamp(meanTemperature + seasonalAmplitude * annualSignal, -40, 40);
+  const variable = world.climateVariability?.version === WEATHER_VERSION;
+  const weather = weatherAt(world, hex, day);
+  const annualMaximumTemperature = clamp(meanTemperature + seasonalAmplitude * annualSignal
+    + (variable ? MAX_TEMPERATURE_ANOMALY : 0), -40, 40);
 
-  const temperature = clamp(meanTemperature + seasonalAmplitude * seasonalSignal, -40, 40);
-  const humidity = water ? null : landHumidity(hex, world.width, temperature, seasonalSignal);
+  const temperature = clamp(meanTemperature + seasonalAmplitude * seasonalSignal + weather.temperatureAnomaly, -40, 40);
+  const humidity = water ? null : clamp(landHumidity(hex, world.width, temperature, seasonalSignal)
+    + weather.moistureAnomaly, 0, 1);
   // Humidity decreases monotonically as the seasonal signal increases, so
   // this is its annual minimum without sampling every day of the year.
   const annualMinimumHumidity = water ? null
-    : landHumidity(hex, world.width, annualMaximumTemperature, annualSignal);
+    : clamp(landHumidity(hex, world.width, annualMaximumTemperature, annualSignal)
+      - (variable ? MAX_MOISTURE_ANOMALY : 0), 0, 1);
   result.latitude = latitude;
   result.meanTemperature = meanTemperature;
   result.annualMaximumTemperature = annualMaximumTemperature;
@@ -46,6 +53,9 @@ function readingsAt(world, hex, season, result = {}) {
   result.humidity = humidity;
   result.annualMinimumHumidity = annualMinimumHumidity;
   result.permanentIce = annualMaximumTemperature < 0;
+  Object.assign(result, weather);
+  result.frozen = temperature < 0;
+  result.iceCover = clamp(-temperature / 5, 0, 1);
   return result;
 }
 
@@ -54,14 +64,14 @@ function readingsAt(world, hex, season, result = {}) {
  */
 export function climateAt(world, hex, day) {
   validateDay(day);
-  return readingsAt(world, hex, SEASONS[day % DAYS_PER_YEAR]);
+  return readingsAt(world, hex, SEASONS[day % DAYS_PER_YEAR], day);
 }
 
 /** Internal builder: modifies only the newly owned generation snapshot. */
 export function assignClimate(world, day = 0) {
   validateDay(day);
   const season = SEASONS[day % DAYS_PER_YEAR];
-  for (const hex of world.hexes) readingsAt(world, hex, season, hex);
+  for (const hex of world.hexes) readingsAt(world, hex, season, day, hex);
 
   world.day = day;
   return world;

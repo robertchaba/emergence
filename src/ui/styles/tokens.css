@@ -82,6 +82,7 @@
   --map-region-6: #cca9ad;
   --map-region-7: #7cb9b1;
   --map-life-producer: #199c35;
+  --map-life-plant: rgb(45 130 30 / 42%);
   --map-life-grazer: #946423;
   --map-life-predator: #a94237;
   --map-life-mixed: #795184;
@@ -196,6 +197,7 @@
   --map-region-6: #bd969f;
   --map-region-7: #65aca4;
   --map-life-producer: #4ccc3b;
+  --map-life-plant: rgb(76 204 59 / 42%);
   --map-life-grazer: #e6ba6c;
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
@@ -312,6 +314,7 @@
     --map-region-6: #bd969f;
     --map-region-7: #65aca4;
   --map-life-producer: #4ccc3b;
+  --map-life-plant: rgb(76 204 59 / 42%);
   --map-life-grazer: #e6ba6c;
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;

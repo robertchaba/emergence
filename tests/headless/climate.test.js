@@ -103,10 +103,11 @@ test('setDay owns its complete snapshot and preserves physical geography and reg
   assert.deepEqual(later.passes, original.passes);
   assert.deepEqual(later.regionConnections, original.regionConnections);
   assert.ok(later.hexes.some((hex, id) => hex.temperature !== original.hexes[id].temperature));
+  const changingClimate = new Set(['temperature', 'humidity', 'temperatureAnomaly', 'moistureAnomaly',
+    'waterLevelAnomaly', 'currentWaterLevel', 'waterExposure', 'frozen', 'iceCover']);
+  const physicalFacts = hex => Object.fromEntries(Object.entries(hex).filter(([key]) => !changingClimate.has(key)));
   for (const hex of later.hexes) {
-    const { temperature, humidity, ...physical } = hex;
-    const { temperature: oldTemperature, humidity: oldHumidity, ...oldPhysical } = original.hexes[hex.id];
-    assert.deepEqual(physical, oldPhysical);
+    assert.deepEqual(physicalFacts(hex), physicalFacts(original.hexes[hex.id]));
   }
   for (const day of [-1, 1.5, Infinity, NaN, '1', Number.MAX_SAFE_INTEGER + 1]) {
     assert.throws(() => setDay(original, day), RangeError);

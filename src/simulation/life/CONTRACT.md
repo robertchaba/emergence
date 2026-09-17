@@ -3,8 +3,8 @@
 This is the semantic contract `life/vN/` implementations must expose to UI
 and rendering. It defines meanings and required queries, not JavaScript function
 signatures, private state layouts, a worker protocol or a save-file schema.
-V1 implements these semantics; its concrete API is documented in
-[v1/README.md](v1/README.md). The [ownership rules](README.md) apply to every version.
+V1 and V2 implement these semantics; the active API is documented in
+[v2/README.md](v2/README.md), with preserved V1 in [v1/README.md](v1/README.md). The [ownership rules](README.md) apply to every version.
 
 ## Commands and simulated time
 
@@ -19,7 +19,8 @@ Repeated-start policy and extinction behavior must be documented by each model.
 World setup's **Start** continues to open the atlas. **Play/Pause** and speed
 remain shared browser controls. They must not implicitly seed, replace or reseed
 life. **Start life here** is the separate biological intent described above;
-the implemented UI requests playback after successful introduction. Entering a
+the implemented UI sets the maximum target speed and requests playback after
+successful introduction (architecture decision 044). Entering a
 new atlas starts at day 1, paused; preview time is separate. This supersedes the
 original UI choice to leave introduction paused (architecture decision 037).
 
@@ -160,3 +161,14 @@ Example: species A has 7 organisms on hex 10 and 3 on hex 11; species B has 2 on
 hex 11. World totals are 12 organisms, 2 species and 2 occupied hexes. Hex 11 has
 5 organisms and 2 species; species A has 10 organisms across 2 hexes. Splitting
 A's storage into more cohorts or drawing fewer dots changes none of these values.
+
+## V2 continuation and observation compatibility
+
+V2 uses the same count, trait, variant, carrier-location, display and history
+extensions described above. Its complete 20-trait catalogue supplies ranges and
+units; UI localizes keys and categorical skeleton/armor values, without reading
+genomes. `modelId` and `rulesRevision` identify V2 explicitly. Pending dispersal
+carriers count at their source until arrival and never occupy two hexes at once.
+V2 checkpoints include pending passages and niche/spatial classification timers;
+V1/V2 checkpoints are intentionally incompatible. Shared weather identity belongs
+to world metadata, so life and atlas observe the same explicit-day conditions.

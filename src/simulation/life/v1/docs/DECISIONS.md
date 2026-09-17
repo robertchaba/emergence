@@ -3,7 +3,8 @@
 The user authorized implementation and judgement on unresolved choices, including
 performance approximations. This record resolves the open items in the preserved
 research; numerical values are model choices, not measured biological constants.
-The implemented identity is `v1`, rules revision `v1-cohorts-2`. Revision 1's
+The implemented identity is `v1`, rules revision `v1-cohorts-3`.
+Revision 2's introduction restrictions are superseded by decision 13 below. Revision 1's
 one-turn-per-day schedule is superseded by decision 12 below; its per-turn
 coefficients and preserved research remain unchanged.
 
@@ -205,3 +206,18 @@ lineages; the approximately 9.2% population difference is not an error guarantee
 An intentionally dense one-hex predator/prey checkpoint (10,000 of each) completed
 one day in approximately 8 ms after size indexing and fed-state recombination;
 this synthetic stress check does not represent an ecological equilibrium.
+
+13. **Introduction on any hex — 2026-09-17.** Supersedes decision 1's rejection
+    of ice, high land and insufficient uncrowded energy, at the user's explicit
+    request. Every valid physical hex receives the same 20 founders with the
+    existing site-matched traits and reserve. Do not test positive net energy
+    before introduction. Habitat factors, energy acquisition, upkeep, stochastic
+    starvation, movement and offspring establishment retain their existing rules.
+    Unsupported sites can therefore lose their founders on subsequent turns;
+    no survival or automatic reseeding is promised. Invalid IDs and another
+    introduction into a living run remain atomic rejections. Explicit attempts
+    after extinction can also use any hex. Rules revision is `v1-cohorts-3`;
+    checkpoint shape remains format 2, but the strict rules check rejects older
+    revisions rather than silently changing future introduction commands.
+    Tests cover all fixture hexes, ice/high-land extinction through ordinary
+    energy rules, reintroduction, detached geography and checkpoint replay.

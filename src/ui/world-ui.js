@@ -69,7 +69,7 @@ export function initWorldUI() {
   let selectedVariant = null;
   let motionTime = 0;
   let lastMotionFrame = 0;
-  let hasMobileLife = false;
+  let hasVisibleLife = false;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const notebook = createLifeNotebook({
     onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
@@ -87,7 +87,7 @@ export function initWorldUI() {
     lifeWorker?.terminate();
     lifeWorker = null;
     life = null;
-    hasMobileLife = false;
+    hasVisibleLife = false;
     motionTime = 0;
     lifeBusy = false;
     lifePendingCommand = null;
@@ -121,12 +121,17 @@ export function initWorldUI() {
         updatePlaybackState();
         const previousDay = world.day;
         life = data.observation;
-        hasMobileLife = life.hexes.some(hex => hex.display.some(group => group.mobile));
+        hasVisibleLife = life.hexes.some(hex => hex.display.some(group => group.population > 0));
         if (life.day !== world.day) world = setDay(world, life.day);
         measuredDays += Math.max(0, world.day - previousDay);
         notebook.update(life, { busy: false, pinnedId, totalHexes: world.hexes.length });
         if (data.command === 'introduce') {
-          if (data.result?.ok) setPlaying(true);
+          if (data.result?.ok) {
+            targetSpeed = Number(speedInput.max);
+            speedInput.value = String(targetSpeed);
+            updateTargetSpeed();
+            setPlaying(true);
+          }
           else notebook.message(data.result?.reason || 'lifeError');
         }
         updateDayReadout();
@@ -402,7 +407,7 @@ export function initWorldUI() {
   // Every biological day executes; only completed observations reach the map.
   // The engine never reads this clock, and hidden tabs do not catch up.
   function animateClimate(timestamp) {
-    if (!workspace.hidden && !document.hidden && playing && hasMobileLife && !reducedMotion.matches
+    if (!workspace.hidden && !document.hidden && playing && hasVisibleLife && !reducedMotion.matches
       && timestamp - lastMotionFrame >= 125) {
       motionTime += Math.min(0.125, (timestamp - lastMotionFrame) / 1000);
       lastMotionFrame = timestamp;

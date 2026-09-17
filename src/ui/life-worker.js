@@ -1,5 +1,5 @@
 // Browser execution boundary. The life model itself never reads browser services.
-import { createLifeModel } from '../simulation/life/v1/model.js';
+import { createLifeModel } from '../simulation/life/v2/model.js';
 
 let model = null;
 self.onmessage = ({ data }) => {

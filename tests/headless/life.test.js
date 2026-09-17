@@ -20,7 +20,10 @@ function freeze(value) {
 
 function seed(world, settings) {
   const model = createLifeModel(world, settings);
-  for (const hex of world.hexes) if (model.introduce(hex.id).ok) return model;
+  for (const hex of world.hexes) {
+    if (!hex.permanentIce && hex.waterType !== 'none' && hex.temperature >= 9 && hex.temperature <= 31
+      && model.introduce(hex.id).ok) return model;
+  }
   throw new Error('No suitable fixture habitat.');
 }
 
@@ -88,13 +91,13 @@ test('biology takes three turns per ten physical days, retaining fractional cred
   assert.throws(() => restoreLifeModel(world, invalid), /Incompatible/);
 });
 
-test('v1 introduction is explicit, validates habitat, and rejected commands are atomic', () => {
+test('v1 introduction is explicit and invalid or repeated commands are atomic', () => {
   const world = freeze(fixture());
   const model = createLifeModel(world);
   const before = model.exportState();
   assert.equal(model.observe().status, 'not-introduced');
   assert.equal(model.introduce(-1).reason, 'unknown-hex');
-  assert.equal(model.introduce(0).reason, 'permanent-ice');
+  assert.equal(model.introduce(world.hexes.length).reason, 'unknown-hex');
   assert.deepEqual(model.exportState(), before);
   assert.equal(model.introduce(6, { population: 999 }).ok, true);
   assert.equal(model.observe().counts.organisms, 20);
@@ -114,6 +117,29 @@ test('v1 introduction is explicit, validates habitat, and rejected commands are 
   delayed.advanceTo(12);
   assert.equal(delayed.introduce(6).ok, true);
   assert.equal(delayed.observe().startDay, 12);
+});
+
+test('every hex accepts founders, with hostile sites losing life through normal energy rules', () => {
+  const world = fixture();
+  world.hexes[6] = { ...world.hexes[6], waterType: 'none', waterLevel: null, bedElevation: 3500 };
+  const before = JSON.stringify(world);
+  for (const hex of world.hexes) {
+    const model = createLifeModel(world);
+    assert.equal(model.introduce(hex.id).ok, true, `hex ${hex.id}`);
+    assert.equal(model.observe().counts.organisms, 20);
+    assert.equal(model.inspectHex(hex.id).population, 20);
+    // Hex 15 is ice-free water with insufficient production entering winter.
+    if (hex.permanentIce || hex.id === 6 || hex.id === 15) {
+      const restored = restoreLifeModel(world, model.exportState());
+      model.advanceTo(40); restored.advanceTo(40);
+      assert.deepEqual(model.exportState(), restored.exportState());
+      assert.equal(model.observe().status, 'extinct');
+      assert.equal(model.observe().stats.deaths, 20);
+      assert.equal(model.observe().stats.births, 0);
+      assert.equal(model.introduce(hex.id).ok, true, 'explicit restart also accepts hostile sites');
+    }
+  }
+  assert.equal(JSON.stringify(world), before);
 });
 
 test('daily advancement preserves geography, exact observations and newborn activation', () => {
@@ -198,7 +224,7 @@ test('loss of all energy systems permits extinction, with historical identity an
   assert.equal(model.observe().status, 'extinct');
   assert.equal(model.observe().day, 5);
   const extinct = model.exportState();
-  assert.equal(model.introduce(0).reason, 'permanent-ice');
+  assert.equal(model.introduce(world.hexes.length).reason, 'unknown-hex');
   assert.deepEqual(model.exportState(), extinct, 'rejected restart is atomic');
   assert.equal(model.introduce(6).ok, true);
   assert.equal(model.observe().day, 5);
@@ -237,7 +263,7 @@ test('founding plants select local moisture and temperature traits only at intro
   assert.deepEqual(crowded.exportState().genomes[0].genome, genome);
   const ridge = fixture();
   ridge.hexes[6] = { ...ridge.hexes[6], waterType: 'none', bedElevation: 3500, waterLevel: null };
-  assert.equal(createLifeModel(ridge).introduce(6).reason, 'unsuitable-habitat');
+  assert.equal(createLifeModel(ridge).introduce(6).ok, true);
 });
 
 test('predation is habitat-local, consumes each prey once and respects smaller-animal eligibility', () => {

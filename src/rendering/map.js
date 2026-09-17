@@ -13,7 +13,7 @@ export const MAP_TOKEN_NAMES = Object.freeze([
   'spring-ring', 'grid', 'pin', 'pin-outline', 'pin-fill', 'temperature-cold',
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
-  'life-producer', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
+  'life-producer', 'life-plant', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
   'life-selected', 'life-selected-fill', 'life-selection-halo', 'life-variant', 'life-variant-fill',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
 ].map((name) => `--map-${name}`));
@@ -21,17 +21,41 @@ export const MAP_TOKEN_NAMES = Object.freeze([
 const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
 const modulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
 const LIFE_ROLES = ['producer', 'grazer', 'predator', 'mixed', 'other'];
-const LIFE_MARKER_LIMIT = 12;
+const LIFE_MARKER_LIMIT = 30;
 
-// These positions are cosmetic, deterministic, and independent of biological
-// randomness. The fixed budget bounds geometry by occupied hexes, not organisms.
+// Cosmetic hashing never touches biological randomness. Each representative has
+// its own bounded sequence of positions inside the hex, independent of the camera.
+function markerPoint(seed, step) {
+  const hash = salt => {
+    let value = Math.imul(seed ^ Math.imul(step + 1, 1597334677) ^ salt, 2246822507);
+    value = Math.imul(value ^ (value >>> 16), 3266489909);
+    return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
+  };
+  const angle = hash(374761393) * Math.PI * 2;
+  const radius = Math.sqrt(hash(668265263)) * 0.66;
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+}
+
 function lifeMarkerPositions(hexId) {
-  const rotation = ((Math.imul(hexId + 1, 2654435761) >>> 0) / 4294967296) * Math.PI * 2;
   return Array.from({ length: LIFE_MARKER_LIMIT }, (_, index) => {
-    const angle = rotation + index * 2.399963229728653;
-    const radius = Math.sqrt((index + 0.5) / LIFE_MARKER_LIMIT) * 0.57;
-    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+    const seed = Math.imul(hexId + 1, 2654435761) ^ Math.imul(index + 1, 1597334677);
+    return { seed, offset: (seed >>> 0) / 4294967296 * 12 };
   });
+}
+
+function animatedMarker(marker, slot, time) {
+  const clock = (time + slot.offset) / (marker.mobile ? 3.5 : 12);
+  const step = Math.floor(clock);
+  const progress = clock - step;
+  const from = markerPoint(slot.seed, step);
+  if (!marker.mobile) {
+    // Plants stay rooted: fade out and reappear elsewhere instead of crawling.
+    return { ...from, opacity: Math.min(1, progress * 12, (1 - progress) * 12) };
+  }
+  const to = markerPoint(slot.seed, step + 1);
+  const blend = progress * progress * (3 - 2 * progress);
+  return { x: from.x + (to.x - from.x) * blend,
+    y: from.y + (to.y - from.y) * blend, opacity: 1 };
 }
 
 function lifeSummary(observation) {
@@ -49,7 +73,6 @@ function lifeSummary(observation) {
       if (role === 'producer' && size <= 0.25 && !mobile) {
         if (display.habitat === 'water') smallWater += display.population;
         else smallLand += display.population;
-        continue;
       }
       const key = `${role}:${display.habitat === 'water' ? 'water' : 'land'}:${mobile}`;
       const group = groups.get(key) ?? { key, role, mobile, population: 0, weightedSize: 0 };
@@ -57,15 +80,15 @@ function lifeSummary(observation) {
       group.weightedSize += size * display.population;
       groups.set(key, group);
     }
-    // At most twenty role/habitat/mobility groups share a twelve-marker budget.
+    // At most twenty role/habitat/mobility groups share a thirty-marker budget.
     // Allocate representatives before extra abundance samples. A dot never means one organism.
     const ordered = [...groups.values()].sort((a, b) => a.key.localeCompare(b.key, 'en'));
     for (const group of ordered) {
       group.size = group.weightedSize / group.population;
-      group.samples = Math.min(4, 1 + Math.floor(Math.log10(group.population)));
+      group.samples = Math.min(group.population, 10, 2 + 2 * Math.floor(Math.log10(group.population)));
     }
     const markers = [];
-    for (let sample = 0; sample < 4 && markers.length < LIFE_MARKER_LIMIT; sample += 1) {
+    for (let sample = 0; sample < 10 && markers.length < LIFE_MARKER_LIMIT; sample += 1) {
       for (const group of ordered) {
         if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, size: group.size, mobile: group.mobile });
       }
@@ -449,7 +472,7 @@ export function createMapRenderer(canvas, { tokens }) {
     if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
       const changed = new Set(frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : []);
       if (motionTime !== previousFrame.motionTime) {
-        for (const [id, summary] of lifeHexes) if (summary.markers.some(marker => marker.mobile)) changed.add(id);
+        for (const [id, summary] of lifeHexes) if (summary.markers.length) changed.add(id);
       }
       if (lifeHexes !== previousFrame.lifeHexes) {
         for (const id of new Set([...(lifeHexes?.keys() ?? []), ...(previousFrame.lifeHexes?.keys() ?? [])])) {
@@ -622,22 +645,20 @@ export function createMapRenderer(canvas, { tokens }) {
         const x = view.x + position.x * view.scale;
         const y = view.y + position.y * view.scale;
         if (x + view.scale < 0 || x - view.scale > width || y + view.scale < 0 || y - view.scale > height) continue;
-        // Diagnostic fills keep their physical meaning; tiny producers get a
-        // separate mark there so life stays visible on every map layer.
-        const markers = summary.tint > 0 && !['terrain', 'elevation'].includes(layer)
-          ? [{ role: 'producer', size: 0, mobile: false }, ...summary.markers] : summary.markers;
+        const markers = summary.markers;
         if (!markers.length) continue;
         if (!geometry.has(id)) geometry.set(id, lifeMarkerPositions(id));
         const positions = geometry.get(id);
-        const markerLimit = view.scale < 7 ? 3 : view.scale < 15 ? 6 : LIFE_MARKER_LIMIT;
+        const markerLimit = view.scale < 7 ? 6 : view.scale < 15 ? 15 : LIFE_MARKER_LIMIT;
         for (let index = 0; index < Math.min(markerLimit, markers.length); index += 1) {
           const marker = markers[index];
-          const point = positions[index];
-          const radius = clamp(view.scale * (0.055 + marker.size * 0.11), 0.65, 8);
+          const plant = marker.role === 'producer' && !marker.mobile;
+          const point = animatedMarker(marker, positions[index], motionTime);
+          const radius = clamp(view.scale * (0.024 + marker.size * 0.055) * (plant ? 0.8 : 1), 0.4, 3.5);
           const phase = motionTime * 1.8 + id * 0.7 + index * 2.4;
-          const drift = marker.mobile ? view.scale * 0.045 : 0;
-          const cx = x + point.x * view.scale + Math.cos(phase) * drift;
-          const cy = y + point.y * view.scale + Math.sin(phase * 0.8) * drift;
+          const cx = x + point.x * view.scale;
+          const cy = y + point.y * view.scale;
+          context.globalAlpha = point.opacity;
           // Appendages use the body's own colour, without an enclosing outline.
           if (marker.mobile && view.scale >= 12) {
             context.beginPath();
@@ -652,9 +673,10 @@ export function createMapRenderer(canvas, { tokens }) {
           }
           context.beginPath();
           context.arc(cx, cy, radius, 0, Math.PI * 2);
-          context.fillStyle = palette[`life-${marker.role}`];
+          context.fillStyle = palette[plant ? 'life-plant' : `life-${marker.role}`];
           context.fill();
         }
+        context.globalAlpha = 1;
       }
     }
 

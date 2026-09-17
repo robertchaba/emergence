@@ -21,7 +21,7 @@ const checkpoint = life.exportState();
 const continued = restoreLifeModel(world, checkpoint);
 ```
 
-Advancement is headless and explicit. Rules revision `v1-cohorts-2` executes three
+Advancement is headless and explicit. Rules revision `v1-cohorts-3` executes three
 complete biological turns per ten physical days; climate still uses the physical
 day. Introduction resets integer turn credit, so the first turns occur after
 4, 7, and 10 days. Checkpoint format 2 retains this credit and the turn counter;
@@ -32,6 +32,9 @@ and classification timers. Queries do not advance the model. A checkpoint is a
 model-local continuation representation, not a version-independent saved-world
 format. A caller supplies a distinct `runId` for each world session. Introduction
 starts a fixed small colony of plants with genes matched to the selected site.
+Every physical hex accepts founders, including ice, high land and energy-poor
+sites; existing survival rules act on subsequent turns. Rules revision 3 changes
+introduction eligibility only; revision 2 checkpoints are rejected explicitly.
 Living runs cannot reset or reseed. After extinction an explicit `introduce`
 command may begin a new attempt at the completed physical day, with a new run ID
 and archived prior attempt summary. A rejected command never changes state.

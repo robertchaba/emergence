@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: reference-inspired land and sea palette — 2026-09-17.** Decision 041
+**Current: V2 evolution and shared weather — 2026-09-17.** Decision 043 switches
+the application to the independent V2 model while preserving V1 unchanged. New
+model rules and genes are in [`v2/README.md`](../src/simulation/life/v2/README.md).
+
+**Historical presentation status — 2026-09-17.** Decision 041
 uses muted warm-grey land and deeper blue seas from the supplied screenshot. Decision 040
 moves the genome portrait above species details and separates vivid plant greens
 from cooler bare ground. Decision 039
@@ -1817,3 +1821,219 @@ validation is limited to Chromium.
 
 Limit: this is a palette approximation of the reference; the generated geography,
 current season and zoom determine the actual distribution of colours.
+
+## 042 — Any-hex introduction and finer life marks — 2026-09-17
+
+**Supersedes 036's site rejection rules, 037's small orbital motion and twelve
+marks per hex, and numeric body-size descriptions.** The user requests words for
+size, introduction regardless of suitability, and smaller, more numerous marks
+with softer plants, changing placement and visible mobile motion.
+
+V1 now accepts introduction on every valid physical hex, including permanent ice,
+high ground and sites with negative initial energy balance. The same 20 founders
+receive the existing site-matched traits and energy reserve. Normal habitat,
+feeding, upkeep, starvation, movement and offspring rules determine subsequent
+survival. Living runs still reject another introduction; explicit restarts after
+extinction accept any hex. No balancing coefficients change. This model-owned
+command change increments rules revision to `v1-cohorts-3`; checkpoint shape stays
+at format 2, with the existing strict revision check rejecting older rules.
+
+The notebook maps the supplied body-size range to ten complete EN/PL word labels,
+from tiny to enormous, removing numeric size and cell counts. Partial-expression
+percentages, filtering and carrier highlighting continue to describe observations.
+There is no gene or body-size calculation in UI.
+
+All display groups receive smaller representative dots, including tiny producers
+alongside their existing terrain tint. Abundance provides up to ten samples per
+group within a 30-mark hex budget, reduced to six/fifteen at lower zoom. Dot radius
+is capped at 3.5 CSS pixels. A separate translucent stationary-plant token softens
+plants without weakening vegetation coverage; both themes and system fallback
+supply it through the existing UI-to-renderer token boundary.
+
+A stateless cosmetic hash supplies scattered in-hex positions. Stationary marks
+fade out and reappear every twelve visible playback seconds, staggered by slot;
+mobile marks follow smooth paths between waypoints every 3.5 seconds. This
+replaces the previous small orbital wiggle. UI advances the cosmetic clock at
+most eight times per second, stopping on pause, hidden tabs and reduced motion.
+Damage repainting includes stationary fades and mobile travel. The renderer reads
+only common observations and cannot alter biological state or random streams.
+
+Validation: `npm run build` and `npm test` passed: 63 headless/renderer checks,
+61 Chromium checks, and one existing skipped desktop touch duplicate. Tests cover
+all fixture hexes, ordinary energy-driven extinction on ice/high land/cold water,
+explicit restart, checkpoint replay, EN/PL size labels, bounded smaller samples,
+reproducible scattering, smooth mobile travel, and partial-versus-full repaint
+pixel comparisons with stationary and mobile marks in both themes. Existing
+checks cover pause/reduced motion, worker/headless equivalence, keyboard focus,
+disabled controls, original assets, storage failure and overflow through 320 px.
+Visually inspected the notebook and a dense presentation fixture in both themes
+at desktop and phone widths, including Polish copy and focused controls.
+Translation parity, theme fallback, layer/dependency review and `git diff --check`
+passed. README and model/rendering records describe the new behavior.
+
+Limits: marks represent population groups, not individual positions or counts.
+Motion stays inside each occupied hex; actual spread follows new observations.
+Poorly suited introductions may go extinct. Prior-rules headless checkpoints
+require their original model revision. No ecological calibration is claimed.
+
+## 043 — Independent V2 life model and bounded environmental variability — 2026-09-17
+
+**Supersedes V1 as the application's active model in 036–042.** V1's source,
+gene catalogue, research and decisions are preserved byte for byte as they stood
+at the beginning of this task, including the user's pre-existing uncommitted
+changes. V2 is a separate sibling implementation, importing no V1 code. The life
+worker now selects V2 explicitly; no model-switching UI or checkpoint conversion
+is introduced. Existing clocks, speed meanings and the common detached
+observation contract continue unchanged. V2 has its own `v2-cohorts-1` rules and
+`emergence-life-v2-checkpoint-1` format, rejecting V1 checkpoints.
+
+### Why a separate model
+
+V1 combines very rare mutations with a classifier requiring disconnected
+populations and a strict majority of one complete genome. In practice this can
+retain one species despite substantial variation. The user requests modestly
+faster diversification, permeable barriers, additional ecological trade-offs and
+complete new documentation, with a clarified target of roughly 5–15 simulated
+years to the first new species on suitable sites. That target guides exploratory
+experiments; it never creates a scheduled branch or protects founders.
+
+V2 implements 20 inherited traits, with all values and costs documented in the
+new [gene catalogue](../src/simulation/life/v2/genes/docs/GENES.md). New capabilities
+include toxins/spines and resistance/handling, alternative skeletons and armor,
+quantitative movement, flight, eyesight, echolocation, thermal sensing and
+facultative sexual reproduction. Larger bodies pay higher absolute and per-cell
+costs, while height affects contested light and size supplies feeding refuges.
+Mixed feeding and mobile photosynthesis remain possible with efficiency costs.
+Expensive newborns must actually be funded; no mutation can create an elaborate
+body for its cheaper parent's construction payment.
+
+Finite accessible plant tissue is allocated in resistance bands; one resistant
+grazer cannot expose otherwise protected tissue to vulnerable consumers. Hunting
+uses opposing movement, sensing, handling and defenses and immediately depletes
+prey. Background mortality, mutations and integer stochastic recruitment retain
+drift. Measured pressure increases undirected mutation probability within a bound;
+no organism receives a useful trait because it needs one. Sex recombines existing
+traits, has maintenance/construction/mate costs, and receives a modest paid
+establishment benefit under stress. Assortative mating uses inherited acquisition
+signatures and living local conspecific partners. Human intelligence is absent.
+
+### Isolation and classification
+
+A land lineage may cross one hostile water hex through delayed passage, with
+survivors counted and feeding at their source until one arrival roll. Waiting
+carriers do not reproduce; passage delay and all remaining state are checkpointed.
+Functional flight can reduce delays but cannot remove them. Land/water adaptation
+has overlapping intermediate states, allowing repeated evolutionary reversals.
+
+Persistent radius-one demes replace the global complete-genome-majority gate.
+Barrier isolation requires two genetic steps for 240 biological turns; weaker
+distance isolation requires three steps for 420 turns. A persistent acquisition
+niche can branch after three steps and 360 turns, even as a minority beside an
+abundant founder population. One connected ecological lineage receives one new
+species identity, avoiding a separate label for every local deme. No divergence,
+insufficient population, or loss of qualifying isolation resets qualification.
+Full rules and limits are in [ISOLATION.md](../src/simulation/life/v2/docs/ISOLATION.md).
+
+### Shared physical inputs and boundaries
+
+The generator's existing quality gate already requires multiple meaningful
+regions, a river and a physically costly region connection. V2 does not insert
+biological barriers or assigned biomes into geography. Regression checks cover
+48 maps spanning sizes and extreme settings, inspecting actual coasts, ground
+barriers and costly neighboring passes.
+
+`physical-world-3` adds `seeded-weather-1` world metadata. Stateless, smoothly
+interpolated regional and long-period seed/day signals bound temperature changes
+at ±2 °C and land-moisture changes at ±0.1. Sea surfaces vary by at most ±0.3 m;
+each lake basin shares a drawdown of at most 0.5 m, exposing shallow margins.
+Channels use a bounded exposure index because the model has no cross-sections.
+Shared `climateAt` and the atlas agree on current conditions and ice cover;
+V2 carries weather metadata in both geography and world identity. Weather never
+consumes biological randomness. Metadata-free historical worlds keep their
+original seasonal formulas.
+
+Hydrology's `waterLevel` remains the fixed datum; `currentWaterLevel` is a dynamic
+observation. Bed elevations, coastline, water types, drainage and region topology
+remain fixed. This is bounded physical variability, not a conservation-based
+weather/water cycle or a flowing-glacier/erosion model. V2's organism responses
+stay in V2. UI and rendering receive common observations, never model internals.
+The notebook localizes all added traits and structural categories in EN/PL using
+supplied expression ranges; themes, controls and original artwork are retained.
+
+### Validation and limits
+
+The complete [V2 validation record](../src/simulation/life/v2/docs/VALIDATION.md)
+records the final checks and seeded pacing panel. New focused tests exercise gene
+costs and countertraits, finite accessible feeding, living-mate selection,
+recombination, delayed passage, habitat reversals, spatial/ecological persistence,
+exact population accounting, checkpoint continuation and weather determinism.
+Cannibalistic hunts explicitly exclude the current actor when removing pending
+prey turns, preventing phantom hunters after a cohort is depleted.
+
+All 13 V1 file hashes match the pre-task manifest. The complete application remains
+static, framework-free and without runtime package dependencies. Exact integer
+counts describe the represented cohorts; energy binning, pooled feeding,
+operational species boundaries and ecological balance remain approximations.
+No universal survival, speciation deadline, accuracy bound for long trajectories,
+or cross-browser numerical identity is claimed. New high-diversity food webs can
+cost more CPU than V1's sparse populations; playback still reports achieved speed.
+
+
+Final V2 validation: `npm run build` and `npm test` passed with 102 headless/
+rendering checks, 63 Chromium checks and one existing skip. Both themes were
+inspected at desktop/phone widths with EN/PL gene labels and visible focus.
+Eight seeded suitable-site introductions (six water, two land) produced first
+branches at 7.00–11.41 simulated years, all retaining living descendants at the
+follow-up observation; exact results and limitations are in the V2 validation
+record. Runtime dependencies remain empty, documentation links resolve, V1 hashes
+are unchanged, and `git diff --check` passes.
+
+A final per-feeding-call cache removes repeated genotype-pair derivation and prey
+filtering during hunts. Six synthetic food-web seeds with both energy modes and
+cross-restored checkpoints gave 36 identical complete before/after states,
+including random streams, with about a 14% fixture speed improvement. It changes
+no rules or continuation schema. The development server also completed atlas
+startup, V2 introduction and pause without browser errors.
+
+The existing climate playback browser check now uses a fixed world seed. Weather
+can offset a short seasonal change at a random site, leaving its rounded reading
+unchanged even when playback works; the known fixture retains the visible-change
+assertion and passed three repetitions at both viewport sizes.
+
+## 044 — Maximum speed after placement and stable gene emphasis — 2026-09-17
+
+**Refines 037's automatic playback and supersedes its dimming of every partial
+gene/expression.** Successful introduction now sets the speed slider and target
+readout to the existing maximum, 10× (20 physical days/s), before starting
+playback. This applies to explicit restarts after extinction as well. The change
+is made only after the worker accepts introduction; rejection/error does not
+change the selected speed. Manual speed controls and Play/Pause retain their
+meanings. UI owns this pacing preference; no life model receives a new setting.
+
+Notebook trait labels and expression values now use decision 039's existing 98%
+cutoff for normal versus muted text as well as for expression interaction. The
+previous exact-100% styling test could toggle colour when a rare noncarrier
+appeared or disappeared while the displayed percentage remained rounded to 100%.
+Shares at or above 98% keep normal theme colours; visible shares below 98% stay
+muted. The comparison uses unrounded observed populations. Percent formatting,
+the 2% visibility filter, carrier locations and selection behavior are preserved.
+
+Both fixes stay in browser composition and notebook presentation. There are no
+changes to biology, snapshots, seeded streams, theme tokens or renderer rules.
+Existing uncommitted V2 work and historical records are preserved. README,
+the common UI command contract and life rendering notes describe the behavior.
+
+Validation: `npm run build` and `npm test` passed: 102 headless/renderer checks
+and 65 Chromium checks, with one existing desktop touch-test duplicate skipped.
+Focused checks cover first placement and extinction/reintroduction selecting 10×,
+and real-model observations alternating between 100%, 99.99%, 98% and 97.99%
+carriers. Computed colours for both labels and values, static/selectable behavior,
+and EN/PL formatting are checked across updates in both themes and viewports.
+Visually inspected light/dark desktop and phone screenshots for stable gene
+emphasis, muted partial values, maximum-speed readouts, wrapping and focus.
+Existing checks cover overflow through 320 px, assets, disabled controls and
+worker/headless equivalence. Diff and layer review plus `git diff --check` passed.
+Browser validation remains limited to Chromium.
+
+Limits: 10× is a throughput target, so achieved speed still depends on workload.
+The 98% cutoff is a presentation convention, not an ecological rule.

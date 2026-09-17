@@ -299,7 +299,7 @@ test('small producer coverage tints land more than water and preserves diagnosti
   assert.equal(capture(land, 'temperature'), capture(null, 'temperature'));
   for (const layer of ['temperature', 'humidity', 'regions']) {
     capture(land, layer);
-    assert.ok(fills.includes(tokens['--map-life-producer']), `small plants remain visible on ${layer}`);
+    assert.ok(fills.includes(tokens['--map-life-plant']), `small plants remain visible on ${layer}`);
   }
   assert.equal(JSON.stringify([world, land, water]), before);
 });
@@ -348,9 +348,9 @@ test('life markers use a bounded population-independent budget and fixed world p
     calls.length = 0;
     fills.length = 0;
     map.draw(world, { geography: world, life, camera });
-    const markerColors = ['producer', 'grazer', 'predator', 'mixed', 'other'].map(role => tokens[`--map-life-${role}`]);
+    const markerColors = ['plant', 'grazer', 'predator', 'mixed', 'other'].map(role => tokens[`--map-life-${role}`]);
     const markerCount = fills.filter(fill => markerColors.includes(fill)).length;
-    assert.ok(markerCount > 0 && markerCount <= 12, `marker budget ${markerCount}`);
+    assert.ok(markerCount > 0 && markerCount <= 30, `marker budget ${markerCount}`);
     return calls.filter(([method]) => method === 'arc').slice(-markerCount);
   };
   const camera = map.fit();
@@ -365,6 +365,39 @@ test('life markers use a bounded population-independent budget and fixed world p
       assert.ok(Math.abs((moved[index][coordinate] - movedOrigin[axis]) / movedCamera.zoom
         - (markers[index][coordinate] - origin[axis])) < 1e-8);
     }
+  }
+});
+
+test('smaller, denser plant dots change patches while mobile markers travel smoothly within their hex', () => {
+  const { map, calls, fills } = renderer();
+  const world = fixture();
+  const camera = map.fit();
+  const plant = lifeFixture({ population: 100000, size: 0.7 });
+  const mobile = freezeDeep({ ...plant, hexes: plant.hexes.map(hex => ({ ...hex,
+    display: hex.display.map(group => ({ ...group, mobile: true })) })) });
+  const origin = map.cellCenter(world, 10, camera);
+  const neighbor = map.cellCenter(world, 11, camera);
+  const hexRadius = Math.abs(neighbor.x - origin.x) / Math.sqrt(3);
+  function positions(life, motionTime) {
+    map.setTokens(tokens); calls.length = 0; fills.length = 0;
+    map.draw(world, { geography: world, camera, life, motionTime });
+    const marks = calls.filter(([method]) => method === 'arc').slice(1); // skip river spring
+    for (const [, x, y, radius] of marks) {
+      assert.ok(radius <= 3.5);
+      assert.ok(Math.hypot(x - origin.x, y - origin.y) + radius < hexRadius * 0.87);
+    }
+    return marks;
+  }
+  const plants = positions(plant, 0);
+  assert.equal(plants.length, 10, 'abundant groups previously had only four dots');
+  assert.ok(fills.includes(tokens['--map-life-plant']), 'stationary plants use translucent theme colour');
+  assert.notDeepEqual(positions(plant, 12), plants, 'stationary patches are renewed');
+  assert.deepEqual(positions(plant, 0), plants, 'placement is reproducible, without mutable random state');
+  const moving = positions(mobile, 0);
+  const next = positions(mobile, 0.125);
+  assert.notDeepEqual(moving, next);
+  for (let index = 0; index < moving.length; index += 1) {
+    assert.ok(Math.hypot(moving[index][1] - next[index][1], moving[index][2] - next[index][2]) < hexRadius * 0.08);
   }
 });
 

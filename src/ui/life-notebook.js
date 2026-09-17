@@ -9,11 +9,13 @@ const geneKeys = {
   size: 'geneSize', photosynthesis: 'genePhotosynthesis', trunk: 'geneTrunk',
   temperatureTolerance: 'geneTemperatureTolerance', landAdaptation: 'geneLandAdaptation',
   movement: 'geneMovement', plantFeeding: 'genePlantFeeding', animalFeeding: 'geneAnimalFeeding',
+  poison: 'genePoison', spines: 'geneSpines', detoxification: 'geneDetoxification',
+  biteForce: 'geneBiteForce', skeleton: 'geneSkeleton', armor: 'geneArmor', armorType: 'geneArmorType',
+  flight: 'geneFlight', eyesight: 'geneEyesight', echolocation: 'geneEcholocation',
+  thermalSensing: 'geneThermalSensing', sexualReproduction: 'geneSexualReproduction',
 };
 const rejectionKeys = {
   'already-introduced': 'lifeAlreadyIntroduced', 'unknown-hex': 'lifeUnknownHex',
-  'permanent-ice': 'lifePermanentIce', 'unsuitable-conditions': 'lifeUnsuitableConditions',
-  'unsuitable-habitat': 'lifeUnsuitableHabitat',
 };
 
 function element(tag, className, text) {
@@ -62,8 +64,15 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   }
 
   function geneValue(trait) {
-    if (trait.key === 'size') return t('geneBodySize', { value: integer(trait.value), cells: integer(trait.cells) });
+    if (trait.key === 'size') {
+      const scale = ['geneSizeTiny', 'geneSizeVerySmall', 'geneSizeSmall', 'geneSizeFairlySmall',
+        'geneSizeMedium', 'geneSizeModeratelyLarge', 'geneSizeLarge', 'geneSizeVeryLarge', 'geneSizeHuge', 'geneSizeEnormous'];
+      const fraction = (trait.value - trait.min) / (trait.max - trait.min || 1);
+      return t(scale[Math.max(0, Math.min(scale.length - 1, Math.round(fraction * (scale.length - 1))))]);
+    }
     if (trait.key === 'landAdaptation') return t(['geneAquatic', 'geneAmphibious', 'geneTerrestrial', 'geneDryLand'][trait.value] || 'geneLevel', { value: integer(trait.value) });
+    if (trait.key === 'skeleton') return t(['geneSoftBody', 'geneHydrostaticSkeleton', 'geneExoskeleton', 'geneEndoskeleton'][trait.value] || 'geneLevel', { value: integer(trait.value) });
+    if (trait.key === 'armorType') return t(['geneFlexibleCovering', 'geneMineralShell', 'geneSegmentedPlates', 'geneScales'][trait.value] || 'geneLevel', { value: integer(trait.value) });
     if (trait.key === 'temperatureTolerance' && trait.temperatureRange) {
       const [minimum, maximum] = trait.temperatureRange;
       return t('geneTemperatureRange', { minimum: integer(minimum), maximum: integer(maximum) });
@@ -90,7 +99,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
       const expressions = trait.expressions.filter(expression => expression.population / species.population >= minimumExpressionShare);
       if (!expressions.length) continue;
       visibleTraits.add(trait.key);
-      const partial = trait.population < species.population;
+      const partial = trait.population / species.population < universalExpressionShare;
       let row = traitRows.get(trait.key);
       if (!row) {
         row = element('div'); row.append(element('dt'), element('dd'));
@@ -128,7 +137,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
           expressionNodes.set(id, node);
           if (wasFocused) buttons.get(species.id)?.focus({ preventScroll: true });
         }
-        node.className = `gene-expression${fraction < 1 ? ' gene-expression-partial' : ''}`;
+        node.className = `gene-expression${fraction < universalExpressionShare ? ' gene-expression-partial' : ''}`;
         node.textContent = text;
         const selected = selectedVariant === id && selectable;
         if (selectable) {

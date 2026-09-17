@@ -1,9 +1,9 @@
 # Versioned life models
 
 This directory holds alternative life/evolution models: `v1/`, later `v2/`, and
-so on. **V1 is implemented.** The application runs the first model against the
-shared physical atlas. Alternative-model selection remains future work; the
-original research and its implementation decisions stay inside each version.
+so on. **V2 is active; V1 is preserved unchanged as a backup.** The browser worker
+imports V2 explicitly against the shared physical atlas. Model-selection UI remains
+future work; each model keeps its own implementation and documentation.
 
 ## Ownership
 
@@ -40,7 +40,7 @@ another or UI/rendering. A version can use shared headless physical utilities;
 browser workers, clocks, persistence adapters and message transport stay outside
 the headless layer. Rendering does not import any simulation implementation.
 The browser life worker is a UI adapter, not part of a model. No cross-model
-registry or implicit state migration is needed for the single implemented model.
+registry or implicit state migration is needed for the explicitly selected active model.
 
 All versions retain the repository's deterministic execution requirements:
 explicit simulated time, seeded randomness with complete serializable state,
@@ -59,13 +59,14 @@ the common observation-contract version.
 Keep alternative rules and their supporting notes together inside their version.
 Do not move v1-specific formulas into a shared helper merely to make v2 reuse
 them. Shared code requires an explicitly shared meaning, not similar code alone.
-The [v1 index](v1/README.md) identifies the current research and its open questions.
+The [V2 index](v2/README.md) documents active rules and validation. The
+[V1 index](v1/README.md) preserves its historical research and implementation.
 
 Changing models starts a separate life run against the chosen shared world and
 explicit starting day. There is no implicit migration of organisms, species IDs
 or PRNG state between incompatible models. Any future conversion must be designed
 and documented explicitly. Same terrain and seed do not promise identical biology
-across models. Model selection UI and browser save/load remain future work. V1 exports a
+across models. Model selection UI and browser save/load remain future work. Each implemented model exports its own incompatible
 versioned headless checkpoint for deterministic continuation.
 
 Later implementations must validate the common inspection invariants as well as
@@ -90,6 +91,7 @@ by its model version; this layout does not create a shared gene implementation.
 The v1 folders contain the implementation, gene code, and preserved research.
 
 - [Common life observations and UI commands](CONTRACT.md)
+- [Active V2 model and complete rules](v2/README.md)
 - [Life model v1 research and open decisions](v1/README.md)
 - [Provisional rendering brief](../../rendering/LIFE.md)
 - [Shared world and playback rules](../../../docs/evolution_simulation_summary_v6.md)
