@@ -1,4 +1,41 @@
+View the project at [https://robertchaba.github.io/emergence/](https://robertchaba.github.io/emergence/).
+
 # Emergence
+
+## About this project
+
+Emergence is a browser-based evolution sandbox built around a simple question: what
+happens if, instead of counting products, tickets and service times, I try to count
+life?
+
+My name is Robert Chaba. I am a programmer. In my day job, I count things - product
+publications, service mean times, employee HR requests, and plenty of other numbers that
+somehow need to end up in databases, reports and charts.
+
+After work, I like to read and listen to what scientists have to say about the world.
+
+Then AI arrived, and suddenly both coding and counting became much easier. One day a
+thought crossed my mind: what if I use all of this to count something completely
+different?
+
+That idea became Emergence - an experiment in creating a tiny artificial world where
+organisms inherit traits, mutate, compete for resources, spread across geography and,
+perhaps, eventually become something new. There are no predefined species and no
+scripted evolutionary paths. The idea is to define relatively simple rules and then
+watch what emerges.
+
+This project is 100% the work of an amateur. I have no biological background and do not
+pretend that this is a faithful model of real evolution. I simply thought it would be
+interesting to build one, watch it run, and see where the rules lead.
+
+OpenAI's Astra model was used extensively while designing the model and creating much of
+the engine that runs it.
+
+If you find the project interesting, find me on
+[GitHub](https://github.com/robertchaba). That's also the best place to find my contact
+details - and I'd genuinely love to hear what you think.
+
+## Project details
 
 A browser-based emergent evolution sandbox. Generate a world, seed life in one
 hex, and observe how resources, inheritance, mutation, and seasons shape its

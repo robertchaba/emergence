@@ -2610,3 +2610,17 @@ pages and initialized generation/life workers without browser errors.
 `git diff --check` and the final scope/dependency review passed. Browser validation
 is limited to Chromium; neither actual GitHub deployment nor cross-browser
 numerical equivalence was tested by this local change.
+
+
+## 053 — README live link and project story — 2026-09-19
+
+At the author’s request, the README opens with the public project URL, followed
+by the existing About dialog’s eight English paragraphs and GitHub contact link.
+The previous README details follow intact under Project details so visitors can
+find the live sandbox and its motivation before the technical documentation.
+This is a documentation-only change with no application or model-rule changes.
+
+Validation: `npm run build`, `npm test` and `git diff --check` passed, including
+89 Chromium checks and one existing skip. Final diff review confirms that the
+previous README details are preserved. Browser coverage is limited to Chromium;
+this documentation change makes no new biological-validation claim.
