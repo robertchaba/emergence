@@ -7,7 +7,7 @@ import { WEATHER_VERSION } from './weather.js';
 
 export { WORLD_SIZES } from './grid.js';
 export { setDay } from './climate.js';
-export const GENERATOR_VERSION = 'physical-world-3';
+export const GENERATOR_VERSION = 'physical-world-4';
 const MAX_CANDIDATES = 12;
 
 function applyElevation(world, seed) {

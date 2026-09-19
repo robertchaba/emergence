@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assignClimate } from '../../src/simulation/climate.js';
+import { assignClimate, climateAt } from '../../src/simulation/climate.js';
 import { createGrid } from '../../src/simulation/grid.js';
 import { createLifeModel, restoreLifeModel, EVOLUTION_RULES } from '../../src/simulation/life/v3/model.js';
 import { founderGenome, deriveGenome, genomeKey } from '../../src/simulation/life/v3/genes/genome.js';
+import { evaluateCommunity } from '../../src/simulation/life/v3/ecology.js';
 import { createLifeModel as createV2 } from '../../src/simulation/life/v2/model.js';
 
 function fixture(width = 6) {
@@ -290,6 +291,44 @@ test('v3 suppresses a proposed species when its established ecological equivalen
   assert.equal(snapshot.counts.species, 2);
   assert.equal(snapshot.stats.speciations, 0);
   assert.equal(snapshot.counts.organisms, 160 + snapshot.stats.births - snapshot.stats.deaths);
+});
+
+test('v3 a viable feeding change must differ ecologically from its own parent', () => {
+  const world = fixture();
+  for (const hex of world.hexes) hex.neighbors = [];
+  const original = createLifeModel(world, { seed: 'redundant-parent' });
+  original.introduce(18);
+  const state = original.exportState();
+  const producer = { ...founderGenome(), temperatureTolerance: 1, depthTolerance: 2 };
+  const parent = { ...producer, size: 2, plantFeeding: 1 };
+  const candidate = { ...parent, photosynthesis: 0 };
+  state.species[0].genome = parent;
+  state.species[0].candidates = [{ id: 'direction-1', genome: candidate, originDay: 0,
+    lastEvaluation: 0, age: EVOLUTION_RULES.persistenceAssessments - 1,
+    steps: 1, support: 1, advantage: 0.05 }];
+  state.species.push({ ...state.species[0], id: 'species-2', genome: producer, candidates: [] });
+  state.nextSpecies = 3; state.nextCandidate = 2;
+  state.populations = [{ ...state.populations[0], count: 100 },
+    { ...state.populations[0], speciesId: 'species-2', count: 150 }];
+  state.day = 37; state.biologicalTurns = 11; state.turnCredit = 1;
+  const model = restoreLifeModel(world, state);
+  model.advanceTo(40);
+  const snapshot = reconcile(model);
+  assert.ok(snapshot.species.find(row => row.id === 'species-1').tendencies
+    .find(row => row.id === 'direction-1').locations.some(row => row.hexId === 18));
+  const saved = model.exportState();
+  const transferred = Math.floor(saved.populations.find(row => row.speciesId === 'species-1').count / 4);
+  const projected = saved.populations.map(row => ({ speciesId: row.speciesId,
+    genome: row.speciesId === 'species-1' ? parent : producer,
+    population: row.count - (row.speciesId === 'species-1' ? transferred : 0) }));
+  projected.push({ speciesId: 'child', genome: candidate, population: transferred });
+  const hex = { ...world.hexes[18], ...climateAt(world, world.hexes[18], 40) };
+  assert.ok(transferred >= EVOLUTION_RULES.minimumPopulation);
+  assert.ok(evaluateCommunity(hex, 'water', projected).at(-1).score > 0,
+    'food can fund the split, but both parent and child would occupy the grazing niche');
+  assert.equal(snapshot.stats.speciations, 0);
+  assert.equal(snapshot.counts.species, 2);
+  assert.equal(snapshot.counts.organisms, 250 + snapshot.stats.births - snapshot.stats.deaths);
 });
 
 test('v3 improvement over a parent is insufficient when a stronger incumbent already occupies the feeding niche', () => {

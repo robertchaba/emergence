@@ -1,5 +1,26 @@
 import { chooseTheme } from './ui-helpers.js';
 import { test, expect } from '@playwright/test';
+import { WORLD_SIZES } from '../src/simulation/world.js';
+
+const defaultWidth = WORLD_SIZES.medium.width;
+
+test('Small, Medium and Large generate the advertised dimensions in both languages', async ({ page }) => {
+  await page.goto('/world.html');
+  await expect(page.locator('#world-size')).toHaveValue('medium');
+  const presets = [['small', 24, 16, 384], ['medium', 42, 28, 1176], ['large', 60, 40, 2400]];
+  await page.locator('#seed').fill('world-size-check');
+  for (const [size, width, height, count] of presets) {
+    await page.locator('#world-size').selectOption(size);
+    await expect(page.locator('#start-workspace')).toBeEnabled();
+    await expect(page.locator('#world-preview')).toHaveAttribute('aria-label', new RegExp(`${width} by ${height} hexes`));
+    await expect(page.locator('#world-summary')).toContainText(new Intl.NumberFormat('en').format(count) + ' hexes');
+    for (const locale of ['pl', 'en']) {
+      await page.locator(`[data-locale="${locale}"]`).click();
+      await expect(page.locator('#world-size option:checked')).toContainText(`${width} × ${height}`);
+      await expect(page.locator('#world-size')).toHaveValue(size);
+    }
+  }
+});
 
 async function openWorld(page, seed) {
   await page.goto('/world.html');
@@ -58,7 +79,7 @@ test('wheel zoom, drag, pin, keyboard inspection and fit work together', async (
   const pinned = Number(await map.getAttribute('data-pinned-id'));
   await expect(page.locator('#hex-details h2')).toContainText('Hex');
   await page.keyboard.press('ArrowRight');
-  await expect(map).toHaveAttribute('data-pinned-id', String(Math.floor(pinned / 60) * 60 + (pinned % 60 + 1) % 60));
+  await expect(map).toHaveAttribute('data-pinned-id', String(Math.floor(pinned / defaultWidth) * defaultWidth + (pinned % defaultWidth + 1) % defaultWidth));
   await page.keyboard.press('Escape');
   await expect(map).toHaveAttribute('data-pinned-id', '');
   await expect(startLife).toBeDisabled();
@@ -84,10 +105,10 @@ test('keyboard wraps the seam, stops at poles and opens the brand menu', async (
   await expect(map).toHaveAttribute('data-pinned-id', /\d+/);
   await expect(page.locator('#start-life')).toBeEnabled();
   const first = Number(await map.getAttribute('data-pinned-id'));
-  for (let i = 0; i < 60; i += 1) await page.keyboard.press('ArrowRight');
+  for (let i = 0; i < defaultWidth; i += 1) await page.keyboard.press('ArrowRight');
   await expect(map).toHaveAttribute('data-pinned-id', String(first));
   for (let i = 0; i < 45; i += 1) await page.keyboard.press('ArrowUp');
-  await expect(map).toHaveAttribute('data-pinned-id', String(first % 60));
+  await expect(map).toHaveAttribute('data-pinned-id', String(first % defaultWidth));
   const menu = page.getByLabel('Emergence application menu', { exact: true });
   await menu.focus();
   await page.keyboard.press('Enter');

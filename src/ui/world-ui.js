@@ -2,6 +2,7 @@ import { t, formatNumber } from './locale.js';
 import { setDay } from '../simulation/climate.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
 import { createLifeNotebook } from './life-notebook.js';
+import { createNumberAnimator } from './number-animation.js';
 
 const number = { format: (value) => formatNumber(value) };
 const integer = { format: (value) => formatNumber(value, 'integer') };
@@ -36,6 +37,8 @@ export function initWorldUI() {
   const pauseButton = document.querySelector('#pause-world');
   const stepButton = document.querySelector('#step-world');
   const details = document.querySelector('#hex-details');
+  const numbers = createNumberAnimator();
+  let inspectedId = null;
   const startLifeButton = document.querySelector('#start-life');
   const tokens = readTokens();
   const preview = createMapRenderer(previewCanvas, { tokens });
@@ -212,26 +215,31 @@ export function initWorldUI() {
     queueDraw();
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-  function addFact(list, label, value) {
-    const row = document.createElement('div');
-    const term = document.createElement('dt');
-    const description = document.createElement('dd');
-    term.textContent = label;
-    description.textContent = value;
-    row.append(term, description);
-    list.append(row);
+  function showFact(list, key, value, format, immediate) {
+    let row = list.querySelector(`[data-fact="${key}"]`);
+    if (!row) {
+      row = document.createElement('div');
+      row.dataset.fact = key;
+      row.append(document.createElement('dt'), document.createElement('dd'));
+      list.append(row);
+    }
+    row.firstChild.textContent = t(key);
+    if (format) numbers.set(row.lastChild, value, format, { immediate });
+    else if (row.lastChild.textContent !== value) row.lastChild.textContent = value;
   }
 
   function updateInspector(announce = true) {
     updateLifeInteraction();
-    details.replaceChildren();
-    const heading = document.createElement('h2');
-    details.append(heading);
+    const immediate = inspectedId !== pinnedId;
+    inspectedId = pinnedId;
+    let heading = details.querySelector('h2');
     if (pinnedId === null || !world) {
+      details.replaceChildren();
+      heading = document.createElement('h2');
       heading.textContent = t('inspectHeading');
       const introduction = document.createElement('p');
       introduction.textContent = t('inspectHelp');
-      details.append(introduction);
+      details.append(heading, introduction);
       document.querySelector('#map-status').textContent = t('noPin');
       return;
     }
@@ -239,38 +247,45 @@ export function initWorldUI() {
     heading.textContent = t('hex', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1) });
     const surface = t(hex.waterType === 'sea' ? 'sea' : hex.waterType === 'lake' ? 'lake' : 'land');
     const terrain = [surface, hex.runoff > 0 && hex.waterType === 'none' && t('river'), hex.temperature < 0 && t(hex.waterType === 'none' ? 'frost' : 'ice')].filter(Boolean).join(' · ');
-    const facts = document.createElement('dl');
-    facts.className = 'hex-facts';
-    addFact(facts, t('terrain'), terrain);
-    addFact(facts, t('elevation'), `${integer.format(hex.bedElevation)} m`);
-    addFact(facts, t('temperature'), `${number.format(hex.temperature)} °C`);
-    addFact(facts, t('humidity'), hex.humidity === null ? t('waterMoisture', { value: percent.format(1) }) : percent.format(hex.humidity));
-    details.append(facts);
+    let facts = details.querySelector('dl');
+    if (!facts) {
+      facts = document.createElement('dl');
+      facts.className = 'hex-facts';
+      details.replaceChildren(heading, facts);
+    }
+    showFact(facts, 'terrain', terrain);
+    showFact(facts, 'elevation', hex.bedElevation, value => `${integer.format(value)} m`, immediate);
+    showFact(facts, 'temperature', hex.temperature, value => `${number.format(value)} °C`, immediate);
+    showFact(facts, 'humidity', hex.humidity ?? 1,
+      value => hex.humidity === null ? t('waterMoisture', { value: percent.format(value) }) : percent.format(value), immediate);
     if (announce) document.querySelector('#map-status').textContent = t('pinned', { col: integer.format(hex.col + 1), row: integer.format(hex.row + 1), surface: surface.toLowerCase(), temperature: number.format(hex.temperature) });
   }
 
   function updateDayReadout() {
-    dayOutput.value = integer.format(world.day);
+    numbers.set(dayOutput, world.day, integer.format, { immediate: !playing });
     dayOutput.dataset.day = String(world.day);
     previewCanvas.dataset.day = String(world.day);
   }
 
-  function showSpeed(output, values) {
+  function showSpeed(output, multiplierValue, rateValue, immediate = true) {
     // Keep the complete translated phrase while giving the rate its own column.
-    const [prefix, suffix] = t('speedValue', { ...values, rate: '{rate}' }).split('{rate}');
-    const multiplier = document.createElement('span');
-    multiplier.className = 'speed-multiplier';
-    multiplier.textContent = prefix;
-    const rate = document.createElement('span');
-    rate.className = 'speed-rate';
-    rate.textContent = values.rate + suffix;
-    output.replaceChildren(multiplier, rate);
+    if (!output.children.length) {
+      const multiplier = document.createElement('span');
+      multiplier.className = 'speed-multiplier';
+      const rate = document.createElement('span');
+      rate.className = 'speed-rate';
+      output.replaceChildren(multiplier, rate);
+    }
+    numbers.set(output.firstChild, multiplierValue, value =>
+      t('speedValue', { multiplier: number.format(value), rate: '{rate}' }).split('{rate}')[0], { immediate });
+    numbers.set(output.lastChild, rateValue, value => number.format(value)
+      + t('speedValue', { multiplier: '', rate: '{rate}' }).split('{rate}')[1], { immediate });
   }
 
   function showActualSpeed(daysPerSecond = 0) {
     const output = document.querySelector('#actual-speed');
     actualDaysPerSecond = daysPerSecond;
-    showSpeed(output, { multiplier: number.format(daysPerSecond / 2), rate: number.format(daysPerSecond) });
+    showSpeed(output, daysPerSecond / 2, daysPerSecond, daysPerSecond === 0);
     output.dataset.daysPerSecond = String(daysPerSecond);
   }
 
@@ -284,6 +299,7 @@ export function initWorldUI() {
 
   function setPlaying(next) {
     playing = next;
+    if (!playing) numbers.finish();
     updatePlaybackState();
     playButton.setAttribute('aria-pressed', String(playing));
     pauseButton.setAttribute('aria-pressed', String(!playing));
@@ -631,7 +647,7 @@ export function initWorldUI() {
 
   function updateTargetSpeed() {
     const values = { multiplier: number.format(targetSpeed), rate: integer.format(targetSpeed * 2) };
-    showSpeed(document.querySelector('#target-speed'), values);
+    showSpeed(document.querySelector('#target-speed'), targetSpeed, targetSpeed * 2);
     speedInput.setAttribute('aria-valuetext', t('speedDescription', values));
   }
 

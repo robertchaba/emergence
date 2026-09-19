@@ -131,6 +131,28 @@ test('V3 defenses and sensing act through paid predator/prey interactions', () =
   assert.ok(outputs.every(output => output.predationLoss <= ECOLOGY_RULES.preyFraction + 1e-8));
 });
 
+test('V3 movement earns its upkeep through hunting only when accessible prey exists', () => {
+  const producer = genome();
+  const grazer = genome({ photosynthesis: 0, plantFeeding: 1 });
+  const hunter = genome({ photosynthesis: 0, animalFeeding: 1 });
+  const movingHunter = { ...hunter, movement: 1 };
+  const community = [{ speciesId: 'plant', genome: producer, population: 100 },
+    { speciesId: 'prey', genome: grazer, population: 60 }];
+  const stationary = scoreSpecies(hunter, land(), 'land', community);
+  const moving = scoreSpecies(movingHunter, land(), 'land', community);
+  assert.ok(stationary.score > 0, 'a rare carnivore can live on actual consumer prey');
+  assert.ok(moving.score > stationary.score + 0.005, 'pursuit can fund a selectable movement advantage');
+  assert.ok(deriveGenome(movingHunter).upkeep > deriveGenome(hunter).upkeep);
+  assert.ok(deriveGenome(movingHunter).reproductionCost > deriveGenome(hunter).reproductionCost);
+  for (const genome of [hunter, movingHunter]) {
+    const noPrey = scoreSpecies(genome, land(), 'land', community.slice(0, 1));
+    assert.equal(noPrey.predationFood, 0, 'producers alone cannot feed a carnivore');
+    assert.ok(noPrey.score < 0);
+  }
+  assert.ok(captureProbability(hunter, { ...grazer, movement: 1 }) < captureProbability(hunter, grazer),
+    'movement also improves prey escape');
+});
+
 test('V3 splitting the same hunting effort cannot increase target-prey kills or transferred food', () => {
   const preyGenome = genome({ photosynthesis: 0, plantFeeding: 1 });
   const predatorGenome = genome({ photosynthesis: 0, animalFeeding: 1 });

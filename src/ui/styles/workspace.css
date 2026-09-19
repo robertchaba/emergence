@@ -178,13 +178,23 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
 .species-choice[aria-expanded='true'] { background: var(--color-panel); }
 .species-choice[aria-pressed='true'] { color: var(--color-on-highlight); background: var(--color-highlight); }
 .species-choice[aria-pressed='true']::after { content: '✓'; color: inherit; }
+.species-choice[data-collapsible='true']::after { content: '▸'; }
+.species-choice[data-collapsible='true'][aria-expanded='true']::after { content: '▾'; }
+.species-choice-copy { min-width: 0; display: grid; gap: 5px; }
+.species-energy { display: flex; flex-wrap: wrap; gap: 4px; font-family: var(--font-body); font-style: normal; font-size: var(--text-compact); line-height: 1.4; }
+.species-energy-label { padding: 2px 6px; border-radius: var(--panel-radius); background: var(--color-panel); }
+.species-energy-label[data-energy='photosynthesis'] { color: var(--color-energy-photosynthesis); }
+.species-energy-label[data-energy='plantFeeding'] { color: var(--color-energy-plant-feeding); }
+.species-energy-label[data-energy='animalFeeding'] { color: var(--color-energy-animal-feeding); }
+.day-readout, .hex-facts dd, .gene-expression { font-variant-numeric: tabular-nums; }
 .species-detail { padding: 0 10px 12px; }
 #hex-panel .species-population { margin: 12px 0 18px; color: var(--color-text); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .gene-heading { font-size: var(--text-notebook); font-weight: normal; margin: 0 0 4px; }
 .gene-list { margin: 0; }
 .species-tendencies { margin-top: 14px; font-size: var(--text-notebook); }
-.species-tendencies .field-note { margin: 4px 0 8px; }
-.tendency-list { list-style: none; margin: 0; padding: 0; }
+.species-tendencies summary { cursor: pointer; padding: 7px 0; }
+.species-tendencies summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.tendency-list { list-style: none; margin: 4px 0 0; padding: 0; }
 .tendency-list li + li { margin-top: 5px; }
 .gene-expression.tendency-choice { text-align: left; justify-content: flex-start; }
 .gene-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; gap: 5px 12px; padding: 7px 0; border-bottom: 1px solid var(--color-rule); font-size: var(--text-notebook); }
@@ -198,11 +208,6 @@ button.gene-expression:hover { background: var(--color-control-selected); }
 button.gene-expression[aria-pressed='true']:hover { background: var(--color-highlight); }
 .gene-expression:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .gene-row.is-partial dt, .gene-expression-partial { color: var(--color-muted); }
-.specimen-portrait { margin: 8px 0 0; text-align: center; color: var(--color-accent); background: radial-gradient(ellipse at center, var(--color-control-selected), var(--color-clear) 72%); }
-.specimen-drawing svg { display: block; width: 100%; height: 150px; }
-.specimen-portrait figcaption { font-size: var(--text-compact); padding-bottom: 10px; }
-.specimen-guide { opacity: 0.45; }
-.specimen-scale { opacity: 0.6; }
 .life-metric { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; }
 .life-counts .life-metric > dd { margin: 0; color: inherit; }
 .life-metric .life-trend-drawing { grid-column: 1 / -1; }

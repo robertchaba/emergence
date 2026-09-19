@@ -7,13 +7,13 @@ import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
 
 export const MODEL_ID = 'v3';
-export const RULES_REVISION = 'v3-populations-1';
+export const RULES_REVISION = 'v3-populations-2';
 export const CONTRACT_VERSION = 'life-observations-1';
 const FORMAT = 'emergence-life-v3-checkpoint-1';
 export const EVOLUTION_RULES = Object.freeze({ maximumCandidates: 3, assessmentTurns: 12,
   sampleLocations: 12, trialMutations: 8, minimumAdvantage: 0.005,
   preliminaryAdvantage: 0.001, persistenceAssessments: 4, minimumPopulation: 20,
-  broadSupport: 0.8, minimumProfileDifference: 0.008 });
+  broadSupport: 0.8, minimumProfileDifference: 0.03, minimumDietDifference: 0.35 });
 const copy = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 const order = (a, b) => a < b ? -1 : a > b ? 1 : 0;
@@ -306,10 +306,10 @@ function buildModel(world, state) {
       maximumAdvantage: Math.max(-1, ...evaluations.filter(item => item.candidate.score > 0).map(item => item.difference)) };
   }
 
-  function novel(record, genome, community) {
+  function novel(record, genome, community, branching = false) {
     const parentRows = state.populations.filter(row => row.speciesId === record.id);
     for (const other of state.species) {
-      if (other.extinctDay !== null || other.id === record.id) continue;
+      if (other.extinctDay !== null || (!branching && other.id === record.id)) continue;
       if (genomeKey(other.genome) === genomeKey(genome)) return false;
       const occupied = new Map();
       for (const row of [...parentRows, ...state.populations.filter(item => item.speciesId === other.id)]) {
@@ -341,7 +341,7 @@ function buildModel(world, state) {
       const shapeDifference = weight ? Math.sqrt(Math.max(0, squared / weight - (sum / weight) ** 2)) : 0;
       const complementary = bestDifference >= EVOLUTION_RULES.minimumAdvantage
         && worstDifference <= -EVOLUTION_RULES.minimumAdvantage;
-      if (weight && dietDifference / weight < 0.15
+      if (weight && dietDifference / weight < EVOLUTION_RULES.minimumDietDifference
         && !(complementary && shapeDifference >= EVOLUTION_RULES.minimumProfileDifference)) return false;
     }
     return true;
@@ -351,7 +351,14 @@ function buildModel(world, state) {
     const options = candidateMutations(genome);
     const result = [];
     for (let index = 0; index < EVOLUTION_RULES.trialMutations && options.length; index += 1) {
-      const selected = Math.floor(random.next() * options.length);
+      // Encounter and locomotion changes get more search opportunities; they
+      // still have to pay their costs and pass the same ecological gates.
+      const weight = trial => ['animalFeeding', 'movement'].includes(trial.key) ? 2 : 1;
+      let ticket = random.next() * options.reduce((sum, trial) => sum + weight(trial), 0);
+      let selected = 0;
+      while (selected < options.length - 1 && ticket >= weight(options[selected])) {
+        ticket -= weight(options[selected]); selected += 1;
+      }
       result.push(options.splice(selected, 1)[0]);
     }
     return result;
@@ -429,7 +436,7 @@ function buildModel(world, state) {
         }
         const specialized = analysis.support < EVOLUTION_RULES.broadSupport && analysis.opposing > 0;
         if ((!roleChange && (!specialized || geneticDistance(record.genome, candidate.genome) < 2))
-          || !novel(record, candidate.genome, community)) continue;
+          || !novel(record, candidate.genome, community, true)) continue;
         const actual = assess(record, candidate.genome, rows, community);
         const targets = actual.evaluations.filter(item => {
           if (item.candidate.score <= 0 || item.difference < EVOLUTION_RULES.minimumAdvantage) return false;

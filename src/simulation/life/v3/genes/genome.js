@@ -90,7 +90,7 @@ export function deriveGenome(g) {
   const allocation = 1 / ((systems || 1) * (1 + GENE_RULES.mixedSystemPenalty * Math.max(0, systems - 1)));
   const thermalCost = g.temperatureTolerance === null ? 0 : 0.02 + 0.008 * Math.abs(g.temperatureTolerance);
   const traitCost = 0.025 * g.photosynthesis + thermalCost + 0.012 * g.landAdaptation
-    + 0.015 * g.trunk + 0.022 * g.movement ** 1.4 + 0.022 * g.plantFeeding + 0.038 * g.animalFeeding
+    + 0.015 * g.trunk + 0.016 * g.movement ** 1.4 + 0.022 * g.plantFeeding + 0.038 * g.animalFeeding
     + 0.025 * g.poison ** 1.2 + 0.018 * g.spines + 0.02 * g.detoxification
     + 0.025 * g.biteForce ** 1.2 + structure.upkeep + covering.upkeep
     + 0.023 * g.armor ** 1.3 * covering.protection + 0.065 * g.flight ** 1.4

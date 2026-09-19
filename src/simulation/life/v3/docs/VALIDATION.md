@@ -1,5 +1,76 @@
 # V3 validation — 2026-09-19
 
+## Revision 2: trophic tuning and ecological distinction
+
+Validated `v3-populations-2` with `npm run build` and `npm test`: 135
+headless/rendering checks and 67 Chromium checks passed; the existing duplicate
+desktop touch check remains skipped. New regressions establish that movement
+can pay for itself through hunting available consumer prey and improve escape,
+while maintaining trait costs and negative growth without prey. A viable,
+population-supported feeding change that duplicates its parent's grazing niche
+is rejected; the same controlled fixture branched under revision 1. Existing
+finite-resource, label-splitting, checkpoint and inspection-independence checks
+continue to pass.
+
+Browser checks cover the collapsed native adaptation disclosure, keyboard
+expansion, retained selection, EN/PL changes, short approximate counts, disabled
+directions, absent portraits and responsive bounds through 320 px. Inspected
+light/dark screenshots at desktop and phone sizes, including large producer
+coverage and dots, focus, wrapping and disabled entries. The development server
+completed actual V3 introduction and pause without page errors. Locale-key parity,
+documentation links, dependency direction and diff checks passed. No runtime
+dependencies, V1/V2 files, supplied artwork or licence files changed.
+
+### Medium-world ecological panel
+
+Repeat the current rules from the repository root:
+
+```sh
+node scripts/check-life-v3-balance.js 28800 medium emergence water
+node scripts/check-life-v3-balance.js 28800 medium v3-compare-b water
+```
+
+Introductions use the benchmark's stable suitable-site selection: water,
+nonpermanent ice, 15–30 °C, closest to the equator, then hex ID. The resulting
+sites are 1140 and 1142. Both founders have no movement, plant feeding or animal
+feeding; consumer and movement traits arise during the run. The final rules
+were advanced through 14,400 days, checkpointed, then continued to 28,800 days.
+The replay suite separately verifies continuation independence. Years below
+mean elapsed 360-day years. Counts are living species, with carnivores including
+mixed feeders; pure predators use only animal feeding. Mobility is movement
+greater than zero, regardless of diet, so these columns overlap.
+
+| Seed / rules | Elapsed years | Species | Carnivorous | Pure predators | Mobile |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `emergence` / revision 1 | 40 | 98 | 0 | 0 | 0 |
+| `emergence` / revision 2 | 40 | 54 | 11 | 3 | 7 |
+| `v3-compare-b` / revision 2 | 40 | 41 | 6 | 3 | 5 |
+| `emergence` / revision 2 | 60 | 60 | 6 | 2 | 6 |
+| `v3-compare-b` / revision 2 | 60 | 45 | 7 | 4 | 5 |
+| `emergence` / revision 2 | 80 | 65 | 11 | 3 | 7 |
+| `v3-compare-b` / revision 2 | 80 | 53 | 8 | 3 | 6 |
+
+At year 80, the first world had 138,010 organisms across 811 hexes and the
+second 295,256 across 913 hexes. Both contained three pure predator species.
+The ten-year observations from years 40–80 ranged from 54–68 species in
+`emergence` and 41–53 in `v3-compare-b`; they do not establish an equilibrium.
+
+The baseline is the unchanged model at commit `b6277a8`, with identical physical
+settings, site, life seed and elapsed days. Its medium-world counts at years
+10/20/30/40 were 39/78/97/98, with no carnivorous or mobile species at those
+observations. This is not a reproduction of the user's 175-species world, whose
+seed and age were unavailable. A small-world land introduction (`emergence`,
+hex 173) had five species and no carnivory or movement after ten years under
+revision 2, illustrating that the tuning does not force feeding transitions.
+
+Species counts are measured outcomes, not a hard cap or a guaranteed equilibrium.
+Stricter novelty can reject subtle niches; hunting changes population and
+extinction trajectories. These few worlds do not prove global ecological
+balance, permanent coexistence, or a 50–60-species result for every seed.
+No runtime speed comparison is claimed for this panel.
+
+## Historical revision 1 verification
+
 Validated `v3-populations-1` on Node 26.8.1, Apple M1 / arm64. The model is an
 experimental ecological approximation. Software checks establish the properties
 below, not biological calibration or equivalence to the preserved V1/V2 models.

@@ -4,7 +4,8 @@ const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 const outside = (value, range) => Math.max(range[0] - value, value - range[1], 0);
 export const ECOLOGY_RULES = Object.freeze({ lightBudget: 2400, waterLightBudget: 2000,
   photosynthesisRate: 1.6, grazingFraction: 0.45, preyFraction: 0.12,
-  conversion: 0.6, backgroundMortality: 0.008, reproductionRate: 0.18 });
+  conversion: 0.6, backgroundMortality: 0.008, reproductionRate: 0.18,
+  huntingEffort: 2.8, captureBase: 0.5, captureSpeed: 0.14 });
 
 export const hasWater = hex => hex.waterType !== 'none' || hex.runoff > 0;
 export const hasLand = hex => hex.waterType === 'none';
@@ -86,7 +87,7 @@ export function preyEligible(predatorGenome, preyGenome, predator = deriveGenome
 
 export function captureProbability(predatorGenome, preyGenome, predator = deriveGenome(predatorGenome), prey = deriveGenome(preyGenome)) {
   if (!preyEligible(predatorGenome, preyGenome, predator, prey)) return 0;
-  return clamp(0.45 + 0.09 * (predator.speed - prey.speed) + 0.06 * (predator.senses - prey.senses)
+  return clamp(ECOLOGY_RULES.captureBase + ECOLOGY_RULES.captureSpeed * (predator.speed - prey.speed) + 0.06 * (predator.senses - prey.senses)
     + 0.07 * predator.handling - 0.07 * prey.defense
     - 0.07 * Math.max(0, preyGenome.poison - predatorGenome.detoxification)
     + 0.07 * (predator.flightEfficiency - prey.flightEfficiency), 0.02, 0.95);
@@ -121,7 +122,7 @@ export function evaluateCommunity(hex, habitat, community = []) {
   const grazingDemand = rows.map(row => row.population * row.derived.cells * row.derived.grazingShare
     * row.environment * 2.2);
   const predationDemand = rows.map(row => row.population * row.derived.cells * row.derived.predationShare
-    * row.environment * 2.2);
+    * row.environment * ECOLOGY_RULES.huntingEffort);
 
   for (let source = 0; source < rows.length; source += 1) {
     if (!(photo[source] > 0)) continue;

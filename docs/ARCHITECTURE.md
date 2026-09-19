@@ -2,7 +2,16 @@
 
 ## Status
 
-**Current: V3 species populations and ecological pressure — 2026-09-19.**
+**Current: Ordered genomes, smooth readouts and revised world sizes — 2026-09-19.**
+Decision 048 adds energy labels and collapsible species inspection, brief numerical
+transitions, and Small / Medium / Large presets of 24 × 16 / 42 × 28 / 60 × 40.
+
+**V3 trophic tuning and compact notebook — 2026-09-19.**
+Decision 047 strengthens ecological distinction, increases opportunities for
+carnivory and movement, extends producer shading to every body size, and removes
+portraits while collapsing the shorter possible-adaptation list.
+
+**V3 activation — 2026-09-19.**
 Decision 046 activates V3, with bounded species-wide adaptation directions,
 community-dependent scores and distinct ecological branching. V1/V2 remain
 preserved. Active rules are in
@@ -2247,3 +2256,163 @@ observation cost about 60 ms. Fixed-population-record updates remained near
 representation change but do not establish a universal speedup or calibrated
 diversification. The record includes the reproducible benchmark command,
 workload sizes and limitations.
+
+## 047 — Compact inspection and V3 ecological tuning — 2026-09-19
+
+**Supersedes 046's portrait and adaptation-note presentation, the earlier
+tiny-producer-only coverage rule, and V3 revision 1 coefficients below.** The user
+requests green shading for large photosynthetic organisms as well as dots,
+shorter collapsible adaptations, removal of genome portraits, more carnivory and
+movement, and fewer, more distinct species in medium worlds (preferably 50–60,
+below 100). These are tuning aims, not hard population or taxonomy quotas.
+
+### Presentation and boundaries
+
+Every producer display group now contributes to the existing green terrain and
+elevation tint, irrespective of normalized size or mobility. Abundance curves,
+land/water tint caps, diagnostic colours and population dots are preserved.
+Rendering still uses model-supplied roles and resolved CSS tokens; no biological
+rules or genome interpretation move into Canvas code.
+
+Species details start with population and inherited traits. The generated
+genome portrait, helper and styles are removed; original resource artwork stays
+intact. The unchanged SVG chart is isolated in `rendering/life-trend.js`.
+Possible adaptations uses native `details`/`summary`, initially collapsed and
+reset when inspecting a different species. It preserves expansion through live
+updates, theme and language switches. Its explanatory paragraph is removed;
+short EN/PL entries use numeric levels and approximate hex counts. Accessible
+button names still identify estimated ranges, and unavailable ranges remain
+disabled. Closing the disclosure preserves its current map selection.
+
+### Version-specific tuning
+
+Active rules become `v3-populations-2`. The checkpoint format is unchanged but
+its existing strict revision check rejects revision 1 trajectories. There is no
+implicit conversion, species merge or forced extinction. V1/V2, shared world
+rules, three-turns-per-ten-days cadence, browser speed and random-state ownership
+are preserved.
+
+- Hunting effort increases from 2.2 to 2.8 per cell/acquisition/environment unit;
+  grazing remains 2.2. Capture's base increases from 0.45 to 0.50 and speed
+  coefficient from 0.09 to 0.14. Finite prey, size/defense limits, failed-attempt
+  effort, 60% conversion and the shared 12% prey-withdrawal cap are unchanged.
+- Movement upkeep decreases from `0.022 × level^1.4` to `0.016 × level^1.4`.
+  Construction and photosynthesis penalties remain. Movement can pay through
+  better pursuit or escape, with no free food or unconditional survival benefit.
+- Movement and animal-feeding mutations get twice the search weight, including
+  losses. Eight trials per pass and three directions per species remain the
+  bounds; ecological advantage, persistence and actual founding-density tests
+  still govern acceptance.
+- A branch must pass ecological novelty against its own parent as well as all
+  other extant species. Previously the parent was skipped. Mean realized-diet
+  difference rises from 0.15 to 0.35, and the alternative complementary score
+  profile threshold from 0.008 to 0.03. Uniform efficiency improvements do not
+  constitute a niche. Whole-species adaptation still excludes its replaced
+  parent from this comparison and cannot converge onto an incumbent.
+
+These changes address weak hunting returns and permissive niche recognition.
+They do not assign species, script future feeding transitions, guarantee movement,
+or use the world's species count as a balancing input. All coefficients and
+genetic search remain inside `life/v3/`.
+
+### Validation and limits
+
+The current [V3 validation record](../src/simulation/life/v3/docs/VALIDATION.md)
+records focused rule checks, complete application checks, visual inspection and
+the seeded medium-world panel. `scripts/check-life-v3-balance.js` repeats the
+population/diet/movement observations without browser timing or hand-seeded
+consumers. Its counts are observations rather than universal pass/fail targets.
+The stronger novelty gate can reject small real niches, and higher hunting
+pressure changes population and extinction trajectories. Limited seeded runs
+cannot establish a stable species count for every seed or a calibrated ecology.
+
+Final verification: `npm run build` and `npm test` passed, with 135
+headless/rendering checks, 67 Chromium checks and the existing touch-test skip.
+Both themes and EN/PL were inspected at desktop/phone widths, including native
+disclosure focus, disabled entries, portrait removal and large-producer shading.
+Actual development-server introduction and pause also passed. Two medium-world
+water introductions reached 65 and 53 living species after 80 simulated years,
+with respectively 11 and 8 animal-feeding lineages, three pure predators each,
+and 7 and 6 mobile lineages. The comparable revision 1 `emergence` run had 98
+species and no carnivorous/mobile species at year 40; revision 2 had 54 at that
+age. These measurements support the tuning direction without guaranteeing the
+requested species range. Full fixture details and limitations are in validation.
+
+
+## 048 — Ordered genomes, smooth readouts and revised world sizes — 2026-09-19
+
+**Supersedes the size presets in 010 and the earlier shared-world summary, and
+refines 037/047's notebook presentation.** The user requests energy-first genome
+inspection, smoother numerical updates, collapsible species when several share a
+hex, energy-dependent list colours, and a size between Small and the former Medium.
+
+### Inspection and presentation boundary
+
+Inherited traits and possible-adaptation changes now list photosynthesis, plant
+feeding and animal feeding first, then body size and sexual reproduction when
+present, followed by the remaining supplied traits in stable observation order.
+The UI sorts copies and reorders persistent rows when traits appear during playback;
+model genomes and observations stay unchanged. Existing expression visibility and
+carrier-selection thresholds retain their meanings.
+
+Each species name has short energy labels: green photosynthesis, brown plant
+feeding, red animal feeding. Every visible acquisition source gets its own label,
+so mixed feeders are not forced into a single role. This describes observed
+capabilities, not measured energy intake or a new biological classification. Text
+labels accompany colour; all colours and type sizes consume root theme tokens,
+including the no-JavaScript dark fallback. English and Polish update in place.
+
+With several local species, clicking an open species again collapses its details
+and clears its map highlight; a chevron indicates expansion. A sole local species
+stays open, and clicking its name still toggles the range highlight. Live updates,
+theme and locale preserve the current collapsed state. Native buttons keep their
+keyboard behavior, visible focus and expanded/pressed state.
+
+A UI-only animator eases numeric readouts to the latest observation over 240 ms:
+population, life census, temperature/moisture, playback day and measured speed.
+Small changes progress through rounded integers; large jumps skip intermediate
+integers to settle promptly. Existing number nodes are retained instead of
+rebuilding the physical inspector and speed text on each update. First display,
+new species/hex selection, paused day stepping and speed-control feedback remain
+immediate. Reduced motion and hidden documents settle active transitions, with
+no catch-up animation. New observations retarget from the currently displayed
+value. Raw data attributes, charts, map selections and model state use completed
+observations immediately; interpolated text is a brief presentation transition,
+not another census or simulated day. No wall-clock reads enter simulation code.
+
+### World presets and reproducibility
+
+Small remains 24 × 16 (384 hexes); Medium is 42 × 28 (1,176 hexes), the midpoint
+of both former Small/Medium dimensions and the default; Large is the former
+Medium at 60 × 40 (2,400 hexes). The 120 × 80 preset is retired. Setup labels,
+static HTML, engine dimensions and current usage documentation agree.
+
+The generator version advances to `physical-world-4` because identical named
+size inputs now mean different dimensions. Terrain, drainage, climate and life
+algorithms are unchanged. Historical validation records preserve their original
+size names and generator versions; their former Medium is now Large. Headless
+checkpoint world-identity checks continue rejecting incompatible worlds; there
+is no implicit conversion of saved runs.
+
+### Validation and limitations
+
+Focused browser checks cover all preset dimensions and EN/PL labels, multi-source
+energy labels, inherited trait priority, persistent collapsing, keyboard focus,
+smooth retargeting, live locale changes and reduced motion. Existing geography
+checks exercise every new preset's drainage, land budget and physical regions.
+`npm run build` and `npm test` passed: 135 headless/renderer checks and 73
+Chromium checks, with the existing desktop touch duplicate skipped. Both themes
+were visually inspected at desktop and phone widths in EN/PL, including coloured
+labels, collapsed lists, ordered genes and keyboard focus. The suite covers
+wrapping through 320 px, disabled controls, original assets, storage failure and
+worker/headless equivalence. New label contrast is at least 5.81:1 on its token
+background; all 204 translation keys and explicit/system dark tokens agree.
+The final diff and dependency-boundary review passed, as did `git diff --check`.
+Pre-existing uncommitted work was preserved. Browser verification is limited to
+Chromium; this task makes no new biological-validation claim.
+
+Transitions intentionally lag numerical observations by at most their short
+settling period after the final update; they never delay commands or biological
+advancement. Compact population formatting can hide small numerical changes.
+Colour indicates acquisition capabilities and makes no promise about future
+evolution, actual diet proportions or ecological calibration.

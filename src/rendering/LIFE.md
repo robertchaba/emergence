@@ -1,6 +1,25 @@
 # Life rendering
 
+## Compact notebook and all-size producer coverage — 2026-09-19
+
+Decision 047 supersedes the portrait, adaptation note and tiny-producer-only
+tint rules below. All producer display groups contribute to green terrain and
+elevation coverage, regardless of size or mobility, while retaining dots. The
+existing abundance curve, land/water caps and diagnostic fills are unchanged.
+
+Genome portraits and their SVG helper are removed. Original artwork remains.
+Species details begin with population and inherited traits. **Possible
+adaptations** is a native, initially closed details/summary disclosure, with
+short localized changes and approximate hex counts. Its explanatory paragraph
+is removed. Accessible range-button names still identify estimates; empty
+ranges remain disabled. Disclosure state survives live updates and theme/locale
+changes for the same species, and resets when a different species is opened.
+Collapsing does not clear the selected range. The unchanged population chart
+now lives in `life-trend.js`.
+
 ## V3 established traits and estimated directions — 2026-09-19
+
+**Historical presentation; compact disclosure and portrait removal superseded above.**
 
 V3 supplies one established genome per species. Its ordinary inherited traits
 and portrait describe that genome. Up to three `tendencies` appear separately

@@ -6,7 +6,7 @@ authorized for this independent version, not measured biological constants.
 V1/V2 research remains intact. Shared physics, weather, calendar and speed
 meanings are unchanged.
 
-Identifiers: `modelId: v3`, `rulesRevision: v3-populations-1`, checkpoint format
+Identifiers: `modelId: v3`, `rulesRevision: v3-populations-2`, checkpoint format
 `emergence-life-v3-checkpoint-1`, common contract `life-observations-1`.
 
 ## State and introduction
@@ -104,8 +104,10 @@ Predators consume eligible feeding species, with size limits and capture affecte
 by movement, sensing, flight, defenses, poison and handling. Per-source withdrawal
 is bounded at 12% of prey population each turn; capture accessibility and demand
 further constrain it. Tissue accounting uses `1.4 × prey body cells`, with 60%
-conversion. Feeding demand is population × cells × acquisition share ×
-environmental performance × 2.2. Same-species feeding is excluded. Finite resource
+conversion. Feeding effort is population × cells × acquisition share ×
+environmental performance, multiplied by 2.2 for grazing and 2.8 for hunting.
+Capture starts at 0.50, with a 0.14 coefficient on predator-minus-prey speed;
+other capture effects and the 12% withdrawal cap remain unchanged. Same-species feeding is excluded. Finite resource
 allocation is shared across consumers; it never loops over individual hunters.
 Pairwise ecological work can still grow with the number of coexisting species.
 
@@ -151,7 +153,10 @@ elevation and actual-water-depth extremes, supplemented with stable positions.
 It is deterministic and not driven by camera or inspection. Small refuges can
 enter the sample even when most organisms live elsewhere.
 
-At most eight seeded legal one-gene changes are tried in a search pass. A
+At most eight seeded legal one-gene changes are tried in a search pass. Movement
+and animal-feeding changes have sampling weight 2; all others have weight 1.
+Both gains and losses use these weights, without replacement within the pass.
+This changes exploration frequency, not ecological acceptance or food supply. A
 candidate and its parent phenotype are both evaluated as equally rare additions
 to the same frozen resident community. The parent remains in that community;
 competition is not removed to make a candidate look successful. A proposed
@@ -194,9 +199,11 @@ distance alone never establishes a species.
 Novelty compares a bounded sample of both the parent's and each incumbent's
 occupied conditions. Both compared phenotypes use the same independent rare
 lineage probe, retaining all existing competition. Exact genome duplicates are
-rejected. Otherwise, novelty requires either a mean total-variation difference
-of at least 0.15 in realized production/grazing/prey energy shares, or a weighted
-standard deviation of score differences of at least 0.008 with locations where
+rejected. A branch must also pass this comparison against its own parent;
+whole-species replacement excludes only the parent being replaced. Otherwise,
+novelty requires either a mean total-variation difference
+of at least 0.35 in realized production/grazing/prey energy shares, or a weighted
+standard deviation of score differences of at least 0.03 with locations where
 each phenotype wins by at least 0.005. A uniform efficiency offset or different
 acquisition bits alone cannot establish a new niche. The same guard applies to
 whole-species fixation so adaptation cannot erase that distinction.
@@ -218,7 +225,7 @@ conditions can still alter the ecological distinction after establishment.
 
 ## Observation, continuation and limits
 
-The accepted genome supplies actual species traits and the portrait. Candidate
+The accepted genome supplies actual species traits. Candidate
 directions supply separate descriptions and estimated favourable ranges, with
 no exact carrier counts or genetic percentages. Ranges are deterministic
 analyses of current occupied locations, not tracked variant territories. Querying

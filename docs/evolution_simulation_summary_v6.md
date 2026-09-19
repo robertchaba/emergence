@@ -42,8 +42,12 @@ Use a cylindrical odd-row hex grid. The left and right edges wrap; the top and b
 | World size | Dimensions | Hexes |
 |---|---:|---:|
 | Small | 24 x 16 | 384 |
-| Medium, default | 60 x 40 | 2,400 |
-| Large, maximum | 120 x 80 | 9,600 |
+| Medium, default | 42 x 28 | 1,176 |
+| Large, maximum | 60 x 40 | 2,400 |
+
+Updated by architecture decision 048 (2026-09-19). The original v6 proposed
+Medium at 60 x 40 and Large at 120 x 80; these presets are superseded. Small
+remains unchanged. Generator `physical-world-4` records the new input meanings.
 
 Small is a complete miniature world, not a low-quality preview. It must contain coherent land masses, at least one river and more than one geographic region.
 

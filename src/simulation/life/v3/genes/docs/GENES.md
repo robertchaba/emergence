@@ -23,7 +23,7 @@ These are rate-model energy budgets, not stored energy tracked for each organism
 | `trunk` | 0–10 | Increases land light-competition weight and canopy height; slows movement and flight. Requires photosynthesis. Cost `0.015x`, plus construction above. |
 | `temperatureTolerance` | absent, −2…2 | Selects a temperature range with smooth loss outside it. Absent costs zero; expressed cost `0.02 + 0.008×abs(x)`. |
 | `landAdaptation` | 0–3 | Aquatic, wet-land overlap, terrestrial overlap, and dry land. Water efficiencies are 1, 0.85, 0.55, 0; land moisture requirements are unavailable, 0.75, 0.45, 0.2. Cost `0.012x`. |
-| `movement` | 0–4 | Improves dispersal, pursuit and escape; enables flight. Reduces photosynthetic efficiency. Cost `0.022x^1.4`, plus construction above. |
+| `movement` | 0–4 | Improves dispersal, pursuit and escape; enables flight. Reduces photosynthetic efficiency. Cost `0.016x^1.4`, plus construction above. |
 | `plantFeeding` | 0–1 | Accesses finite edible production from other species, subject to height and defenses. Cost `0.022x`. |
 | `animalFeeding` | 0–1 | Accesses consumer prey within the size limit; hunting removes represented prey and loses energy in conversion. Cost `0.038x`. |
 | `poison` | 0–3 | Reduces grazing access and capture unless opponents have detoxification. Cost `0.025x^1.2`. |
@@ -106,7 +106,7 @@ cannot unlock protected production.
 Predators target species with at least one consumer system. Prey cells must be
 at most `predatorCells×(1.6+0.6biteForce)`. Capture probability, limited to
 0.02–0.95 for eligible prey, is
-`0.45+0.09(speedDifference)+0.06(sensingDifference)+0.07predatorHandling
+`0.50+0.14(speedDifference)+0.06(sensingDifference)+0.07predatorHandling
 −0.07preyDefense−0.07max(0,preyPoison−detoxification)
 +0.07(flightEfficiencyDifference)`. Established species do not feed on their
 own identity. A prospective new trophic lineage is assessed separately and can
@@ -116,6 +116,8 @@ applied as a whole-parent replacement.
 For each eligible prey source, successful hunting effort is limited to
 `remainingPredationDemand / preyTissue × captureProbability`, where prey tissue
 is `1.4×preyCells`. All predators share the same 12%-of-prey withdrawal budget.
+Hunting effort is `population×cells×predationShare×environment×2.8`;
+grazing retains its 2.2 effort factor. These efforts do not create prey or food.
 Capture therefore scales population-proportional effort; splitting unchanged
 hunters into more species cannot multiply their source access allowance.
 After a withdrawal, attempted effort `eaten×preyTissue/captureProbability` is

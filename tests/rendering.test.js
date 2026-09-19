@@ -4,7 +4,7 @@ import test from 'node:test';
 import { territoryContours } from '../src/rendering/territory.js';
 import { createGrid } from '../src/simulation/grid.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../src/rendering/map.js';
-import { createSpecimenSvg, createLifeTrendSvg } from '../src/rendering/specimen.js';
+import { createLifeTrendSvg } from '../src/rendering/life-trend.js';
 
 const style = readFileSync(new URL('../src/ui/styles/tokens.css', import.meta.url), 'utf8');
 const tokenValue = (name) => {
@@ -277,7 +277,7 @@ function lifeFixture({ revision = 1, runId = 'life-test', population = 800, role
   }] });
 }
 
-test('small producer coverage tints land more than water and preserves diagnostic colors', () => {
+test('producer coverage at every body size tints land more than water and preserves diagnostic colors', () => {
   const { map, fills } = renderer();
   const world = fixture();
   const capture = (life, layer = 'terrain') => {
@@ -296,6 +296,11 @@ test('small producer coverage tints land more than water and preserves diagnosti
   const channels = value => value.match(/\d+/g).map(Number);
   const distance = value => Math.hypot(...channels(value).map((channel, index) => channel - channels(baseline)[index]));
   assert.ok(distance(landColor) > distance(waterColor));
+  for (const size of [0.5, 1]) {
+    assert.equal(capture(lifeFixture({ size })), landColor, 'large plants keep the coverage tint');
+    assert.ok(fills.includes(tokens['--map-life-plant']), 'large plants also retain their green dots');
+    assert.equal(capture(lifeFixture({ size, habitat: 'water' })), waterColor);
+  }
   assert.equal(capture(land, 'temperature'), capture(null, 'temperature'));
   for (const layer of ['temperature', 'humidity', 'regions']) {
     capture(land, layer);
@@ -399,22 +404,6 @@ test('smaller, denser plant dots change patches while mobile markers travel smoo
   for (let index = 0; index < moving.length; index += 1) {
     assert.ok(Math.hypot(moving[index][1] - next[index][1], moving[index][2] - next[index][2]) < hexRadius * 0.08);
   }
-});
-
-test('specimen illustrations are deterministic, read-only, and escape accessible labels', () => {
-  const traits = freezeDeep([
-    { key: 'size', value: 4, min: 1, max: 10, active: true },
-    { key: 'photosynthesis', value: 8, min: 0, max: 10, active: true },
-    { key: 'movement', value: 3, min: 0, max: 10, active: true },
-  ]);
-  const before = JSON.stringify(traits);
-  const svg = createSpecimenSvg(traits);
-  assert.equal(svg, createSpecimenSvg(traits));
-  assert.match(svg, /aria-hidden="true"/);
-  assert.notEqual(svg, createSpecimenSvg([]));
-  assert.match(createSpecimenSvg(traits, { label: '<Specimen "A">' }), /aria-label="&lt;Specimen &quot;A&quot;&gt;"/);
-  assert.equal(/(?:#[a-f\d]{3,8}|rgb\(|NaN|undefined)/i.test(svg), false);
-  assert.equal(JSON.stringify(traits), before);
 });
 
 test('independent trend scales retain small living counts alongside large extinct counts and occupied areas', () => {

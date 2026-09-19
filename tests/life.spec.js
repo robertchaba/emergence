@@ -6,6 +6,132 @@ import { chooseTheme } from './ui-helpers.js';
 
 const settings = { seed: 'life-browser-check', size: 'small' };
 
+test('species energy labels, ordered genomes and collapsible details survive live updates', async ({ page }, testInfo) => {
+  const world = setDay(generateWorld(settings), 1);
+  const site = suitable(world);
+  const model = createActiveLifeModel(world);
+  model.introduce(site.id);
+  const soleSpecies = model.observe();
+  const saved = model.exportState();
+  const original = saved.species[0];
+  const diets = [
+    { photosynthesis: 1, plantFeeding: 0, animalFeeding: 0 },
+    { photosynthesis: 0, plantFeeding: 1, animalFeeding: 0 },
+    { photosynthesis: 0, plantFeeding: 0, animalFeeding: 1 },
+    { photosynthesis: 1, plantFeeding: 1, animalFeeding: 1 },
+  ];
+  saved.species = diets.map((diet, index) => ({ ...original, id: `species-${index + 1}`,
+    name: `Exemplaria ${['viridis', 'brunnea', 'rubra', 'mixta'][index]}`,
+    genome: { ...original.genome, ...diet, trunk: 0, sexualReproduction: 1 }, candidates: [] }));
+  saved.populations = saved.species.map(species => ({ ...saved.populations[0], speciesId: species.id }));
+  saved.day = 2; saved.revision += 1;
+  const initial = restoreActiveLifeModel(world, saved).observe();
+  saved.day += 1; saved.revision += 1;
+  saved.species[0].genome.animalFeeding = 1;
+  const changed = restoreActiveLifeModel(world, saved).observe();
+  await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
+    body: `const snapshots = ${JSON.stringify([soleSpecies, initial, changed])}; let revision = 0;
+      self.onmessage = ({data}) => { if (data.command === 'advance') revision = Math.min(2, revision + 1);
+        self.postMessage({command: data.command, observation: snapshots[revision]}); };`,
+  }));
+  await openLifeWorld(page);
+  await pinHex(page, site, world.width, world.height);
+  const choices = page.locator('.species-choice');
+  await expect(choices).toHaveCount(1);
+  await expect(choices.first()).toHaveAttribute('aria-expanded', 'true');
+  await page.locator('#step-world').click();
+  await expect(choices).toHaveCount(4);
+  await choices.first().click();
+  await expect(page.locator('#species-detail')).toHaveCount(0);
+  const first = choices.first();
+  const mixed = choices.last();
+  await expect(mixed.locator('.species-energy-label')).toHaveCount(3);
+  for (const locale of ['en', 'pl']) {
+    await page.locator(`[data-locale="${locale}"]`).click();
+    await expect(mixed.locator('.species-energy-label')).toHaveText(locale === 'en'
+      ? ['Photosynthesis', 'Plant feeding', 'Animal feeding'] : ['Fotosynteza', 'Roślinożerność', 'Mięsożerność']);
+    for (const theme of ['light', 'dark']) {
+      await chooseTheme(page, theme);
+      await mixed.focus();
+      await page.keyboard.press('Enter');
+      await expect(mixed).toHaveAttribute('aria-expanded', 'true');
+      expect(await page.locator('.gene-row').evaluateAll(rows => rows.slice(0, 5).map(row => row.dataset.gene)))
+        .toEqual(['photosynthesis', 'plantFeeding', 'animalFeeding', 'size', 'sexualReproduction']);
+      await expect(mixed).toBeFocused();
+      await expect(mixed).toHaveCSS('outline-style', 'solid');
+      const colours = await mixed.locator('.species-energy-label').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).color));
+      expect(new Set(colours).size).toBe(3);
+      await page.screenshot({ path: testInfo.outputPath(`species-energy-${locale}-${theme}.png`) });
+      await page.locator('.gene-heading').first().scrollIntoViewIfNeeded();
+      await page.screenshot({ path: testInfo.outputPath(`ordered-genes-${locale}-${theme}.png`) });
+      await mixed.press('Enter');
+      await expect(mixed).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('#species-detail')).toHaveCount(0);
+      await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth
+        && document.querySelector('.notebook').scrollWidth <= document.querySelector('.notebook').clientWidth + 1)).toBe(true);
+      await page.locator('.notebook').evaluate(node => { node.scrollTop = node.scrollHeight; });
+      await page.screenshot({ path: testInfo.outputPath(`species-collapsed-${locale}-${theme}.png`) });
+    }
+  }
+  await page.locator('#step-world').click();
+  await expect(page.locator('#world-day')).toHaveAttribute('data-day', '3');
+  await expect(page.locator('#species-detail')).toHaveCount(0);
+  await page.locator('[data-locale="en"]').click();
+  await expect(page.locator('#species-detail')).toHaveCount(0);
+  await first.click();
+  expect(await page.locator('.gene-row').evaluateAll(rows => rows.slice(0, 4).map(row => row.dataset.gene)))
+    .toEqual(['photosynthesis', 'animalFeeding', 'size', 'sexualReproduction']);
+  if (testInfo.project.name === 'phone') {
+    await page.setViewportSize({ width: 320, height: 700 });
+    expect(await page.evaluate(() => document.querySelector('.notebook').scrollWidth
+      <= document.querySelector('.notebook').clientWidth + 1)).toBe(true);
+  }
+});
+
+test('population counts ease towards observations, retarget smoothly and respect reduced motion', async ({ page }) => {
+  const world = setDay(generateWorld(settings), 1);
+  const site = suitable(world);
+  const model = createActiveLifeModel(world);
+  model.introduce(site.id);
+  const saved = model.exportState();
+  const snapshots = [20, 32, 24, 50].map((count, index) => {
+    saved.day = index + 1; saved.revision = index + 1;
+    saved.populations[0].count = count;
+    return restoreActiveLifeModel(world, saved).observe();
+  });
+  await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
+    body: `const snapshots = ${JSON.stringify(snapshots)}; let revision = 0;
+      self.onmessage = ({data}) => { if (data.command === 'advance') revision = Math.min(3, revision + 1);
+        self.postMessage({command: data.command, observation: snapshots[revision]}); };`,
+  }));
+  await openLifeWorld(page);
+  await pinHex(page, site, world.width, world.height);
+  const population = page.locator('.species-population');
+  await expect(population).toHaveText('Population: 20');
+  await page.clock.install();
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
+  await page.locator('#step-world').click();
+  await expect(population).toHaveAttribute('data-count', '32');
+  await expect(population).toHaveText('Population: 20');
+  await page.clock.runFor(80);
+  const intermediate = Number((await population.textContent()).replace(/\D/g, ''));
+  expect(intermediate).toBeGreaterThan(20);
+  expect(intermediate).toBeLessThan(32);
+  await page.locator('#step-world').click();
+  await expect(population).toHaveAttribute('data-count', '24');
+  await page.locator('[data-locale="pl"]').click();
+  await expect(population).toHaveText(`Populacja: ${intermediate}`);
+  await page.clock.runFor(300);
+  await expect(population).toHaveText('Populacja: 24');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#step-world').click();
+  await expect(population).toHaveAttribute('data-count', '50');
+  await expect(population).toHaveText('Populacja: 50');
+  await page.clock.runFor(300);
+  await expect(population).toHaveText('Populacja: 50');
+});
+
 test('V3 distinguishes estimated adaptation ranges from inherited traits in both languages and themes', async ({ page }, testInfo) => {
   const world = setDay(generateWorld(settings), 1);
   const site = suitable(world);
@@ -29,6 +155,13 @@ test('V3 distinguishes estimated adaptation ranges from inherited traits in both
   await openLifeWorld(page);
   await pinHex(page, site, world.width, world.height);
   const direction = page.locator('[data-tendency-id="depth-direction"]');
+  const disclosure = page.locator('.species-tendencies summary');
+  await expect(direction).toBeHidden();
+  await expect(page.locator('#species-detail .specimen-portrait')).toHaveCount(0);
+  await expect(page.locator('.species-tendencies .field-note')).toHaveCount(0);
+  await disclosure.focus();
+  await page.keyboard.press('Enter');
+  await expect(direction).toBeVisible();
   await expect(page.locator('[data-tendency-id="unfavoured-direction"]')).toBeDisabled();
   await expect(page.locator('.gene-list button')).toHaveCount(0);
   await expect(page.locator('.gene-expression[data-gene="photosynthesis"]')).toHaveText('100%');
@@ -37,16 +170,15 @@ test('V3 distinguishes estimated adaptation ranges from inherited traits in both
   await expect(direction).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#world-map')).toHaveAttribute('data-selected-variant-id', 'tendency:depth-direction');
   const labels = {
-    en: ['Possible adaptations', 'Elevation tolerance', 'Water depth tolerance', 'not tracked carriers', 'estimate'],
-    pl: ['Możliwe adaptacje', 'Tolerancja wysokości', 'Tolerancja głębokości wody', 'bez śledzenia nosicieli genów', 'szacunek'],
+    en: ['Possible adaptations', 'Elevation tolerance', 'Water depth tolerance', 'Hexes: ~1'],
+    pl: ['Możliwe adaptacje', 'Tolerancja wysokości', 'Tolerancja głębokości wody', 'Heksy: ~1'],
   };
   for (const locale of ['en', 'pl']) {
     await page.locator(`[data-locale="${locale}"]`).click();
-    await expect(page.locator('.species-tendencies h4')).toHaveText(labels[locale][0]);
+    await expect(disclosure).toHaveText(labels[locale][0]);
     await expect(page.locator('.gene-list')).toContainText(labels[locale][1]);
     await expect(page.locator('.gene-list')).toContainText(labels[locale][2]);
-    await expect(page.locator('.species-tendencies .field-note')).toContainText(labels[locale][3]);
-    await expect(direction).toContainText(labels[locale][4]);
+    await expect(direction).toContainText(labels[locale][3]);
     await expect(direction).not.toContainText('%');
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
@@ -63,6 +195,14 @@ test('V3 distinguishes estimated adaptation ranges from inherited traits in both
       await page.screenshot({ path: testInfo.outputPath(`v3-tendencies-${locale}-${theme}.png`) });
     }
   }
+  await disclosure.click();
+  await expect(direction).toBeHidden();
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-variant-id', 'tendency:depth-direction');
+  await page.locator('[data-locale="en"]').click();
+  await expect(direction).toBeHidden();
+  await disclosure.focus();
+  await page.keyboard.press('Enter');
+  await expect(direction).toBeVisible();
   if (testInfo.project.name === 'phone') {
     await page.setViewportSize({ width: 320, height: 700 });
     expect(await page.evaluate(() => document.querySelector('.notebook').scrollWidth
@@ -206,7 +346,7 @@ test('life catalogue preserves state through themes and languages and fits narro
       await page.keyboard.press('Shift+Tab');
       await page.keyboard.press('Tab');
       await expect(page.locator('.species-choice')).toHaveCSS('outline-style', 'solid');
-      await expect(page.locator('#species-detail .specimen-svg')).toBeVisible();
+      await expect(page.locator('#species-detail .specimen-svg')).toHaveCount(0);
       await expect(page.locator('.species-population')).toHaveAttribute('data-count', populationBefore);
       await expect(page.locator('#world-day')).toHaveAttribute('data-day', before);
       expect(await page.evaluate(() => {
@@ -316,7 +456,7 @@ test('local species list excludes distant species and shows partial gene carrier
   await pinHex(page, site, world.width, world.height);
   await expect(page.locator('#species-count')).toHaveText('3');
   const choices = page.locator('.species-choice');
-  await expect(choices).toHaveText([snapshot.species.find(row => row.id === 'species-1').name, 'Veladora mirena']);
+  await expect(choices.locator('.species-name')).toHaveText([snapshot.species.find(row => row.id === 'species-1').name, 'Veladora mirena']);
   await expect(page.locator('#species-detail')).toHaveCount(0);
   await choices.first().click();
   await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
@@ -359,7 +499,7 @@ test('local species list excludes distant species and shows partial gene carrier
   await expect(page.locator('.species-population')).toHaveAttribute('data-count', '8');
   await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-2');
   await page.locator('[data-locale="pl"]').click();
-  await expect(choices.nth(1)).toHaveText('Veladora mirena');
+  await expect(choices.nth(1).locator('.species-name')).toHaveText('Veladora mirena');
   await expect(choices.nth(1)).toHaveAttribute('aria-pressed', 'true');
   const empty = world.hexes.find(hex => !snapshot.hexes.some(row => row.hexId === hex.id));
   await pinHex(page, empty, world.width, world.height);
@@ -592,6 +732,8 @@ test('V2 inherited traits and skeleton types are translated and fit both themes'
       await expect(page.locator(`.gene-expression[data-gene="armorType"][data-expression="${index + 1}"]`)).toContainText(label);
     }
     await expect(page.locator('.gene-expression[data-gene="sexualReproduction"]')).toHaveText('100%');
+    expect(await page.locator('.gene-row').evaluateAll(rows => rows.slice(0, 3).map(row => row.dataset.gene)))
+      .toEqual(['photosynthesis', 'size', 'sexualReproduction']);
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
       const skeleton = page.locator('.gene-expression[data-gene="skeleton"]').first();

@@ -22,7 +22,9 @@ const world = generateWorld({
 const summer = setDay(world, 90);
 ```
 
-Sizes are `small` (24 × 16), `medium` (60 × 40) and `large` (120 × 80).
+Sizes are `small` (24 × 16), `medium` (42 × 28, the default) and `large` (60 × 40).
+`physical-world-4` versions this preset change; geography algorithms are unchanged.
+Historical 60 × 40 worlds were named Medium; 120 × 80 is no longer a preset.
 Geography is 0–1; land fraction is 0.35–0.40. The requested fraction counts the
 non-marine footprint before freshwater lakes; `nonMarineLandFraction` and
 `dryLandFraction` expose both measurements. `setDay` takes a non-negative integer

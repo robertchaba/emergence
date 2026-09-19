@@ -1,7 +1,7 @@
 export const WORLD_SIZES = Object.freeze({
   small: Object.freeze({ width: 24, height: 16 }),
-  medium: Object.freeze({ width: 60, height: 40 }),
-  large: Object.freeze({ width: 120, height: 80 }),
+  medium: Object.freeze({ width: 42, height: 28 }),
+  large: Object.freeze({ width: 60, height: 40 }),
 });
 
 export function wrapColumn(col, width) {

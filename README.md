@@ -81,9 +81,10 @@ camera, selected layer, and pinned hex. Without JavaScript, static copy is Engli
    reproduce a world, or use **Randomize** beside the seed field.
 2. Choose size, geography, land fraction, and **Lakes and rivers**. Changes update
    the preview automatically after a short input delay. Generation runs in a
-   browser worker so the controls remain responsive. Sizes are 24 × 16,
-   60 × 40, and 120 × 80. The water slider increases spring abundance; actual
-   rivers and lakes follow drainage and basins rather than an exact count.
+   browser worker so the controls remain responsive. Sizes are Small (24 × 16),
+   Medium (42 × 28, the default), and Large (60 × 40). The water slider increases
+   spring abundance; actual rivers and lakes follow drainage and basins rather
+   than an exact count.
 3. The map previews the seasons automatically at 20 days per second. Select
    **Start** to open the atlas on **day 1**, paused. Both views
    start zoomed to fill their frame.
@@ -134,21 +135,29 @@ completed days of the current life attempt. Extinct species and the percentage
 of all hexes occupied appear as counts only.
 Pinning a hex reveals compact physical readings and all species living there, or
 an explicit empty-hex message. Species receive stable generated names. Click a
-name to open its genome portrait directly below the name, followed by its compact
-population count (e.g. 21K) and present genes, and outline its whole occupied range;
-click it again to clear the highlight. A sole local species opens automatically, with highlighting still
-requiring a click. Established traits describe the whole species. Up to three
-possible adaptations appear separately, with an explicitly estimated favourable
-range. Click a direction to highlight those hexes; click again to clear it.
+name to open its compact population count (e.g. 21K) and present genes, and
+outline its whole occupied range;
+click it again to clear the highlight and collapse its details when several species
+share the hex. A sole local species stays open automatically, with highlighting
+still requiring a click. Coloured energy labels distinguish photosynthesis (green),
+plant feeding (brown), and animal feeding (red); mixed feeders show each source.
+Established traits describe the whole species. Up to three
+possible adaptations appear in a collapsed **Possible adaptations** section.
+Expand it to see brief changes and estimated hex counts (`~`). Click a direction
+to highlight those hexes; click again to clear it. Collapsing the section keeps
+the current highlight; playback, language and theme changes preserve its open state.
 These are prospective evolutionary directions, not exact carrier populations.
 A major feeding-strategy change must establish a distinct lineage before it
 affects living populations. Binary inherited traits show their carrier percentage;
 selected controls use dark green in both themes. The common notebook still
 supports partial carrier observations from the preserved older models.
-Body size uses words only, from tiny to enormous, in both languages.
-The portrait uses the species' established genome.
+Genomes list energy sources first, then body size, sexual reproduction when present,
+and the remaining traits. Body size uses words only, from tiny to enormous, in both
+languages. Live numerical readouts ease between observations over a brief transition;
+reduced-motion preferences show each new value immediately. Selecting another hex
+or species shows its values immediately. This animation only changes presentation.
 
-Life always appears on the map as vivid green plant coverage and coloured dots
+Life always appears on the map as vivid green producer coverage at every body size and coloured dots
 without dark outlines. Bare land uses softly warm stone greys in both themes.
 Dots are smaller and more numerous, with softer translucent marks for stationary
 plants. Plant marks fade and reappear in scattered positions; mobile groups travel
@@ -203,6 +212,12 @@ there is no automatic conversion or model-selection control.
 See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
 calculation, evolutionary pressure, species criteria and experimental coefficients,
 and [validation](src/simulation/life/v3/docs/VALIDATION.md) for measured limits.
+V3 revision 2 strengthens ecological distinction and increases opportunities
+for carnivory and movement. Species diversity remains an outcome of the world;
+there is no fixed count cap. To inspect a 60 × 40 world (now Large) through
+80 simulated years,
+run `node scripts/check-life-v3-balance.js 28800 large emergence water`.
+Earlier validation records use the previous world-size names and generator version.
 Run `node scripts/benchmark-life-v3.js 1440` (or `4320`) for the same-world
 V2/V3 comparison and a fixed-record population-scaling check. It measures different
 ecological trajectories, not identical outcomes or a universal speed guarantee.

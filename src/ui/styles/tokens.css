@@ -13,6 +13,9 @@
   --color-on-accent: #faf5e8;
   --color-highlight: #254c35;
   --color-on-highlight: #f1f4df;
+  --color-energy-photosynthesis: #35633b;
+  --color-energy-plant-feeding: #785024;
+  --color-energy-animal-feeding: #9b4036;
   --color-rule: rgb(90 73 43 / 25%);
   --color-rule-strong: rgb(90 73 43 / 42%);
   --color-rule-terminal: rgb(90 73 43 / 30%);
@@ -142,6 +145,9 @@
   --color-on-accent: #18271e;
   --color-highlight: #254c35;
   --color-on-highlight: #f1f4df;
+  --color-energy-photosynthesis: #a5d78d;
+  --color-energy-plant-feeding: #e0b481;
+  --color-energy-animal-feeding: #efaaa0;
   --color-rule: rgb(196 219 165 / 17%);
   --color-rule-strong: rgb(196 219 165 / 32%);
   --color-rule-terminal: rgb(196 219 165 / 23%);
@@ -259,6 +265,9 @@
     --color-on-accent: #18271e;
     --color-highlight: #254c35;
     --color-on-highlight: #f1f4df;
+    --color-energy-photosynthesis: #a5d78d;
+    --color-energy-plant-feeding: #e0b481;
+    --color-energy-animal-feeding: #efaaa0;
     --color-rule: rgb(196 219 165 / 17%);
     --color-rule-strong: rgb(196 219 165 / 32%);
     --color-rule-terminal: rgb(196 219 165 / 23%);

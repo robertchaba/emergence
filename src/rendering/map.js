@@ -62,17 +62,17 @@ function lifeSummary(observation) {
   const summaries = new Map();
   for (const hex of observation?.hexes ?? []) {
     if (!(hex.population > 0)) continue;
-    let smallLand = 0;
-    let smallWater = 0;
+    let producerLand = 0;
+    let producerWater = 0;
     const groups = new Map();
     for (const display of hex.display ?? []) {
       if (!(display.population > 0)) continue;
       const size = clamp(Number(display.size) || 0);
       const role = LIFE_ROLES.includes(display.role) ? display.role : 'other';
       const mobile = display.mobile === true;
-      if (role === 'producer' && size <= 0.25 && !mobile) {
-        if (display.habitat === 'water') smallWater += display.population;
-        else smallLand += display.population;
+      if (role === 'producer') {
+        if (display.habitat === 'water') producerWater += display.population;
+        else producerLand += display.population;
       }
       const key = `${role}:${display.habitat === 'water' ? 'water' : 'land'}:${mobile}`;
       const group = groups.get(key) ?? { key, role, mobile, population: 0, weightedSize: 0 };
@@ -93,7 +93,7 @@ function lifeSummary(observation) {
         if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, size: group.size, mobile: group.mobile });
       }
     }
-    const tint = Math.min(0.48, Math.min(0.44, Math.log1p(smallLand) / 26) + Math.min(0.20, Math.log1p(smallWater) / 40));
+    const tint = Math.min(0.48, Math.min(0.44, Math.log1p(producerLand) / 26) + Math.min(0.20, Math.log1p(producerWater) / 40));
     const species = new Set((hex.species ?? []).filter(row => row.population > 0).map(row => row.id));
     const signature = JSON.stringify([tint, markers, [...species].sort()]);
     summaries.set(hex.hexId, { tint, markers, species, signature });
