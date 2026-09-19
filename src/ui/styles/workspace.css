@@ -182,6 +182,11 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
 #hex-panel .species-population { margin: 12px 0 18px; color: var(--color-text); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .gene-heading { font-size: var(--text-notebook); font-weight: normal; margin: 0 0 4px; }
 .gene-list { margin: 0; }
+.species-tendencies { margin-top: 14px; font-size: var(--text-notebook); }
+.species-tendencies .field-note { margin: 4px 0 8px; }
+.tendency-list { list-style: none; margin: 0; padding: 0; }
+.tendency-list li + li { margin-top: 5px; }
+.gene-expression.tendency-choice { text-align: left; justify-content: flex-start; }
 .gene-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; gap: 5px 12px; padding: 7px 0; border-bottom: 1px solid var(--color-rule); font-size: var(--text-notebook); }
 .gene-row dt { color: var(--color-text); }
 .gene-row dd { margin: 0; text-align: right; overflow-wrap: anywhere; color: var(--color-accent); }

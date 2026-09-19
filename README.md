@@ -5,15 +5,15 @@ hex, and observe how resources, inheritance, mutation, and seasons shape its
 descendants. Geography supplies physical conditions; ecology emerges from life.
 There are no predefined species or scripted outcomes.
 
-**Current stage: V2 life simulation; V1 preserved as a backup.** Generate deterministic cylindrical
-hex worlds, introduce a locally suited plant lineage, and observe resource competition,
-inheritance, mutation, dispersal, and species branching. The Field Notebook shows
-living and extinct species, their history, and the present traits of local species. V2 adds
-20 inherited traits, costly defenses and counteradaptations, sexual recombination,
-delayed barrier crossings, persistent spatial/ecological isolation and seeded weather.
-It now keeps a small set of local variant representatives and recognizes persistent
-divergence sooner. It is an experimental model with documented approximations,
-not calibrated biology.
+**Current stage: V3 population life simulation; V1 and V2 preserved.** Generate
+deterministic cylindrical hex worlds, introduce a locally suited plant lineage
+with seeded random traits, and observe competition, adaptation and branching.
+V3 calculates populations per species and hex, with one established genome and
+at most three possible adaptation directions per whole species. New lineages
+need a sustained ecological advantage; temperature, habitat, moisture, elevation,
+water depth and other species all affect success. The Field Notebook shows
+inherited traits and estimated favourable ranges for possible adaptations.
+The model is an explicit simplification, not calibrated biology.
 
 ## Run locally
 
@@ -51,7 +51,8 @@ src/
   simulation/            Headless generation, drainage, climate, and regions
     life/                Common life-model boundary and observation contract
       v1/                Preserved first life model and historical research
-      v2/                Active life model, 20 genes, rules and validation
+      v2/                Preserved cohort life model and its research
+      v3/                Active population model, 22 genes, rules and validation
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -136,24 +137,16 @@ an explicit empty-hex message. Species receive stable generated names. Click a
 name to open its genome portrait directly below the name, followed by its compact
 population count (e.g. 21K) and present genes, and outline its whole occupied range;
 click it again to clear the highlight. A sole local species opens automatically, with highlighting still
-requiring a click. Gene expressions
-carried by less than 98% of the species appear in lighter text with their percentage.
-Traits and expressions at or above 98% retain their normal text colour, including
-values rounded to 100%.
-Expressions below 2% of the species population are hidden in this view without
-removing their represented carriers. Separately, V2 limits active variation to
-three complete genomes per species/hex/habitat/acquisition-niche/pending-passage
-pool: two abundant representatives and one stable weighted candidate. This is
-not a limit of three per species or hex. Counts stay exact for the represented
-population, while compacting approximates its trait frequencies and phenotypes.
-Expressions covering at least 98% of the population are plain values; partial
-expressions below that threshold can be clicked to highlight their carrier hexes
-in pale green, with a dark-green dashed border inside the light species outline.
-Click again to clear only the carrier highlight. Binary traits show their carrier
-percentage, without a redundant “Present” label. Selected controls use dark green
-in both themes.
+requiring a click. Established traits describe the whole species. Up to three
+possible adaptations appear separately, with an explicitly estimated favourable
+range. Click a direction to highlight those hexes; click again to clear it.
+These are prospective evolutionary directions, not exact carrier populations.
+A major feeding-strategy change must establish a distinct lineage before it
+affects living populations. Binary inherited traits show their carrier percentage;
+selected controls use dark green in both themes. The common notebook still
+supports partial carrier observations from the preserved older models.
 Body size uses words only, from tiny to enormous, in both languages.
-The portrait uses the most populous complete genome.
+The portrait uses the species' established genome.
 
 Life always appears on the map as vivid green plant coverage and coloured dots
 without dark outlines. Bare land uses softly warm stone greys in both themes.
@@ -190,7 +183,7 @@ const serialized = JSON.stringify(summer);
 Life is a separate model with its own explicit commands:
 
 ```js
-import { createLifeModel, restoreLifeModel } from './src/simulation/life/v2/model.js';
+import { createLifeModel, restoreLifeModel } from './src/simulation/life/v3/model.js';
 
 const life = createLifeModel(world);
 const result = life.introduce(selectedHexId);
@@ -203,18 +196,16 @@ if (result.ok) {
 ```
 
 `inspectHex(id)` and `inspectSpecies(id)` expose consistent local counts and
-locations. Checkpoints retain the complete biological PRNG and classification
-state; a world seed alone cannot resume a run. Browser save/load is not provided.
-Current rules are `v2-cohorts-2`; the format remains
-`emergence-life-v2-checkpoint-1`, but checkpoints from older V2 rules and V1 are
-rejected. The compact representation applies in both ordinary and unrounded-energy
-modes; it adds no browser control or API setting. Run the six-seed small-world
-pacing panel with `node scripts/benchmark-life-v2.js` (optional seed arguments;
-`--land` for terrestrial sites, `--full` for all 15 years).
-See [V2 rules](src/simulation/life/v2/docs/RULES.md) for experimental
-coefficients, compact variation, energy rounding, and validation limits. Earlier
-5–15-year pacing targets and measurements describe `v2-cohorts-1`, not calibration
-of the current compact revision.
+locations. Checkpoints retain the complete biological PRNG, population reserves,
+candidate directions and their persistence; a world seed alone cannot resume a
+run. Browser save/load is not provided. V3 checkpoints are independent of V1/V2;
+there is no automatic conversion or model-selection control.
+See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
+calculation, evolutionary pressure, species criteria and experimental coefficients,
+and [validation](src/simulation/life/v3/docs/VALIDATION.md) for measured limits.
+Run `node scripts/benchmark-life-v3.js 1440` (or `4320`) for the same-world
+V2/V3 comparison and a fixed-record population-scaling check. It measures different
+ecological trajectories, not identical outcomes or a universal speed guarantee.
 
 Snapshots record the generator version, settings, selected candidate, hash
 inputs, physical hex fields, drainage basins, regions, and their connections.
@@ -241,9 +232,10 @@ Shared world rules and the decision record stay in **`docs/`**, despite the
 original brief's `/documents` path. Life/evolution and approximation research is
 now under **`src/simulation/life/v1/docs/`**, with gene descriptions in
 **`src/simulation/life/v1/genes/docs/`** and gene code in the enclosing
-**`genes/`** directory. Active V2 has newly written rules in
-**`src/simulation/life/v2/docs/`** and a complete gene catalogue in
-**`src/simulation/life/v2/genes/docs/GENES.md`**, while keeping the same physical world and common UI data contract.
+**`genes/`** directory. V2 research remains in its own sibling directory.
+Active V3 has rules in **`src/simulation/life/v3/docs/`** and its gene catalogue
+in **`src/simulation/life/v3/genes/docs/GENES.md`**, while keeping the same physical
+world and common UI data contract.
 Research filename suffixes retain their original revisions; they are separate
 from the enclosing life-model version.
 
@@ -252,7 +244,11 @@ from the enclosing life-model version.
 - [Shared world, climate, and playback rules](docs/evolution_simulation_summary_v6.md)
 - [Life-model ownership and versioning](src/simulation/life/README.md)
 - [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
-- [Active V2 model](src/simulation/life/v2/README.md)
+- [Active V3 model](src/simulation/life/v3/README.md)
+- [V3 rules](src/simulation/life/v3/docs/RULES.md)
+- [V3 genes](src/simulation/life/v3/genes/docs/GENES.md)
+- [V3 validation](src/simulation/life/v3/docs/VALIDATION.md)
+- [Preserved V2 model](src/simulation/life/v2/README.md)
 - [V2 rules](src/simulation/life/v2/docs/RULES.md)
 - [V2 genes](src/simulation/life/v2/genes/docs/GENES.md)
 - [V2 validation and pacing](src/simulation/life/v2/docs/VALIDATION.md)

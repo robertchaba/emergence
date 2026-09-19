@@ -1,8 +1,8 @@
 # Versioned life models
 
-This directory holds alternative life/evolution models: `v1/`, later `v2/`, and
-so on. **V2 is active; V1 is preserved unchanged as a backup.** The browser worker
-imports V2 explicitly against the shared physical atlas. Model-selection UI remains
+This directory holds alternative life/evolution models: `v1/`, `v2/`, `v3/`, and
+so on. **V3 is active; V1 and V2 are preserved.** The browser worker
+imports V3 explicitly against the shared physical atlas. Model-selection UI remains
 future work; each model keeps its own implementation and documentation.
 
 ## Ownership
@@ -59,8 +59,9 @@ the common observation-contract version.
 Keep alternative rules and their supporting notes together inside their version.
 Do not move v1-specific formulas into a shared helper merely to make v2 reuse
 them. Shared code requires an explicitly shared meaning, not similar code alone.
-The [V2 index](v2/README.md) documents active rules and validation. The
-[V1 index](v1/README.md) preserves its historical research and implementation.
+The [V3 index](v3/README.md) documents active rules and validation. The
+[V2 index](v2/README.md) and [V1 index](v1/README.md) preserve their historical
+research and implementation; their active-model statements describe their own era.
 
 Changing models starts a separate life run against the chosen shared world and
 explicit starting day. There is no implicit migration of organisms, species IDs
@@ -91,7 +92,8 @@ by its model version; this layout does not create a shared gene implementation.
 The v1 folders contain the implementation, gene code, and preserved research.
 
 - [Common life observations and UI commands](CONTRACT.md)
-- [Active V2 model and complete rules](v2/README.md)
+- [Active V3 model and complete rules](v3/README.md)
+- [Preserved V2 model and complete rules](v2/README.md)
 - [Life model v1 research and open decisions](v1/README.md)
 - [Provisional rendering brief](../../rendering/LIFE.md)
 - [Shared world and playback rules](../../../docs/evolution_simulation_summary_v6.md)

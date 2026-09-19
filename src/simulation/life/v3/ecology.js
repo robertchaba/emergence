@@ -1,0 +1,225 @@
+import { candidateMutations, deriveGenome, founderGenome } from './genes/genome.js';
+
+const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+const outside = (value, range) => Math.max(range[0] - value, value - range[1], 0);
+export const ECOLOGY_RULES = Object.freeze({ lightBudget: 2400, waterLightBudget: 2000,
+  photosynthesisRate: 1.6, grazingFraction: 0.45, preyFraction: 0.12,
+  conversion: 0.6, backgroundMortality: 0.008, reproductionRate: 0.18 });
+
+export const hasWater = hex => hex.waterType !== 'none' || hex.runoff > 0;
+export const hasLand = hex => hex.waterType === 'none';
+export const waterDepth = hex => Math.max(0, (hex.currentWaterLevel ?? hex.waterLevel ?? hex.bedElevation)
+  - hex.bedElevation);
+
+export function supportsHabitat(genome, hex, habitat) {
+  return !hex.permanentIce && (habitat === 'water' ? hasWater(hex) && genome.landAdaptation <= 2
+    : habitat === 'land' && hasLand(hex) && genome.landAdaptation >= 1);
+}
+
+/** Elevation represents nonthermal highland stress; depth represents pressure
+ * and substrate specialization. Neither silently changes shared climate. */
+export function environmentalPerformance(genome, hex, habitat, derived = deriveGenome(genome)) {
+  if (!supportsHabitat(genome, hex, habitat)) return 0;
+  const temperature = Math.exp(-outside(hex.temperature ?? 20, derived.temperatureRange) / 10);
+  const ice = 1 - 0.8 * clamp(hex.iceCover ?? 0);
+  if (habitat === 'water') {
+    const depth = Math.exp(-outside(waterDepth(hex), derived.depthRange) / 350);
+    return temperature * depth * [1, 0.85, 0.55][genome.landAdaptation]
+      * ice * (1 - 0.8 * clamp(hex.waterExposure ?? 0));
+  }
+  const humidity = clamp((hex.humidity ?? 0.5) + (hex.runoff > 0 ? 0.2 : 0));
+  const requiredMoisture = [1, 0.75, 0.45, 0.2][genome.landAdaptation];
+  const moisture = clamp(humidity / requiredMoisture);
+  const elevation = Math.exp(-outside(Math.max(0, hex.bedElevation), derived.elevationRange) / 1000);
+  return temperature * moisture * elevation * ice;
+}
+
+/** Allocate one finite pool with weighted demand and individual caps. */
+function allocate(entries, budget) {
+  const result = entries.map(() => 0);
+  const active = entries.map((entry, index) => ({ ...entry, index }))
+    .filter(entry => entry.cap > 0 && entry.weight > 0)
+    .sort((a, b) => a.cap / a.weight - b.cap / b.weight || a.index - b.index);
+  let weight = active.reduce((sum, entry) => sum + entry.weight, 0);
+  let remaining = Math.max(0, budget);
+  for (const entry of active) {
+    const amount = Math.min(entry.cap, weight > 0 ? remaining * entry.weight / weight : 0);
+    result[entry.index] = amount;
+    remaining = Math.max(0, remaining - amount);
+    weight = Math.max(0, weight - entry.weight);
+  }
+  return result;
+}
+
+/** Access fractions are nested portions of one plant's production. A collection
+ * of poorly adapted grazers cannot expose the protected portion by multiplying
+ * species labels. Higher-access consumers alone can use the additional bands. */
+function allocateAccessible(entries, budget) {
+  const total = entries.map(() => 0);
+  const levels = [...new Set(entries.filter(entry => entry.cap > 0 && entry.weight > 0)
+    .map(entry => entry.access).filter(access => access > 0))].sort((a, b) => a - b);
+  let previous = 0;
+  for (const level of levels) {
+    const eligible = entries.map((entry, index) => ({
+      cap: entry.access >= level ? Math.max(0, entry.cap - total[index]) : 0,
+      weight: entry.access >= level ? entry.weight : 0,
+    }));
+    const allocated = allocate(eligible, budget * (level - previous));
+    for (let index = 0; index < total.length; index += 1) total[index] += allocated[index];
+    previous = level;
+  }
+  return total;
+}
+
+export function grazingAccess(consumerGenome, plantGenome, consumer = deriveGenome(consumerGenome), plant = deriveGenome(plantGenome)) {
+  if (!consumerGenome.plantFeeding || !plantGenome.photosynthesis) return 0;
+  if (plant.height > consumerGenome.size * (2.2 + 0.3 * consumerGenome.biteForce + 0.1 * consumer.flightEfficiency)) return 0;
+  const poison = Math.max(0, plantGenome.poison - consumerGenome.detoxification);
+  const spines = Math.max(0, plantGenome.spines - 0.7 * consumerGenome.biteForce - 0.2 * consumerGenome.armor);
+  return 1 / (1 + 0.8 * poison + 0.6 * spines + 0.15 * plant.armorProtection);
+}
+
+export function preyEligible(predatorGenome, preyGenome, predator = deriveGenome(predatorGenome), prey = deriveGenome(preyGenome)) {
+  return !!predatorGenome.animalFeeding && !!(preyGenome.plantFeeding || preyGenome.animalFeeding)
+    && prey.cells <= predator.cells * (1.6 + 0.6 * predatorGenome.biteForce);
+}
+
+export function captureProbability(predatorGenome, preyGenome, predator = deriveGenome(predatorGenome), prey = deriveGenome(preyGenome)) {
+  if (!preyEligible(predatorGenome, preyGenome, predator, prey)) return 0;
+  return clamp(0.45 + 0.09 * (predator.speed - prey.speed) + 0.06 * (predator.senses - prey.senses)
+    + 0.07 * predator.handling - 0.07 * prey.defense
+    - 0.07 * Math.max(0, preyGenome.poison - predatorGenome.detoxification)
+    + 0.07 * (predator.flightEfficiency - prey.flightEfficiency), 0.02, 0.95);
+}
+
+/** The rows are same-hex species populations, not variants. Output remains in
+ * input order. production/food are per-organism energy; predationLoss is the
+ * fraction of the represented population withdrawn per biological turn.
+ * Both habitat pools receive fixed portions on river hexes, so their separate
+ * evaluations cannot double the hex's photosynthetic resource budget. */
+export function evaluateCommunity(hex, habitat, community = []) {
+  const rows = community.map(row => {
+    const matches = (row.habitat ?? habitat) === habitat;
+    const population = matches ? Math.max(0, row.population ?? row.count ?? 0) : 0;
+    const derived = row.derived ?? deriveGenome(row.genome);
+    return { ...row, population, derived,
+      environment: matches ? row.environment ?? environmentalPerformance(row.genome, hex, habitat, derived) : 0 };
+  });
+  const riverShare = hasLand(hex) && hasWater(hex) ? habitat === 'land' ? 0.7 : 0.3 : 1;
+  const budget = riverShare * (habitat === 'water' ? ECOLOGY_RULES.waterLightBudget
+    / (1 + waterDepth(hex) / 180) : ECOLOGY_RULES.lightBudget);
+  const photo = allocate(rows.map(row => {
+    const cap = row.population * row.derived.cells * row.derived.photosynthesisShare
+      * ECOLOGY_RULES.photosynthesisRate * row.environment;
+    return { cap, weight: cap * (habitat === 'land' ? row.derived.landCompetition : 1) };
+  }), budget);
+  const remainingPhoto = [...photo];
+  const food = rows.map(() => 0);
+  const grazingFood = rows.map(() => 0);
+  const predationFood = rows.map(() => 0);
+  const preyLoss = rows.map(() => 0);
+  const grazingDemand = rows.map(row => row.population * row.derived.cells * row.derived.grazingShare
+    * row.environment * 2.2);
+  const predationDemand = rows.map(row => row.population * row.derived.cells * row.derived.predationShare
+    * row.environment * 2.2);
+
+  for (let source = 0; source < rows.length; source += 1) {
+    if (!(photo[source] > 0)) continue;
+    const available = photo[source] * ECOLOGY_RULES.grazingFraction;
+    const demands = rows.map((consumer, index) => {
+      if (consumer.speciesId != null && consumer.speciesId === rows[source].speciesId) return { cap: 0, weight: 0, access: 0 };
+      const access = grazingAccess(consumer.genome, rows[source].genome, consumer.derived, rows[source].derived);
+      return { cap: grazingDemand[index], weight: grazingDemand[index] * access, access };
+    });
+    const eaten = allocateAccessible(demands, available);
+    for (let consumer = 0; consumer < rows.length; consumer += 1) {
+      remainingPhoto[source] -= eaten[consumer];
+      grazingDemand[consumer] = Math.max(0, grazingDemand[consumer] - eaten[consumer]);
+      food[consumer] += ECOLOGY_RULES.conversion * eaten[consumer];
+      grazingFood[consumer] += ECOLOGY_RULES.conversion * eaten[consumer];
+    }
+  }
+
+  for (let source = 0; source < rows.length; source += 1) {
+    const prey = rows[source];
+    if (!(prey.population > 0) || !(prey.genome.plantFeeding || prey.genome.animalFeeding)) continue;
+    const tissue = prey.derived.cells * 1.4;
+    const available = prey.population * ECOLOGY_RULES.preyFraction;
+    const demands = rows.map((predator, index) => {
+      if (index === source || (predator.speciesId != null && predator.speciesId === prey.speciesId)) return { cap: 0, weight: 0, capture: 0 };
+      const capture = captureProbability(predator.genome, prey.genome, predator.derived, prey.derived);
+      // Successful effort is extensive in hunter population. A per-species
+      // available*capture cap would create extra kills merely by adding names.
+      return { cap: predationDemand[index] / tissue * capture,
+        weight: predationDemand[index] * capture, capture };
+    });
+    const eaten = allocate(demands, available);
+    for (let predator = 0; predator < rows.length; predator += 1) {
+      preyLoss[source] += eaten[predator];
+      // Charge attempted effort, including failed captures. Otherwise identical
+      // prey split into more source labels would offer repeated free attempts.
+      const effort = demands[predator].capture > 0 ? eaten[predator] * tissue / demands[predator].capture : 0;
+      predationDemand[predator] = Math.max(0, predationDemand[predator] - effort);
+      food[predator] += eaten[predator] * tissue * ECOLOGY_RULES.conversion;
+      predationFood[predator] += eaten[predator] * tissue * ECOLOGY_RULES.conversion;
+    }
+  }
+
+  return rows.map((row, index) => {
+    const population = row.population || 1;
+    const production = Math.max(0, remainingPhoto[index]) / population;
+    const intake = production + food[index] / population;
+    const starvation = clamp(1 - intake / row.derived.upkeep);
+    const predationLoss = preyLoss[index] / population;
+    const stressBenefit = row.derived.sexual ? 1 + 0.12 * (1 - row.environment)
+      * row.population / (row.population + 20) : 1;
+    const birthRate = clamp(Math.max(0, intake - row.derived.upkeep) / row.derived.reproductionCost
+      * ECOLOGY_RULES.reproductionRate * stressBenefit, 0, 0.3);
+    const deathRate = clamp(ECOLOGY_RULES.backgroundMortality + starvation * 0.14 + predationLoss, 0, 0.9);
+    return { birthRate, deathRate, growthRate: birthRate - deathRate, score: birthRate - deathRate,
+      environment: row.environment, production, food: food[index] / population,
+      grazingFood: grazingFood[index] / population, predationFood: predationFood[index] / population, predationLoss,
+      grossProduction: photo[index] / population, role: row.derived.role,
+      capacity: budget / Math.max(1, row.derived.upkeep),
+      resourceBudget: budget };
+  });
+}
+
+/** A rare candidate is evaluated against exactly the supplied resident census.
+ * independentLineage permits a new consumer to feed on its unchanged parent.
+ * Otherwise excludeSpeciesId retains the parent's self-feeding exclusion.
+ * Such an opportunity cannot be applied as an untested whole-parent replacement. */
+export function scoreSpecies(genome, hex, habitat, community = [], options = {}) {
+  return evaluateCommunity(hex, habitat, [...community, { genome,
+    derived: options.derived,
+    speciesId: options.excludeSpeciesId != null && !options.independentLineage ? options.excludeSpeciesId
+      : `__candidate__:${options.excludeSpeciesId ?? options.speciesId ?? ''}`,
+    population: options.population ?? 1, habitat }]).at(-1);
+}
+
+/** Condition the founder first, then pay for 1–3 random viable one-gene changes.
+ * Randomness only chooses among viable options, never grants free capabilities. */
+export function founderForSite(hex, habitat, random) {
+  let genome = founderGenome();
+  genome.landAdaptation = habitat === 'water' ? 0 : (hex.humidity ?? 0.5) >= 0.75 ? 1
+    : (hex.humidity ?? 0.5) >= 0.4 ? 2 : 3;
+  const bestExpression = (key, values) => values.reduce((best, value) => {
+    const trial = { ...genome, [key]: value };
+    const score = environmentalPerformance(trial, hex, habitat) / deriveGenome(trial).upkeep;
+    return score > best.score ? { value, score } : best;
+  }, { value: genome[key], score: -Infinity }).value;
+  genome.temperatureTolerance = bestExpression('temperatureTolerance', [null, -2, -1, 0, 1, 2]);
+  if (habitat === 'land') genome.elevationTolerance = bestExpression('elevationTolerance', [0, 1, 2, 3, 4]);
+  else genome.depthTolerance = bestExpression('depthTolerance', [0, 1, 2, 3, 4]);
+  const count = 1 + Math.min(2, Math.floor(random() * 3));
+  const changed = new Set();
+  for (let index = 0; index < count; index += 1) {
+    const options = candidateMutations(genome).filter(candidate => candidate.genome.photosynthesis
+      && !changed.has(candidate.key) && scoreSpecies(candidate.genome, hex, habitat).score > 0);
+    if (!options.length) break;
+    const candidate = options[Math.min(options.length - 1, Math.floor(random() * options.length))];
+    genome = candidate.genome;
+    changed.add(candidate.key);
+  }
+  return genome;
+}

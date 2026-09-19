@@ -3,8 +3,9 @@
 This is the semantic contract `life/vN/` implementations must expose to UI
 and rendering. It defines meanings and required queries, not JavaScript function
 signatures, private state layouts, a worker protocol or a save-file schema.
-V1 and V2 implement these semantics; the active API is documented in
-[v2/README.md](v2/README.md), with preserved V1 in [v1/README.md](v1/README.md). The [ownership rules](README.md) apply to every version.
+V1, V2 and V3 implement these semantics; the active API is documented in
+[v3/README.md](v3/README.md), with preserved implementations in
+[V2](v2/README.md) and [V1](v1/README.md). The [ownership rules](README.md) apply to every version.
 
 ## Commands and simulated time
 
@@ -199,3 +200,31 @@ requires `rulesRevision: v2-cohorts-2`; checkpoints from older V2 rules are reje
 Stable compacting tickets use one-draw seeded substreams reconstructed from saved
 seed, pool and genome identities. The main biological PRNG retains its complete
 serialized state, and observation queries consume neither source of randomness.
+
+## V3 established genomes and estimated adaptation directions
+
+V3's `variants` contains the one established representative genome of a species;
+its population and trait carrier counts cover the whole represented species.
+Actual species locations remain integer census observations. The model performs
+aggregate population updates rather than maintaining genotype carrier cohorts.
+
+Optional `species[].tendencies` contains at most three prospective directions
+per species. Each has a stable ID, described candidate traits, changed traits,
+diagnostic strength, `roleChange`, `rangeQuality: estimated`, and `locations`
+containing favourable physical hex IDs. Those locations are estimates of current
+ecological opportunity within occupied range, not observations of carriers.
+They contain no carrier population and are never included in population totals.
+Strength describes pressure, not a carrier percentage or probability of success.
+
+UI may highlight the supplied estimated range, with an explicit estimate label.
+It must not derive actual gene frequencies, count directions as living species,
+or implement scoring. All tendency observations belong to the same completed
+revision as the census. Repeated queries cannot resample or progress a direction.
+An established species never mixes a producer genome and a consumer genome as
+separately behaving carrier populations. New lineages transfer population from
+their parent; merely showing a direction creates no organisms.
+
+V3's exact count quality describes the integer represented census, not exact
+ecology. Approximation metadata identifies aggregate populations, pooled energy,
+stochastic rounding and estimated directions. V3 owns its independent checkpoint
+format and rules revision; V1/V2 continuation is intentionally rejected.

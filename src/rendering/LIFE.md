@@ -1,5 +1,22 @@
 # Life rendering
 
+## V3 established traits and estimated directions — 2026-09-19
+
+V3 supplies one established genome per species. Its ordinary inherited traits
+and portrait describe that genome. Up to three `tendencies` appear separately
+under **Possible adaptations**, localized in English and Polish. Each supplies
+changed traits and an estimated favourable range. The note explicitly states
+that these are not tracked carriers and may disappear without producing a species.
+Directions with a nonempty range use native buttons to highlight the supplied
+hexes through the existing variant-range overlay. Empty ranges are disabled;
+no simulated position, population share or guaranteed branch is implied.
+
+Range estimates come from the model at the completed observation revision.
+UI only translates and displays them; inspection never runs evolution. Existing
+partial-carrier presentation remains supported for older model observations.
+The map, portrait grammar, colours and population marks retain their meanings;
+no renderer imports a life model or interprets its genome internals.
+
 ## Stable near-universal gene appearance — 2026-09-17
 
 Decision 044 supersedes the earlier dimming of every non-universal gene. Notebook

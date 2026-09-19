@@ -13,6 +13,7 @@ const geneKeys = {
   biteForce: 'geneBiteForce', skeleton: 'geneSkeleton', armor: 'geneArmor', armorType: 'geneArmorType',
   flight: 'geneFlight', eyesight: 'geneEyesight', echolocation: 'geneEcholocation',
   thermalSensing: 'geneThermalSensing', sexualReproduction: 'geneSexualReproduction',
+  elevationTolerance: 'geneElevationTolerance', depthTolerance: 'geneDepthTolerance',
 };
 const rejectionKeys = {
   'already-introduced': 'lifeAlreadyIntroduced', 'unknown-hex': 'lifeUnknownHex',
@@ -34,11 +35,16 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   const population = element('p', 'species-population');
   const heading = element('h4', 'gene-heading');
   const traits = element('dl', 'gene-list');
+  const tendencies = element('section', 'species-tendencies');
+  const tendencyHeading = element('h4', 'gene-heading');
+  const tendencyNote = element('p', 'field-note');
+  const tendencyList = element('ul', 'tendency-list');
+  tendencies.append(tendencyHeading, tendencyNote, tendencyList);
   const portrait = element('figure', 'specimen-portrait');
   const drawing = element('div', 'specimen-drawing');
   const caption = element('figcaption', 'field-note');
   portrait.append(drawing, caption);
-  detail.append(portrait, population, heading, traits);
+  detail.append(portrait, population, heading, traits, tendencies);
   const buttons = new Map();
   let observation = null;
   let expandedId = null;
@@ -48,6 +54,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   let selectedVariant = null;
   const traitRows = new Map();
   const expressionNodes = new Map();
+  const tendencyNodes = new Map();
   let messageKey = '';
   let failed = false;
   let retryAvailable = false;
@@ -90,6 +97,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     }
     if (traitSpeciesId !== species.id) {
       traits.replaceChildren(); traitRows.clear(); expressionNodes.clear();
+      tendencyList.replaceChildren(); tendencyNodes.clear();
       traitSpeciesId = species.id;
     }
     const visibleTraits = new Set();
@@ -150,6 +158,47 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     }
     for (const [key, row] of traitRows) if (!visibleTraits.has(key)) { row.remove(); traitRows.delete(key); }
     for (const [id, node] of expressionNodes) if (!visibleExpressions.has(id)) { node.remove(); expressionNodes.delete(id); }
+    const directions = species.tendencies ?? [];
+    tendencies.hidden = directions.length === 0;
+    tendencyHeading.textContent = t('tendencyHeading');
+    tendencyNote.textContent = t('tendencyNote');
+    const visibleTendencies = new Set();
+    for (const direction of directions) {
+      const id = `tendency:${direction.id}`;
+      visibleTendencies.add(id);
+      let button = tendencyNodes.get(id);
+      if (!button) {
+        button = element('button', 'gene-expression tendency-choice');
+        button.type = 'button';
+        button.dataset.tendencyId = direction.id;
+        const item = element('li'); item.append(button); tendencyList.append(item);
+        button.addEventListener('click', () => {
+          highlight(species.id);
+          selectedVariant = selectedVariant === id ? null : id;
+          renderSpecies();
+        });
+        tendencyNodes.set(id, button);
+      }
+      const changes = (direction.traits ?? []).filter(trait =>
+        portraitTraits.find(current => current.key === trait.key)?.value !== trait.value);
+      const descriptions = changes.map(trait => {
+        const gene = geneKeys[trait.key] ? t(geneKeys[trait.key]) : trait.label ?? trait.key;
+        const value = trait.value === null ? t('geneAbsent')
+          : trait.max === 1 ? t(trait.value ? 'geneEnabled' : 'geneDisabled') : geneValue(trait);
+        return t('tendencyChange', { gene, value });
+      }).join(' · ');
+      const count = direction.locations?.length ?? 0;
+      button.textContent = t('tendencyRange', { changes: descriptions, count: integer(count) });
+      button.disabled = count === 0;
+      const selected = selectedVariant === id && !button.disabled;
+      button.setAttribute('aria-pressed', String(selected));
+      button.setAttribute('aria-label', t(selected ? 'clearTendencyHighlight' : 'highlightTendency', { changes: descriptions, count: integer(count) }));
+      if (selected) selectedExpression = { id, hexIds: direction.locations.map(location => location.hexId) };
+    }
+    for (const [id, button] of tendencyNodes) if (!visibleTendencies.has(id)) {
+      if (document.activeElement === button) buttons.get(species.id)?.focus({ preventScroll: true });
+      button.parentElement.remove(); tendencyNodes.delete(id);
+    }
     if (!selectedExpression) selectedVariant = null;
     onVariantSelect(selectedExpression);
   }

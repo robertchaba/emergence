@@ -2,7 +2,13 @@
 
 ## Status
 
-**Current: V2 evolution and shared weather — 2026-09-17.** Decision 043 switches
+**Current: V3 species populations and ecological pressure — 2026-09-19.**
+Decision 046 activates V3, with bounded species-wide adaptation directions,
+community-dependent scores and distinct ecological branching. V1/V2 remain
+preserved. Active rules are in
+[`v3/README.md`](../src/simulation/life/v3/README.md).
+
+**Historical V2 activation — 2026-09-17.** Decision 043 switches
 the application to the independent V2 model while preserving V1 unchanged. New
 model rules and genes are in [`v2/README.md`](../src/simulation/life/v2/README.md).
 
@@ -2134,3 +2140,110 @@ but does not conserve embodied biomass when changing representative body size.
 The earlier waits are experimental pacing choices; neither the software checks
 nor the small seeded panel proves ecological realism or guarantees survival,
 branching time, long-run error bounds or cross-browser numerical equivalence.
+
+## 046 — V3 species populations and ecological pressure — 2026-09-19
+
+**Supersedes 043 and 045 as the active biological model.** The user explicitly
+authorizes implementing and activating an independent V3, with freedom to change
+genes and calculation rules. V2's per-location variant pools still multiply
+across habitats, feeding signatures, journeys and energies; individual hunting,
+offspring handling and deme classification remain expensive. Its classifier can
+also recognize genetic distance without requiring a useful ecological difference.
+V1/V2 source, research and artwork are preserved; V3 imports neither life model.
+
+### Representation and selection
+
+V3 holds one accepted genome per species and one integer population per species,
+hex and habitat. It replaces individual action loops, energy cohorts and variant
+journeys with finite-resource community calculation and aggregate demographic
+events. The maximum of three candidate adaptation directions applies to the
+whole species, not separately to every hex or feeding niche. Candidates never
+feed, reproduce, count as organisms, or acquire their own tracked territories.
+
+Founders still match local physical conditions, with additional viable seeded
+random gene changes. All 22 traits, including new paid elevation and water-depth
+preferences, are documented in the V3 gene catalogue. Elevation acts separately
+from temperature; depth uses the actual water-surface/bed difference. No new
+physical world fields, ecological biomes, species templates or guaranteed
+evolutionary outcomes are introduced.
+
+The same calculation supplies population growth and candidate ecological scores.
+It accounts for temperature, habitat, moisture, elevation, depth and the resident
+community's finite light, accessible plant production and prey. Consumers share
+defended tissue bands, so additional species cannot unlock an inaccessible food
+pool. Candidates and the parent phenotype are compared at the same probe size
+against the same occupied community. New feeding lineages may use existing
+parent resources, but hypothetical carriers cannot supply their own food.
+
+Periodic seeded searches try single legal gene changes. Persistent broad
+improvements can replace a species genome. A branch instead requires sustained
+advantage, a meaningful ecological profile, available local support and an
+advantage over occupants of its acquisition niche. Near-duplicate score and
+realized-diet profiles are rejected. A successful branch transfers parent
+population; it never creates additional organisms merely by naming a species.
+A major feeding-system change always enters living state as a distinct lineage,
+preventing large producer/consumer subpopulations hidden behind one species name.
+
+Full coefficients, temporal sampling, candidate extension, novelty gates and
+transfer thresholds are in [V3 rules](../src/simulation/life/v3/docs/RULES.md).
+These are version-specific model decisions, not shared geography or UI rules.
+
+### Integration and deterministic continuation
+
+The browser worker explicitly imports V3. Existing introduction, pause/play,
+automatic maximum target speed, calendar and three-turns-per-ten-days cadence
+retain their meanings. V3 has its own `v3-populations-1` rules revision and
+`emergence-life-v3-checkpoint-1` format. It serializes complete random state,
+partial turn credit, populations, genomes, directions and persistence. V1/V2
+checkpoints are rejected; there is no automatic migration or model-selection UI.
+
+The common detached observation preserves consistent exact integer census
+totals. Approximation metadata identifies aggregate demographic events and
+estimated directions. The notebook shows established traits and separately
+labels candidate ranges as estimated favourable locations, with no invented
+carrier percentages. English/Polish controls highlight the model-supplied range
+through the existing overlay. Empty estimated ranges are disabled. Themes,
+portraits, population marks, keyboard controls and supplied artwork remain intact.
+Queries, rendering and locale do not execute selection or consume randomness.
+
+Memoized phenotypes and local scores are caches of immutable genomes and one
+frozen community. They are discarded/rebuilt as their inputs change and are
+not checkpoint state. They reduce repeated calculation without replacing the
+underlying population rules. Simulation remains headless; UI owns browser
+workers, translation and interaction; rendering consumes observations and tokens.
+
+### Validation and limitations
+
+The [V3 validation record](../src/simulation/life/v3/docs/VALIDATION.md) records
+the final software checks, visual inspection and reproducible timing panel.
+Focused checks cover bounded directions, conditioned/randomized founders,
+finite resources, defended food access, ecological novelty and incumbent
+competition, population-conserving branching, role coherence, aggregate count
+consistency, checkpoint replay, query independence and browser/headless agreement.
+
+This is a deliberately different ecological approximation. Stochastic rounding
+has less demographic variance than individual Bernoulli events. Mean reserves
+are bookkeeping, and body biomass is not conserved through phenotype changes.
+Sampled pressure can miss intermediate or seasonal events; harmful/neutral
+bridges can be lost. Barrier transport is rare aggregate conductance, with no
+individual delayed journeys. Candidate territories and frequencies are not
+measured carrier distributions. Ecological score criteria are not biological
+taxonomy. No calibration, survival guarantee, speciation deadline, cross-browser
+numerical identity or universal performance multiplier is claimed.
+
+Final V3 verification: `npm run build` and `npm test` passed with 134
+headless/rendering checks and 67 Chromium checks, plus one existing skip.
+The development server completed atlas startup, V3 introduction and pause
+without browser errors. Both themes and both locales were visually inspected
+at desktop and phone widths; new controls also pass 320 px overflow and keyboard
+focus checks. Localization parity, documentation links, layer review and diff
+checks passed. V1/V2, original artwork, licence and package/lockfile are unchanged.
+
+The eight same-world advancement samples in the validation record show smaller
+V3 checkpoints and faster elapsed time, with different biological trajectories.
+The most expensive water sample improved by about 17%, while its first complete
+observation cost about 60 ms. Fixed-population-record updates remained near
+0.1 ms when organism count grew 1,000-fold. These measurements support the
+representation change but do not establish a universal speedup or calibrated
+diversification. The record includes the reproducible benchmark command,
+workload sizes and limitations.
