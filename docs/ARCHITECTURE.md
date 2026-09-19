@@ -2,7 +2,15 @@
 
 ## Status
 
-**Current: Google tag restricted to the public deployment — 2026-09-19.**
+**Current: Restore directly from the landing page — 2026-09-19.**
+Decision 057 replaces the landing restore link with a panel-style button and
+opens the upload dialog without navigating to setup.
+
+**Downloadable saves and local restore — 2026-09-19.**
+Decision 056 adds paused checkpoint downloads and validated file restore from
+the landing page, setup and atlas menu.
+
+**Google tag restricted to the public deployment — 2026-09-19.**
 Decision 054 adds the requested analytics tag only under the exact HTTPS
 GitHub Pages origin and `/emergence/` path.
 
@@ -2676,3 +2684,132 @@ Validation: `npm run build`, `npm test` and `git diff --check` passed, with
 137 headless/rendering checks and 113 Chromium checks plus one existing skip.
 The analytics checks verify the new ID and the preserved URL restriction using
 stubbed external requests; live analytics receipt and deployment were not tested.
+
+
+## 056 — Downloadable saves and atomic local restore — 2026-09-19
+
+The user requested saving through the atlas menu, restoring through that menu
+and the main page, downloaded/uploaded files, and pausing when Save begins.
+**Supersedes earlier deferrals of browser save/load.** The menu now exposes
+Save world to file and Restore a saved world. A landing-page restore link opens
+`world.html?restore` with the upload dialog ready; setup also has a restore
+button. Native file input, modal focus, keyboard dismissal and complete EN/PL
+phrases use existing theme/type tokens. No dependency or server is introduced.
+
+Save pauses immediately and queues export behind any already requested worker
+command. Export therefore captures one completed biological/physical day,
+including any pending bounded batch. Playback, stepping, introduction and world
+replacement are disabled while exporting. Download produces
+`emergence-day-N.json`; playback stays paused even if download creation fails.
+UI reports download initiation, not confirmation that the browser wrote a file.
+
+`emergence-save-1` wraps exact generator/weather identifiers and world settings,
+the complete model-owned V3 checkpoint, and the camera, map layer, pinned hex
+and target speed. Fixed geography is regenerated deterministically from those
+settings and checked against V3's complete physical-world identity. Climate is
+then set to the model's observed completed day. The checkpoint retains random
+stream words, partial biological turn credit, counters, populations/reserves,
+species/genomes, adaptation directions, history and previous attempts. Saving
+and inspection consume no randomness; a seed alone is never treated as a run.
+
+File reading, JSON parsing, generation and model construction occur in a
+candidate browser worker. The current paused run stays alive until validation
+and observation succeed. Cancel terminates the candidate; rejected files leave
+the current world available. Success terminates obsolete generation/life work,
+adopts the candidate and its matching world, resets browser pacing and opens
+the atlas paused. Empty, living, extinct and restarted runs use the same path.
+Theme/language remain current; species disclosures and trait highlights reset.
+No local/session storage, account, remote upload or cross-page file staging is
+required. The landing page navigates to the upload dialog before choosing a file.
+
+`src/ui/save-state.js` composes the versioned envelope using public engine APIs;
+`save-dialog.js` owns DOM, file choice, candidate-worker lifetime and download.
+The life worker exports opaque checkpoints and imports validated saves, while
+world UI handles playback and atomic adoption. V3 retains all biological
+validation, extended to reject missing PRNG state, malformed required metadata,
+history, counters and record fields before constructing a run. Valid checkpoint
+shape, rules, biological coefficients and rendering are unchanged. No other life
+model is activated or converted. Earlier architecture entries remain historical.
+
+Validation: new headless checks compare complete saved/restored checkpoints,
+physical worlds, observations and subsequent deterministic continuation, cover
+empty/extinct/restarted runs, and reject invalid versions/settings/views/model
+state without modifying the source. New real-browser checks cover actual file
+downloads/uploads from landing and menu, saving while running and during a
+pending advance, paused restoration, invalid files, cancellation during loading,
+download-failure retry, storage failure, localization, keyboard focus and phone
+wrapping. A pause or restore/cancel also overrides a pending introduction's
+automatic playback request.
+
+Final verification: `npm run build`, `npm test` and `git diff --check` passed:
+140 headless/rendering checks, 121 Chromium checks and one existing skipped
+desktop touch duplicate. Visually inspected landing, setup, save menu and
+restore dialog in light/dark at desktop/phone widths, including translated
+wrapping, visible focus, assets and disabled controls. The Vite development
+server also loaded the landing restore route, restored a checkpoint, advanced
+the worker and downloaded a save without browser errors. Scope/dependency review
+confirmed browser services remain in UI and no renderer or ecological rule
+changes were introduced.
+
+Limits: only compatible current generator/weather/V3 rules are accepted;
+no automatic migration or cryptographic authenticity is promised. Reproduction
+is checked in Node and Chromium, not asserted across browser numerical engines.
+Browser download handling remains subject to the visitor's browser settings.
+
+
+## 057 — Landing restore button and in-place dialog — 2026-09-19
+
+At the user's request, the landing restore action is a native button using the
+same raised-panel background and action-button styles as World setup. It opens
+the upload dialog over the landing page without navigation. Cancel and rejected
+uploads retain the landing page and return keyboard focus to the button.
+**Supersedes 056's landing link and pre-upload navigation to `world.html?restore`.**
+The existing direct world-page restore route remains supported.
+
+After a file validates, the landing adapter fetches the shipped `world.html`
+markup and imports only the setup section and workspace into the current
+document. The existing world UI adopts the already validated worker and opens
+the saved atlas paused, without an intervening setup screen or fresh generation.
+This reuses the canonical workspace markup and preserves source/build deployment
+under subdirectories. A cancelled or failed markup fetch keeps the landing page
+intact and allows retry. No browser storage, file staging or second checkpoint
+decode is required. Only a successful restore mounts the atlas.
+
+Existing theme/language controls and footer remain attached; inserted copy is
+translated using the current locale without reinitializing preferences. The
+old landing dialog is disposed before the workspace installs its restore dialog.
+Botanical styles are available on both entries so restored notebook artwork has
+the same appearance. These changes stay in browser UI; save format, model rules,
+checkpoint validation and renderer remain unchanged.
+
+Validation covers the landing button background, keyboard focus, unchanged URL,
+both themes/locales at desktop and phone widths, invalid uploads, cancellation,
+markup-load failure/retry, exact saved-state continuation, storage failure and
+successful restore on both source and built subdirectory deployments.
+
+`npm run build`, `npm test` and `git diff --check` passed: 140 headless/rendering
+checks and 121 Chromium checks, with one existing skipped desktop touch duplicate.
+Visually inspected the button and in-place dialog in both themes at desktop and
+phone widths, including wrapping and keyboard focus. The development server
+also restored directly from the Polish landing page, advanced the life worker
+and returned to functional setup without errors. Final scope review preserved
+the existing save feature and layer boundaries. Validation remains limited to
+Chromium; landing restore needs the shipped world markup to remain available,
+with a retryable error if loading it fails.
+
+
+## 058 — Consistent footer and return-link colours — 2026-09-19
+
+All site-footer links and “Back to Emergence” now share the About link's
+existing muted text token, underline colour and accent hover state. This
+supersedes the brighter project-credit link override. Shared presentation
+rules remain in UI CSS and consume the existing light/dark theme tokens.
+
+Validation: computed colours match for all four links in both themes at desktop
+and phone widths. Screenshots confirm readable wrapping and visible keyboard
+focus. This is a presentation-only change; usage and layer boundaries are
+unchanged. Browser inspection is limited to Chromium.
+
+`npm run build`, `npm test` (121 Chromium checks passed, one existing skip,
+plus the headless/rendering suite) and `git diff --check` passed. Final scope
+review preserved the pre-existing save/restore work in the working tree.

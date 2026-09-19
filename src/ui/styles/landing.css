@@ -102,6 +102,7 @@ h1 { margin-block: 23px 22px; font-size: var(--text-display); letter-spacing: va
 .start-block { margin-top: 32px; }
 .start-button { display: inline-flex; min-height: 50px; min-width: 206px; align-items: center; justify-content: space-between; gap: 32px; padding: 10px 20px; border: 1px solid var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); font-size: var(--text-base); cursor: not-allowed; }
 .start-button span[aria-hidden] { font-size: var(--text-title); }
+#restore-landing { display: block; width: fit-content; margin-top: 16px; }
 
 .specimen { min-width: 0; padding-block: 12px; }
 .specimen-art { position: relative; isolation: isolate; display: grid; place-items: center; aspect-ratio: 1; }
@@ -129,11 +130,10 @@ h3 { margin-block: 15px 12px; font-size: var(--text-title); }
 .principles p { max-width: 39ch; color: var(--color-muted); font-size: var(--text-base); }
 .site-footer { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-block: 24px 36px; border-top: 1px solid var(--color-rule); color: var(--color-muted); font-size: var(--text-sm); }
 .creator-name { color: var(--color-text); }
-.site-footer a { text-decoration-color: var(--color-rule-strong); text-underline-offset: 4px; }
-.site-footer a:hover { color: var(--color-accent); text-decoration-color: var(--color-accent); }
+.site-footer a, .back-link { color: var(--color-muted); text-decoration-color: var(--color-rule-strong); text-underline-offset: 4px; }
+.site-footer a:hover, .back-link:hover { color: var(--color-accent); text-decoration-color: var(--color-accent); }
 .creator-credit a { display: inline-block; margin-top: 4px; }
 .project-credit { text-align: right; }
-.project-credit a { color: var(--color-text); }
 .project-credit p { margin-top: 4px; }
 .about-dialog { width: min(760px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: var(--frame-width) var(--frame-style) var(--color-rule-strong); border-radius: var(--panel-radius); color: var(--color-text); background: var(--page-background); font-size: var(--text-base); overflow: hidden; }
 .about-dialog[open] { display: grid; grid-template-rows: auto minmax(0, 1fr); }

@@ -12,6 +12,17 @@ export function formatNumber(value, kind = 'number') {
   return formats[kind].format(value);
 }
 
+export function translateContent(root = document) {
+  for (const element of root.querySelectorAll('[data-i18n]')) {
+    element.textContent = t(element.dataset.i18n);
+  }
+  for (const attribute of ['aria-label', 'title', 'alt', 'content']) {
+    for (const element of root.querySelectorAll(`[data-i18n-${attribute}]`)) {
+      element.setAttribute(attribute, t(element.getAttribute(`data-i18n-${attribute}`)));
+    }
+  }
+}
+
 export function initLocale() {
   try {
     if (window.localStorage.getItem(storageKey) === 'pl') locale = 'pl';
@@ -27,14 +38,7 @@ export function initLocale() {
       compact: new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 0 }),
       percent: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }),
     };
-    for (const element of document.querySelectorAll('[data-i18n]')) {
-      element.textContent = t(element.dataset.i18n);
-    }
-    for (const attribute of ['aria-label', 'title', 'alt', 'content']) {
-      for (const element of document.querySelectorAll(`[data-i18n-${attribute}]`)) {
-        element.setAttribute(attribute, t(element.getAttribute(`data-i18n-${attribute}`)));
-      }
-    }
+    translateContent();
     for (const button of document.querySelectorAll('[data-locale]')) {
       button.disabled = false;
       button.setAttribute('aria-pressed', String(button.dataset.locale === locale));

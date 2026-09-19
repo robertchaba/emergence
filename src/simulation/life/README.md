@@ -67,8 +67,12 @@ Changing models starts a separate life run against the chosen shared world and
 explicit starting day. There is no implicit migration of organisms, species IDs
 or PRNG state between incompatible models. Any future conversion must be designed
 and documented explicitly. Same terrain and seed do not promise identical biology
-across models. Model selection UI and browser save/load remain future work. Each implemented model exports its own incompatible
-versioned headless checkpoint for deterministic continuation.
+across models. Model selection UI remains future work. Each implemented model
+exports its own incompatible versioned headless checkpoint for deterministic
+continuation. The browser now wraps the active V3 checkpoint in a downloadable
+save file with versioned world settings and view state; restore validates it in
+a candidate worker before replacing the current run. File transport and format
+composition belong to UI; biological validation stays in V3.
 
 Later implementations must validate the common inspection invariants as well as
 their own biological and approximation rules. Neither this directory layout nor

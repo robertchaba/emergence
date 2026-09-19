@@ -67,14 +67,42 @@ export function restoreLifeModel(world, checkpoint) {
   }
   const state = copy(checkpoint);
   validateDay(state.day);
+  const count = value => Number.isSafeInteger(value) && value >= 0;
+  const text = value => typeof value === 'string';
+  const statsValid = stats => stats && Object.keys(initialStats()).every(key => count(stats[key]));
+  if (!['runId', 'baseRunId', 'seed', 'baseSeed'].every(key => text(state[key]))
+    || typeof state.introduced !== 'boolean' || !count(state.revision)
+    || !count(state.startDay) || state.startDay > state.day
+    || !count(state.attempt) || state.attempt < 1
+    || !count(state.nextSpecies) || state.nextSpecies < 1
+    || !count(state.nextCandidate) || state.nextCandidate < 1
+    || !statsValid(state.stats) || !Array.isArray(state.randomState)
+    || JSON.stringify(state.worldIdentity) !== JSON.stringify(worldIdentity(world))
+    || !Array.isArray(state.history) || state.history.length > 180
+    || state.history.some((row, index) => !row || !['day', 'population', 'species', 'extinctSpecies', 'variants', 'occupiedHexes'].every(key => count(row[key]))
+      || row.day > state.day || index > 0 && row.day <= state.history[index - 1].day)
+    || !Array.isArray(state.previousAttempts)
+    || state.previousAttempts.some(attempt => !attempt || !text(attempt.runId)
+      || !count(attempt.startDay) || !count(attempt.endDay) || attempt.startDay > attempt.endDay
+      || !statsValid(attempt.stats) || !Array.isArray(attempt.species))) {
+    throw new TypeError('Invalid checkpoint metadata.');
+  }
   if (!Number.isSafeInteger(state.biologicalTurns) || state.biologicalTurns < 0
     || !Number.isInteger(state.turnCredit) || state.turnCredit < 0 || state.turnCredit >= 10
     || !Array.isArray(state.species) || !Array.isArray(state.populations)) throw new TypeError('Invalid checkpoint state.');
   const ids = new Set();
   for (const record of state.species) {
-    if (!record.id || ids.has(record.id) || !validateGenome(record.genome)
+    if (!text(record.id) || !record.id || ids.has(record.id) || !text(record.name)
+      || !(record.parentId === null || text(record.parentId))
+      || !count(record.originDay) || record.originDay > state.day
+      || !(record.extinctDay === null || count(record.extinctDay) && record.extinctDay <= state.day)
+      || !count(record.genomeRevision) || record.genomeRevision < 1 || !validateGenome(record.genome)
       || !Array.isArray(record.candidates) || record.candidates.length > EVOLUTION_RULES.maximumCandidates
-      || record.candidates.some(candidate => !validateGenome(candidate.genome)
+      || record.candidates.some(candidate => !text(candidate.id) || !candidate.id || !validateGenome(candidate.genome)
+        || !count(candidate.originDay) || candidate.originDay > state.day
+        || !count(candidate.lastEvaluation) || candidate.lastEvaluation > state.day
+        || !Number.isFinite(candidate.support) || candidate.support < 0 || candidate.support > 1
+        || !Number.isFinite(candidate.advantage)
         || !Number.isSafeInteger(candidate.age) || candidate.age < 0
         || !Number.isSafeInteger(candidate.steps) || candidate.steps < 1)) throw new TypeError('Invalid checkpoint species or candidates.');
     ids.add(record.id);
@@ -82,7 +110,7 @@ export function restoreLifeModel(world, checkpoint) {
   const pools = new Set();
   for (const row of state.populations) {
     const key = populationKey(row);
-    if (!ids.has(row.speciesId) || !world.hexes[row.hexId]
+    if (!ids.has(row.speciesId) || !count(row.hexId) || !world.hexes[row.hexId]
       || !Number.isSafeInteger(row.count) || row.count < 1
       || !['land', 'water'].includes(row.habitat) || pools.has(key)
       || !Number.isFinite(row.reserve) || row.reserve < 0) throw new TypeError('Invalid checkpoint population.');

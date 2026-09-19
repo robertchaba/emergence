@@ -39,6 +39,7 @@
           <div class="section-heading">
             <p class="eyebrow" data-i18n="atlasIndex">01 / Field atlas</p>
             <h1 id="setup-title" data-i18n="setup">World setup</h1>
+            <button id="restore-setup" class="action-button" type="button" disabled data-i18n="restoreState">Restore a saved world</button>
           </div>
           <div class="setup-layout">
             <form id="world-form" class="world-form">
@@ -92,6 +93,9 @@
             <span class="menu-indicator" aria-hidden="true">⌄</span>
           </summary>
           <div class="menu-actions">
+            <button id="save-state" type="button" disabled data-i18n="saveState">Save world to file</button>
+            <button id="restore-state" type="button" data-i18n="restoreState">Restore a saved world</button>
+            <p id="save-status" class="field-note" role="status" hidden></p>
             <fieldset class="map-layers"><legend data-i18n="mapLayer">Map layer</legend>
               <label><input type="radio" name="layer" value="terrain" checked /><span data-i18n="terrain">Terrain</span></label>
               <label><input type="radio" name="layer" value="elevation" /><span data-i18n="elevation">Elevation</span></label>

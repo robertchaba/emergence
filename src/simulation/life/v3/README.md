@@ -30,6 +30,13 @@ owns founder selection, all gene effects, ecological scores, demographic
 approximations, movement and species identity. No ecological biome or species is
 assigned by geography.
 
+The browser's save/restore adapter carries this complete checkpoint without
+interpreting population or genome records. Restore validates required metadata,
+clocks, counters, histories, PRNG words, species, candidates and populations
+before constructing a model. Missing random state is rejected rather than
+silently restarting the seeded stream. This validation does not change valid
+checkpoint behavior or the rules revision.
+
 ## What is represented
 
 One established genome describes each species. Sparse records hold integer

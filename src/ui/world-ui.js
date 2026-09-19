@@ -3,6 +3,7 @@ import { setDay } from '../simulation/climate.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
 import { createLifeNotebook } from './life-notebook.js';
 import { createNumberAnimator } from './number-animation.js';
+import { createRestoreDialog, downloadSave } from './save-dialog.js';
 
 const number = { format: (value) => formatNumber(value) };
 const integer = { format: (value) => formatNumber(value, 'integer') };
@@ -18,7 +19,7 @@ function readTokens() {
 }
 
 /** Browser composition only: inputs become explicit engine calls; snapshots are read-only. */
-export function initWorldUI() {
+export function initWorldUI(restored = null) {
   const form = document.querySelector('#world-form');
   const startButton = document.querySelector('#start-workspace');
   const generationStatus = document.querySelector('#generation-status');
@@ -35,6 +36,9 @@ export function initWorldUI() {
   const speedInput = document.querySelector('#simulation-speed');
   const playButton = document.querySelector('#play-world');
   const pauseButton = document.querySelector('#pause-world');
+  const saveButton = document.querySelector('#save-state');
+  const restoreButton = document.querySelector('#restore-state');
+  const saveStatus = document.querySelector('#save-status');
   const stepButton = document.querySelector('#step-world');
   const details = document.querySelector('#hex-details');
   const numbers = createNumberAnimator();
@@ -67,22 +71,70 @@ export function initWorldUI() {
   let lifeRevision = 0;
   let lifeBusy = false;
   let lifePendingCommand = null;
+  let playAfterIntroduction = false;
   let lifeFailed = false;
   let selectedSpeciesId = null;
   let selectedVariant = null;
   let motionTime = 0;
   let lastMotionFrame = 0;
   let hasVisibleLife = false;
+  let saving = false;
+  let saveStatusKey = '';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const notebook = createLifeNotebook({
     onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
     onVariantSelect(variant) { selectedVariant = variant; queueDraw(); },
   });
+  const restoreDialog = createRestoreDialog({
+    onOpen() { setPlaying(false); menu.open = false; },
+    onRestore: adoptRestoredWorld,
+  });
+
+  function adoptRestoredWorld(worker, data) {
+    revision += 1;
+    clearTimeout(generationTimer);
+    generationWorker?.terminate();
+    generationWorker = null;
+    generating = false;
+    form.removeAttribute('aria-busy');
+    previewSurface.removeAttribute('aria-busy');
+    stopLife();
+    world = data.world;
+    geography = data.world;
+    lifeWorker = worker;
+    attachLifeWorker();
+    camera = { ...data.view.camera };
+    layer = data.view.layer;
+    pinnedId = data.view.pinnedId;
+    selectedSpeciesId = null;
+    selectedVariant = null;
+    targetSpeed = data.view.speed;
+    speedInput.value = String(targetSpeed);
+    form.elements.seed.value = world.seed;
+    form.elements.size.value = world.size;
+    for (const key of ['geography', 'landFraction', 'waterAbundance']) form.elements[key].value = String(world[key] * 100);
+    document.querySelector(`input[name="layer"][value="${layer}"]`).checked = true;
+    document.querySelector('#layer-legend').textContent = t(legends[layer]);
+    startButton.disabled = false;
+    showSaveStatus('');
+    updateSettingReadouts();
+    updateWorldSummary();
+    updateTargetSpeed();
+    showGenerationStatus('ready');
+    openWorkspace();
+    setPlaying(false);
+    acceptLifeMessage(data);
+    draw();
+    canvas.focus({ preventScroll: true });
+  }
 
   function updateLifeInteraction() {
-    notebook.setInteraction(lifeBusy, pinnedId);
-    playButton.disabled = (lifeBusy && !life) || lifeFailed;
-    stepButton.disabled = lifeBusy || lifeFailed || playing;
+    notebook.setInteraction(lifeBusy || saving, pinnedId);
+    playButton.disabled = (lifeBusy && !life) || lifeFailed || saving;
+    stepButton.disabled = lifeBusy || lifeFailed || playing || saving;
+    saveButton.disabled = !life || lifeFailed || saving;
+    restoreButton.disabled = saving;
+    document.querySelector('#return-setup').disabled = saving;
   }
 
   function stopLife() {
@@ -95,6 +147,7 @@ export function initWorldUI() {
     lifeBusy = false;
     lifePendingCommand = null;
     lifeFailed = false;
+    saving = false;
     notebook.reset();
   }
 
@@ -102,6 +155,7 @@ export function initWorldUI() {
     lifeBusy = false;
     lifePendingCommand = null;
     lifeFailed = true;
+    if (saving) { saving = false; showSaveStatus('saveFailed'); }
     setPlaying(false);
     notebook.fail({ canRetry: command === 'initialize' && life === null });
     playButton.disabled = true;
@@ -110,46 +164,90 @@ export function initWorldUI() {
 
   function initializeLife() {
     stopLife();
-    const session = lifeRevision;
+    showSaveStatus('');
     lifeBusy = true;
     lifePendingCommand = 'initialize';
     updateLifeInteraction();
     try {
       lifeWorker = new Worker(new URL('./life-worker.js', import.meta.url), { type: 'module' });
-      lifeWorker.onmessage = ({ data }) => {
-        if (session !== lifeRevision) return;
-        if (data.error) { lifeFailure(data.command); return; }
-        lifeBusy = false;
-        lifePendingCommand = null;
-        updatePlaybackState();
-        const previousDay = world.day;
-        life = data.observation;
-        hasVisibleLife = life.hexes.some(hex => hex.display.some(group => group.population > 0));
-        if (life.day !== world.day) world = setDay(world, life.day);
-        measuredDays += Math.max(0, world.day - previousDay);
-        notebook.update(life, { busy: false, pinnedId, totalHexes: world.hexes.length });
-        if (data.command === 'introduce') {
-          if (data.result?.ok) {
-            targetSpeed = Number(speedInput.max);
-            speedInput.value = String(targetSpeed);
-            updateTargetSpeed();
-            setPlaying(true);
-          }
-          else notebook.message(data.result?.reason || 'lifeError');
-        }
-        updateDayReadout();
-        updateInspector(false);
-        updateLifeInteraction();
-        if (life.status === 'extinct' && playing) setPlaying(false);
-        queueDraw();
-      };
-      lifeWorker.onerror = () => { if (session === lifeRevision) lifeFailure(lifePendingCommand); };
-      lifeWorker.postMessage({ command: 'initialize', world, options: { runId: `life-${session}` } });
+      attachLifeWorker();
+      lifeWorker.postMessage({ command: 'initialize', world, options: { runId: `life-${lifeRevision}` } });
     } catch { lifeFailure('initialize'); }
   }
 
+  function attachLifeWorker() {
+    const session = lifeRevision;
+    lifeWorker.onmessage = ({ data }) => {
+      if (session !== lifeRevision) return;
+      if (data.command === 'export') {
+        saving = false;
+        try {
+          if (data.error) throw new Error(data.error);
+          downloadSave(data.json, data.day);
+          showSaveStatus('savedState');
+        } catch { showSaveStatus('saveFailed'); }
+        updateLifeInteraction();
+        return;
+      }
+      if (data.error) { lifeFailure(data.command); return; }
+      acceptLifeMessage(data);
+    };
+    lifeWorker.onerror = () => { if (session === lifeRevision) lifeFailure(lifePendingCommand); };
+  }
+
+  function acceptLifeMessage(data) {
+    lifeBusy = false;
+    lifePendingCommand = null;
+    updatePlaybackState();
+    const previousDay = world.day;
+    life = data.observation;
+    hasVisibleLife = life.hexes.some(hex => hex.display.some(group => group.population > 0));
+    if (life.day !== world.day) world = setDay(world, life.day);
+    measuredDays += Math.max(0, world.day - previousDay);
+    notebook.update(life, { busy: false, pinnedId, totalHexes: world.hexes.length });
+    if (data.command === 'introduce') {
+      if (data.result?.ok) {
+        targetSpeed = Number(speedInput.max);
+        speedInput.value = String(targetSpeed);
+        updateTargetSpeed();
+        if (playAfterIntroduction && !saving && !restoreDialog.open) setPlaying(true);
+      }
+      else notebook.message(data.result?.reason || 'lifeError');
+      playAfterIntroduction = false;
+    }
+    updateDayReadout();
+    updateInspector(false);
+    updateLifeInteraction();
+    if (life.status === 'extinct' && playing) setPlaying(false);
+    queueDraw();
+  }
+
+  function showSaveStatus(key = saveStatusKey) {
+    saveStatusKey = key;
+    saveStatus.textContent = key ? t(key) : '';
+    saveStatus.hidden = !key;
+  }
+
+  saveButton.addEventListener('click', () => {
+    if (saveButton.disabled) return;
+    saving = true;
+    setPlaying(false);
+    showSaveStatus('savingState');
+    // Worker messages are ordered: export follows any already requested batch.
+    try {
+      lifeWorker.postMessage({ command: 'export', view: { camera: { ...camera }, layer, pinnedId, speed: targetSpeed } });
+    } catch {
+      saving = false;
+      showSaveStatus('saveFailed');
+      updateLifeInteraction();
+    }
+  });
+  restoreButton.addEventListener('click', () => restoreDialog.show());
+  document.querySelector('#restore-setup').disabled = false;
+  document.querySelector('#restore-setup').addEventListener('click', () => restoreDialog.show());
+
   function requestLifeCommand(command) {
-    if (lifeBusy || lifeFailed || !lifeWorker) return false;
+    if (lifeBusy || lifeFailed || saving || !lifeWorker) return false;
     lifeBusy = true;
     lifePendingCommand = command.command;
     updateLifeInteraction();
@@ -299,6 +397,8 @@ export function initWorldUI() {
 
   function setPlaying(next) {
     playing = next;
+    if (playing) showSaveStatus('');
+    else playAfterIntroduction = false;
     if (!playing) numbers.finish();
     updatePlaybackState();
     playButton.setAttribute('aria-pressed', String(playing));
@@ -406,7 +506,7 @@ export function initWorldUI() {
   });
   startLifeButton.addEventListener('click', () => {
     setPlaying(false);
-    requestLifeCommand({ command: 'introduce', hexId: pinnedId });
+    playAfterIntroduction = requestLifeCommand({ command: 'introduce', hexId: pinnedId });
   });
   document.querySelector('#retry-life').addEventListener('click', () => {
     if (!lifeFailed || life !== null) return;
@@ -467,19 +567,23 @@ export function initWorldUI() {
     world = setDay(world, 1);
     setPlaying(false);
     updateDayReadout();
-    savedScroll = window.scrollY;
-    workspace.hidden = false;
+    openWorkspace();
     initializeLife();
-    page.hidden = true;
-    document.querySelector('.skip-link').hidden = true;
-    document.body.classList.add('workspace-open');
-    themePicker.open = false;
-    document.querySelector('#workspace-preferences').append(themePicker, languageSwitcher);
     resizeRenderer(map, canvas);
     camera = map.cover(world);
     draw();
     canvas.focus({ preventScroll: true });
   });
+
+  function openWorkspace() {
+    if (workspace.hidden) savedScroll = window.scrollY;
+    workspace.hidden = false;
+    page.hidden = true;
+    document.querySelector('.skip-link').hidden = true;
+    document.body.classList.add('workspace-open');
+    themePicker.open = false;
+    document.querySelector('#workspace-preferences').append(themePicker, languageSwitcher);
+  }
 
   document.querySelector('#return-setup').addEventListener('click', () => {
     setPlaying(false);
@@ -657,6 +761,7 @@ export function initWorldUI() {
   // Locale only re-renders presentation: no world generation, clock reset,
   // camera changes, layer changes, or lost selection when switching mid-run.
   document.addEventListener('emergence:localechange', () => {
+    showSaveStatus();
     updateSettingReadouts();
     showGenerationStatus();
     updateWorldSummary();
@@ -674,6 +779,10 @@ export function initWorldUI() {
   showActualSpeed();
   updatePlaybackState();
 
-  randomizeSeed();
+  if (restored) adoptRestoredWorld(restored.worker, restored.data);
+  else {
+    randomizeSeed();
+    if (new URLSearchParams(location.search).has('restore')) restoreDialog.show();
+  }
   window.addEventListener('pageshow', (event) => { if (event.persisted && workspace.hidden) randomizeSeed(); });
 }

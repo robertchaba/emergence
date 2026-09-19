@@ -160,6 +160,24 @@ Close it with **Close** or **Escape** to return to the page.
    Use the logo menu's **Return to World setup** to build another world, then
    **Back to Emergence** to return to the landing page.
 
+Use **Save world to file** in the logo menu to pause and download an
+`emergence-day-….json` file. Any day batch already in progress finishes first;
+the saved world stays paused. The file includes the world settings, complete
+life checkpoint and history, day, speed, map layer, camera and pinned hex.
+It also works before life has been introduced or after extinction.
+
+Choose **Restore a saved world** from the landing page, World setup or the logo
+menu, select the downloaded file, then restore it. The landing-page button uses
+the same light panel styling as World setup and opens the dialog over the
+landing page. Cancelling or an invalid file leaves that page in place; a valid
+upload opens the restored atlas directly. The restored world opens
+paused; choose **Play** to continue. Invalid or incompatible files leave the
+current world intact. Cancel also keeps it intact and paused. File handling
+stays on your device and does not require browser storage or an account.
+Theme and language follow your current preferences. Notebook disclosures and
+trait highlights reset. Saves require compatible generator, weather and V3
+rules versions; automatic migration from older simulation versions is not provided.
+
 A year has 360 days, beginning at the northern spring equinox. Hydrology and
 geographic regions stay fixed while temperature, land moisture, water surfaces and
 ice cover respond to seasons and bounded seeded weather. The coastline remains fixed. Once
@@ -264,7 +282,8 @@ if (result.ok) {
 `inspectHex(id)` and `inspectSpecies(id)` expose consistent local counts and
 locations. Checkpoints retain the complete biological PRNG, population reserves,
 candidate directions and their persistence; a world seed alone cannot resume a
-run. Browser save/load is not provided. V3 checkpoints are independent of V1/V2;
+run. The browser save file wraps this checkpoint with world settings and view
+state. V3 checkpoints are independent of V1/V2;
 there is no automatic conversion or model-selection control.
 See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
 calculation, evolutionary pressure, species criteria and experimental coefficients,
@@ -285,7 +304,8 @@ ecological trajectories, not identical outcomes or a universal speed guarantee.
 Snapshots record the generator version, settings, selected candidate, hash
 inputs, physical hex fields, drainage basins, regions, and their connections.
 They contain ordinary serializable values. UI and rendering treat snapshots as
-read-only; there is no browser save/load interface yet.
+read-only. Save-file restoration regenerates this fixed geography from its
+versioned settings and verifies the checkpoint's physical-world identity.
 
 Generation is synthetic geography with a fixed, established groundwater-flow
 approximation. It models neither tectonics nor erosion, evaporation, infiltration,
