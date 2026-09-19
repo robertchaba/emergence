@@ -1,5 +1,66 @@
 # V3 validation — 2026-09-19
 
+## Revision 3: mixed-feeding maintenance and construction
+
+`npm run build` and `npm test` passed: 136 headless/rendering checks and 83
+Chromium checks, with the existing duplicate desktop touch check skipped.
+Both themes were visually inspected at desktop and phone widths, including
+EN/PL species disclosure, focus, wrapping and intermediate theme-effect frames.
+The full suite also covers unavailable storage, disabled controls, original
+assets, live playback, responsive bounds and browser/headless agreement.
+
+The focused ecology fixture evaluates all seven nonempty feeding combinations
+in the same shallow-water resource setting. Single-system scores and resource
+access match revision 2. Compared with the same phenotype under revision 2's
+costs, photosynthetic grazing's net growth falls by more than 60%, other dual
+strategies by more than 20%, and all three systems remain viable with supplied
+food. These are controlled score comparisons, not measured mutation probabilities
+or expected prevalence in every world. Empty-food versions of those mixed
+fixtures have negative growth; hypothetical candidates receive no free food.
+
+The branching fixture now uses a two-step specialist grazer direction and 100
+parent organisms, which can support the proposed founding population under the
+finite local food budget. It still checks persistent qualification, separate
+lineage identity, population conservation and replay. The crowded 600-organism
+fixture still rejects a rare advantage that cannot support the actual split.
+Revision 2 checkpoints are explicitly rejected. No mutation-search, resource,
+species-novelty or population-transfer rules were relaxed to pass these checks.
+
+### Same-world observations
+
+`physical-world-4`, seed `emergence`, current Medium (42 × 28); introductions at
+water hex 546 and land hex 555. The pre-change panel ran revision 2 to 7,200 days.
+The final revision 3 panel ran to 14,400 days, with no seeded consumers or forced
+branches. At 7,200 elapsed days (20 years):
+
+| Introduction | Rules revision | Species | Mixed feeders | Photosynthesis + plants | Plant + animal feeding | Pure predators |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Water | 2 | 32 | 4 | 1 | 3 | 3 |
+| Water | 3 | 16 | 0 | 0 | 0 | 0 |
+| Land | 2 | 29 | 3 | 1 | 2 | 1 |
+| Land | 3 | 18 | 0 | 0 | 0 | 0 |
+
+At 40 years, revision 3's water run had 27 species, including 16 pure grazers,
+and no mixed feeders or predators. The land run had 26 species, 13 pure grazers,
+one plant/animal omnivore and one pure predator. One species had movement, and
+cumulative predation deaths were 79,598. Neither final community contained
+photosynthesis plus grazing. All eight decade checkpoints had zero photosynthetic
+grazers; this does not rule out transient lineages between checkpoints.
+
+Reproduce the final panel:
+
+```sh
+node scripts/check-life-v3-balance.js 14400 medium emergence water
+node scripts/check-life-v3-balance.js 14400 medium emergence land
+```
+
+The script now reports acquisition-pair counts and pure grazers. Pair counts
+overlap for three-system genomes; `mixedFeeding` counts each species once.
+Selection costs also slow some routes toward specialist consumers and can alter
+diversity, predation and extinction trajectories. These two introductions in one
+seeded world support the intended direction, not calibrated rarity, a species
+target, a guarantee of carnivory, or universal long-term balance.
+
 ## Revision 2: trophic tuning and ecological distinction
 
 Validated `v3-populations-2` with `npm run build` and `npm test`: 135

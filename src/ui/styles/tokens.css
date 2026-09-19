@@ -29,6 +29,9 @@
   --color-halo: rgb(191 161 103 / 10%);
   --color-halo-edge: var(--color-clear);
   --color-logo-shadow: rgb(63 46 23 / 9%);
+  --color-dialog-backdrop: rgb(30 25 16 / 55%);
+  --color-theme-dim: #09130d;
+  --color-theme-glow: rgb(208 173 89 / 32%);
   --color-focus: var(--color-accent);
   --color-selection: var(--color-accent);
   --color-on-selection: var(--color-on-accent);
@@ -136,6 +139,8 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --color-dialog-backdrop: rgb(5 13 9 / 75%);
+  --color-theme-glow: rgb(178 221 139 / 34%);
   --color-ground: #101a17;
   --color-panel: #1b2b22;
   --color-panel-raised: #203128;
@@ -256,6 +261,8 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
+    --color-dialog-backdrop: rgb(5 13 9 / 75%);
+    --color-theme-glow: rgb(178 221 139 / 34%);
     --color-ground: #101a17;
     --color-panel: #1b2b22;
     --color-panel-raised: #203128;

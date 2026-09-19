@@ -58,6 +58,40 @@ test('V3 every additional capability has upkeep and construction costs', () => {
   }
 });
 
+test('V3 penalizes mixed feeding most strongly for photosynthetic grazing, without forbidding combinations', () => {
+  const hex = land({ waterType: 'sea', bedElevation: -5, waterLevel: 0 });
+  const producer = genome({ size: 1, landAdaptation: 0 });
+  const prey = { ...producer, photosynthesis: 0, plantFeeding: 1 };
+  for (const [photosynthesis, plantFeeding, animalFeeding] of [
+    [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1],
+  ]) {
+    const candidate = { ...producer, photosynthesis, plantFeeding, animalFeeding,
+      movement: animalFeeding ? 3 : 0, eyesight: animalFeeding ? 2 : 0 };
+    const systems = photosynthesis + plantFeeding + animalFeeding;
+    const photoGrazer = photosynthesis && plantFeeding;
+    assert.ok(validateGenome(candidate), 'all acquisition combinations remain legal');
+    const community = [{ speciesId: 'plants', genome: producer, population: 60 },
+      { speciesId: 'prey', genome: prey, population: animalFeeding ? 10 : 0 }];
+    const current = scoreSpecies(candidate, hex, 'water', community);
+    assert.ok(current.score > 0, `a resource-rich niche can support ${photosynthesis}/${plantFeeding}/${animalFeeding}`);
+    // Revision 2 counterfactual: identical resource access, body and community,
+    // without revision 3's additional maintenance/construction charges.
+    const derived = deriveGenome(candidate);
+    const charge = 0.06 * (systems - 1) + 0.16 * photoGrazer;
+    const previous = scoreSpecies(candidate, hex, 'water', community, { derived: { ...derived,
+      upkeep: derived.upkeep - derived.cells * charge,
+      reproductionCost: derived.reproductionCost - derived.cells * (1.3 * charge + 0.30 * (systems - 1) + 0.30 * photoGrazer),
+    } });
+    assert.equal(current.food, previous.food, 'penalties cannot manufacture or remove a resource pool');
+    assert.equal(current.production, previous.production);
+    if (systems === 1) assert.deepEqual(current, previous, 'single-system feeders retain revision 2 behavior');
+    else {
+      assert.ok(current.score < previous.score * (photoGrazer ? 0.4 : 0.8), 'mixed strategies earn a substantially smaller surplus');
+      assert.ok(scoreSpecies(candidate, hex, 'water').score < 0, 'maintaining unused feeding machinery is not free');
+    }
+  }
+});
+
 test('V3 founders condition their environment and add deterministic viable random traits', () => {
   const hex = land({ bedElevation: 4500, temperature: 2 });
   const first = founderForSite(hex, 'land', random(5));

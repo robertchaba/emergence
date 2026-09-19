@@ -50,7 +50,8 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   const buttons = new Map();
   const numbers = createNumberAnimator();
   let observation = null;
-  let expandedId = null;
+  // Undefined permits a sole occupant to open by default; null records a collapse.
+  let expandedId;
   let highlightedId = null;
   let traitSpeciesId = null;
   let selectedVariant = null;
@@ -216,7 +217,9 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     speciesPanel.hidden = !ids.size;
     document.querySelector('#hex-life-empty').hidden = pinnedId === null || ids.size > 0;
     if (!ids.has(highlightedId)) highlight(null);
-    if (!ids.has(expandedId)) expandedId = occupants.length === 1 ? occupants[0].id : null;
+    if (expandedId !== null && !ids.has(expandedId)) {
+      expandedId = occupants.length === 1 ? occupants[0].id : undefined;
+    }
     for (const [id, button] of buttons) {
       if (!ids.has(id)) { button.parentElement.remove(); buttons.delete(id); }
     }
@@ -237,7 +240,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
         list.append(row);
         buttons.set(species.id, button);
         button.addEventListener('click', () => {
-          const collapse = expandedId === species.id && button.dataset.collapsible === 'true';
+          const collapse = expandedId === species.id;
           expandedId = collapse ? null : species.id;
           highlight(collapse || highlightedId === species.id ? null : species.id);
           renderSpecies();
@@ -256,12 +259,10 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
           return label;
         }));
       }
-      button.dataset.collapsible = String(occupants.length > 1);
+      button.dataset.collapsible = 'true';
       button.setAttribute('aria-pressed', String(highlightedId === species.id));
       button.setAttribute('aria-expanded', String(expandedId === species.id));
-      button.title = t(occupants.length > 1
-        ? expandedId === species.id ? 'collapseSpecies' : 'expandSpecies'
-        : highlightedId === species.id ? 'clearSpeciesHighlight' : 'highlightSpecies');
+      button.title = t(expandedId === species.id ? 'collapseSpecies' : 'expandSpecies');
       if (expandedId === species.id) {
         button.setAttribute('aria-controls', detail.id);
         if (detail.parentElement !== button.parentElement) button.parentElement.append(detail);
@@ -274,7 +275,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
         renderTraits(species);
       } else button.removeAttribute('aria-controls');
     }
-    if (expandedId === null) detail.remove();
+    if (expandedId == null) detail.remove();
   }
 
   function renderControls() {
@@ -315,7 +316,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   function setPin(id) {
     if (id === pinnedId) return;
     pinnedId = id;
-    expandedId = null;
+    expandedId = undefined;
     highlight(null);
   }
 
@@ -324,7 +325,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     update(next, options = {}) {
       if (next?.runId !== observation?.runId) {
         numbers.reset(); populationSpeciesId = null; traitSpeciesId = null;
-        expandedId = null; highlight(null); messageKey = '';
+        expandedId = undefined; highlight(null); messageKey = '';
       }
       observation = next;
       busy = options.busy ?? busy;
@@ -343,7 +344,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     fail({ canRetry = false } = {}) { failed = true; busy = false; retryAvailable = canRetry; render(); },
     reset() {
       numbers.reset(); populationSpeciesId = null;
-      failed = false; retryAvailable = false; expandedId = null; traitSpeciesId = null;
+      failed = false; retryAvailable = false; expandedId = undefined; traitSpeciesId = null;
       messageKey = ''; observation = null; pinnedId = null; totalHexes = 0;
       highlight(null); render();
     },

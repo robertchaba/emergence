@@ -10,9 +10,12 @@ not empirical biological constants. Implementation: [genome.js](../genome.js) an
 ## Complete catalogue and cost accounting
 
 For size `s`, body cells are `C = 1 + 3s(s−1)`. Add the trait-cost contributions
-`T` below. Per-turn upkeep is `C × [0.42 + 0.016(s−1) + T]`. Construction cost is
+`T` below, including the mixed-acquisition charge described below. Per-turn upkeep
+is `C × [0.42 + 0.016(s−1) + T]`. Construction cost is
 `C × [1 + 0.08(s−1) + 1.3T + skeletonConstruction + armorMaterialConstruction
-+ 0.035trunk + 0.035movement + 0.035armor + 0.07flight]`. Thus every acquired
++ 0.035trunk + 0.035movement + 0.035armor + 0.07flight
++ 0.30max(0,n−1) + 0.30PG]`. Here `n` counts acquisition systems, and `P/G`
+indicate photosynthesis/plant feeding. Thus every acquired
 capability increases both budgets even when the local conditions give no benefit.
 These are rate-model energy budgets, not stored energy tracked for each organism.
 
@@ -85,6 +88,24 @@ With `n` acquisition systems, each receives
 by `1+0.06movement+0.06flight`. A genome without an acquisition system has zero
 intake. Mixed acquisition has one coherent representative genome and pays the
 costs of every system; it is not a hidden mixture of producers and consumers.
+
+Revision 3 adds `0.06max(0,n−1) + 0.16PG` to `T`, paid regardless of which
+resources are currently available. The normal `1.3T` construction contribution
+and the additional machinery charges above both apply. Compared with revision 2:
+
+| Acquisition combination | Extra upkeep per cell/turn | Extra construction per cell |
+| --- | ---: | ---: |
+| A single system, or none | 0 | 0 |
+| Photosynthesis + plant feeding | 0.22 | 0.886 |
+| Photosynthesis + animal feeding | 0.06 | 0.378 |
+| Plant + animal feeding | 0.06 | 0.378 |
+| All three | 0.28 | 1.264 |
+
+No combination is invalidated and mutation sampling is unchanged. The charges
+reduce net growth and ecological acceptance, especially for photosynthetic
+grazing. Single-system feeding, intake allocation, prey/plant access and finite
+resource budgets retain revision 2 behavior. Exact prevalence depends on the
+community and evolutionary path; these coefficients are experimental tuning.
 
 Land light weight is `(1+0.12size×trunk)×(1+0.012eyesight)`; canopy height is
 `size×(1+0.12trunk)`. Water receives neither land canopy competition nor free

@@ -6,7 +6,7 @@ authorized for this independent version, not measured biological constants.
 V1/V2 research remains intact. Shared physics, weather, calendar and speed
 meanings are unchanged.
 
-Identifiers: `modelId: v3`, `rulesRevision: v3-populations-2`, checkpoint format
+Identifiers: `modelId: v3`, `rulesRevision: v3-populations-3`, checkpoint format
 `emergence-life-v3-checkpoint-1`, common contract `life-observations-1`.
 
 ## State and introduction
@@ -120,6 +120,19 @@ increase extraction from that source. Distinct identities can still create
 additional interspecific prey links because same-species feeding is excluded.
 
 Genes partition acquisition capacity and pay upkeep/construction costs.
+Revision 3 adds per-cell upkeep `0.06 × max(0, n−1) + 0.16 × P×G`, where
+`n` counts acquisition systems and `P/G` indicate photosynthesis/plant feeding.
+Construction includes 1.3 times that charge, plus
+`0.30 × max(0, n−1) + 0.30 × P×G` per cell. Thus a two-system photosynthetic
+grazer pays an extra 0.22 upkeep and 0.886 construction per cell, versus 0.06
+and 0.378 for either other two-system combination. All three systems pay 0.28
+and 1.264. Charges apply even when one food source is absent; losing a system
+removes its corresponding cost. Single-system strategies keep their prior costs.
+These are experimental selection pressures, not mutation odds or hard bans.
+The larger construction charge makes retaining photosynthetic grazing much less
+profitable while allowing marginal hypothetical directions to reach specialist
+consumers through the existing single-locus extension process. No search weights,
+novelty thresholds, resource budgets or forced diet transitions are changed.
 Successful strategies depend on actual competitors, food and predators. There
 is no independent positive score that creates resources, guaranteed niche slot,
 predefined species, or fixed ecological biome.

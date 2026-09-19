@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Ordered genomes, smooth readouts and revised world sizes — 2026-09-19.**
+**Current: Theme flicker, universal species collapsing and mixed-feeding costs — 2026-09-19.**
+Decision 051 adds a brief neon-like theme effect, lets a sole species collapse,
+and activates V3 revision 3's stronger mixed-feeding tradeoffs.
+
+**Ordered genomes, smooth readouts and revised world sizes — 2026-09-19.**
 Decision 048 adds energy labels and collapsible species inspection, brief numerical
 transitions, and Small / Medium / Large presets of 24 × 16 / 42 × 28 / 60 × 40.
 
@@ -236,7 +240,7 @@ requests, animation, or dependencies. Decorative lines do not intercept input.
 Their colours, alpha values, halo, and logo shadows use theme tokens, including
 the no-JavaScript fallback. Small diamond terminals finish the section rule.
 
-The footer credits Robert Chaba, links `robert.chaba@gmail.com` using `mailto:`,
+The footer credits Robert Chaba, links the author’s email using `mailto:` (address removed in 049),
 and links the supplied GitHub repository. It states that the repository is
 private and a public BSD release is planned, rather than implying it is already
 available. No repository visibility change or release is part of this task.
@@ -2416,3 +2420,129 @@ settling period after the final update; they never delay commands or biological
 advancement. Compact population formatting can hide small numerical changes.
 Colour indicates acquisition capabilities and makes no promise about future
 evolution, actual diet proportions or ecological calibration.
+
+
+## 049 — About dialog and GitHub contact — 2026-09-19
+
+**Supersedes 007’s email contact link.** At the author’s request, the landing and
+world-setup footers replace the email address with **About / O projekcie**.
+The README directs contact to the author’s GitHub profile; the historical email
+address is also removed from this record without removing the earlier decision.
+Author credit, repository and BSD-3-Clause links remain.
+
+A shared UI module creates a native modal `dialog` with the author’s supplied
+eight English paragraphs, preserving their wording, and a complete Polish
+translation. The final paragraph links directly to the author’s GitHub profile.
+The current page locale determines the dialog language. The title receives
+initial focus so readers start at the beginning; native modal behavior confines
+keyboard navigation, and Close or Escape restores focus to About. The text scrolls
+independently beneath a persistent heading and Close control, and each opening
+starts at the top. The dialog fits desktop and phone viewports and uses existing
+theme typography plus a root-defined backdrop token in both explicit and system
+themes. The About link is enabled only after JavaScript initializes the dialog.
+
+The change stays in the browser UI, with no simulation, rendering, dependency or
+biological-rule changes. The AI attribution is author-supplied project copy.
+Browser checks cover both footer entry points, both themes and locales, bounded
+layout, readable scrolled contact, keyboard opening, focus, Escape, Close and
+reopening. `npm run build` and `npm test` passed: 135 headless/rendering
+checks and 77 Chromium checks, with the existing desktop touch duplicate skipped.
+Both themes were visually inspected at desktop and phone widths, including
+English and Polish copy, wrapping and visible keyboard focus. `git diff --check`
+and the dependency-boundary review passed. Validation is limited to Chromium;
+the dialog requires JavaScript and makes no new biological-validation claim.
+
+
+## 050 — More explicit About link — 2026-09-19
+
+At the author’s request, the English footer link from 049 is now **About this
+project** on the landing and setup pages. Polish remains **O projekcie**.
+The dialog title and supplied story retain their wording. This is a UI copy
+change; static HTML, the translation catalogue, README and existing link check
+use the same label, with no engine or rendering changes.
+
+Validation: `npm run build` and `npm test` passed (135 headless/rendering checks,
+77 Chromium checks and one existing skip). The updated footer was visually
+inspected in both themes at desktop and phone widths through the development
+server. `git diff --check` passed. Browser coverage remains limited to Chromium.
+
+## 051 — Neon theme switching, sole-species disclosure and feeding tradeoffs — 2026-09-19
+
+**Supersedes 048's always-open sole-species behavior and 047's V3 revision 2
+mixed-feeding costs.** The user requests an irregular neon-like light/dark
+transition, collapsing even a single local species, and substantially less
+profitable mixed acquisition, especially photosynthesis with plant feeding.
+
+Theme changes apply the final palette once, then play a 760 ms decorative
+power effect: two uneven, low-opacity dimming holds plus a localized edge and
+top glow. There is no smooth whole-page colour interpolation or repeated palette
+swap. The effect consumes root colour tokens, uses no biological randomness,
+and cannot intercept input or change focus. It is absent on initial load,
+locale-only updates, unchanged resolved themes, hidden documents and reduced
+motion. Active effects are removed when motion is reduced or the page is hidden.
+Rapid changes cancel the current effect; a one-second guard prevents stacked
+flickering. System/Light/Dark, persistence, storage failure, and no-JavaScript
+fallback retain their meanings. Canvas updates its palette once per actual
+change and does not implement the effect.
+
+Every species row now has the same disclosure behavior and chevron. A sole
+occupant opens by default; clicking it closes its details and clears the range
+highlight, and reopening also highlights its range. An uninitialized disclosure
+is distinct from an explicit collapse, so live observations, themes and locales
+cannot reopen it. A new pinned hex or life run restores default expansion.
+Native buttons retain keyboard operation, focus and accessible expanded state.
+No additional UI interpretation of genomes is introduced.
+
+### V3 costs and compatibility
+
+Rules become `v3-populations-3`; the existing checkpoint format and strict
+revision check reject older V3 continuations. With `n` acquisition systems,
+additional per-cell upkeep is `0.06max(0,n−1) + 0.16PG`, where `P/G` indicate
+photosynthesis/plant feeding. Construction pays 1.3 times that upkeep charge,
+plus `0.30max(0,n−1) + 0.30PG` per cell. Thus photosynthesis plus grazing pays
+an extra 0.22 upkeep and 0.886 construction per cell, versus 0.06 and 0.378
+for either other dual combination; all three pay 0.28 and 1.264.
+
+Costs apply even without food for a retained system. They change both resident
+demographics and hypothetical direction scores through the existing shared
+phenotype calculation. Every combination stays legal, and removing an unused
+system removes its costs. Single-system phenotypes keep their earlier budgets.
+Construction carries much of the pressure because excessive upkeep can close
+marginal paths toward specialist consumers entirely. The final coefficients
+are experimental game tuning, not empirical biological constants or fixed
+mutation probabilities.
+
+All rules stay inside `life/v3/`. V1/V2, mutation weights, the one-locus search,
+branching gates, food access, finite budgets, hunting/movement, physical world,
+calendar and browser speed are unchanged. There are no predefined species,
+forced feeding transitions, quotas or new engine APIs. Existing uncommitted
+About/contact work is preserved.
+
+### Validation and limits
+
+Focused checks cover paid mixed-feeding viability, unchanged specialist budgets,
+finite resources, independent replay and prior-revision rejection. The mature
+branching fixture now uses a viable specialist direction at an affordable
+founding density; the overlarge split still fails. Browser checks cover the
+actual intermediate theme frames, input during the effect, rapid changes,
+reduced motion, system choice, sole-species keyboard toggles and persistence
+through live updates and both locales. Screenshots cover both themes at desktop
+and phone widths.
+
+The [V3 validation record](../src/simulation/life/v3/docs/VALIDATION.md) records
+same-world revision 2/3 comparisons at 20 years and final revision 3 observations
+at 40 years. Photosynthesis/grazing disappeared from sampled checkpoints, while
+specialist grazers still emerged and the land introduction produced one omnivore
+and one pure predator. All combinations can grow in controlled suitable niches.
+Two introductions in one world cannot establish universal rarity or calibrated
+balance; the extra costs also affect consumer-emergence timing and diversity.
+Browser inspection is limited to Chromium and cannot validate ecology.
+
+Final verification: `npm run build` and `npm test` passed with 136
+headless/rendering checks, 83 Chromium checks and the existing desktop touch
+duplicate skipped. Intermediate theme frames and expanded/collapsed species
+were inspected in light/dark at desktop/phone widths, including EN/PL and
+keyboard focus. The full suite covers storage failure, disabled controls,
+original assets, responsive overflow and browser/headless equivalence.
+`git diff --check` and the final dependency/scope review passed. No runtime
+dependencies, shared physical rules, artwork or licence changes were introduced.

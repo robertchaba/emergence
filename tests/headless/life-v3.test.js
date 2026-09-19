@@ -77,6 +77,7 @@ test('v3 introduction and incompatible checkpoint rejection are atomic and model
   assert.throws(() => model.inspectSpecies('unknown-species'), RangeError);
   assert.throws(() => restoreLifeModel(world, createV2(world).exportState()), /Incompatible/);
   assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'other-v3-rules' }), /Incompatible/);
+  assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v3-populations-2' }), /Incompatible/);
   const changedWorld = fixture();
   changedWorld.hexes[18].bedElevation -= 1;
   assert.throws(() => restoreLifeModel(changedWorld, introduced), /Incompatible/);
@@ -227,12 +228,12 @@ function matureFeedingDirection(world, incumbent = false) {
   original.introduce(18);
   const state = original.exportState();
   const producer = { ...founderGenome(), temperatureTolerance: 1, depthTolerance: 2 };
-  const consumer = { ...producer, plantFeeding: 1 };
+  const consumer = { ...producer, photosynthesis: 0, plantFeeding: 1 };
   state.species[0].genome = producer;
   state.species[0].candidates = [{ id: 'direction-1', genome: consumer, originDay: 0,
     lastEvaluation: 0, age: EVOLUTION_RULES.persistenceAssessments - 1,
-    support: 1, advantage: 0.05, steps: 1 }];
-  state.populations = [{ ...state.populations[0], count: 150, reserve: deriveGenome(producer).cells }];
+    support: 1, advantage: 0.05, steps: 2 }];
+  state.populations = [{ ...state.populations[0], count: 100, reserve: deriveGenome(producer).cells }];
   state.nextCandidate = 2;
   // Finish just before an assessment, preserving a valid three-per-ten clock.
   state.day = 37; state.biologicalTurns = 11; state.turnCredit = 1;
@@ -254,12 +255,12 @@ test('v3 admits a persistent advantageous feeding direction only as a distinct s
   const snapshot = reconcile(model);
   assert.equal(snapshot.stats.speciations, 1);
   assert.equal(snapshot.counts.species, 2);
-  assert.equal(snapshot.counts.organisms, 150 + snapshot.stats.births - snapshot.stats.deaths,
+  assert.equal(snapshot.counts.organisms, 100 + snapshot.stats.births - snapshot.stats.deaths,
     'naming a lineage transfers existing organisms instead of creating them');
   const parent = snapshot.species.find(row => row.id === 'species-1');
   const child = snapshot.species.find(row => row.parentId === parent.id);
   assert.equal(parent.variants[0].role, 'producer');
-  assert.equal(child.variants[0].role, 'mixed');
+  assert.equal(child.variants[0].role, 'grazer');
   assert.equal(parent.traits.some(trait => trait.key === 'plantFeeding'), false);
   assert.equal(child.traits.find(trait => trait.key === 'plantFeeding').population, child.population);
   const resumed = restoreLifeModel(world, model.exportState());
@@ -290,7 +291,7 @@ test('v3 suppresses a proposed species when its established ecological equivalen
   const snapshot = reconcile(model);
   assert.equal(snapshot.counts.species, 2);
   assert.equal(snapshot.stats.speciations, 0);
-  assert.equal(snapshot.counts.organisms, 160 + snapshot.stats.births - snapshot.stats.deaths);
+  assert.equal(snapshot.counts.organisms, 110 + snapshot.stats.births - snapshot.stats.deaths);
 });
 
 test('v3 a viable feeding change must differ ecologically from its own parent', () => {

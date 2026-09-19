@@ -7,7 +7,7 @@ import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
 
 export const MODEL_ID = 'v3';
-export const RULES_REVISION = 'v3-populations-2';
+export const RULES_REVISION = 'v3-populations-3';
 export const CONTRACT_VERSION = 'life-observations-1';
 const FORMAT = 'emergence-life-v3-checkpoint-1';
 export const EVOLUTION_RULES = Object.freeze({ maximumCandidates: 3, assessmentTurns: 12,

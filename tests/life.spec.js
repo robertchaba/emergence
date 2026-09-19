@@ -6,6 +6,46 @@ import { chooseTheme } from './ui-helpers.js';
 
 const settings = { seed: 'life-browser-check', size: 'small' };
 
+test('a sole species opens by default and remembers a keyboard collapse through updates', async ({ page }, testInfo) => {
+  const world = setDay(generateWorld(settings), 1);
+  const site = suitable(world);
+  const model = createActiveLifeModel(world);
+  model.introduce(site.id);
+  const snapshot = model.observe();
+  await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
+    body: `const observation = ${JSON.stringify(snapshot)};
+      self.onmessage = ({data}) => { if (data.command === 'advance') { observation.day += 1; observation.revision += 1; }
+        self.postMessage({command: data.command, observation}); };`,
+  }));
+  await openLifeWorld(page);
+  await pinHex(page, site, world.width, world.height);
+  const choice = page.locator('.species-choice');
+  await expect(choice).toHaveCount(1);
+  await expect(choice).toHaveAttribute('aria-expanded', 'true');
+  await expect(choice).toHaveAttribute('data-collapsible', 'true');
+  await choice.press('Enter');
+  await expect(choice).toHaveAttribute('aria-expanded', 'false');
+  for (const theme of ['light', 'dark']) {
+    await chooseTheme(page, theme);
+    await page.locator(`[data-locale="${theme === 'light' ? 'en' : 'pl'}"]`).click();
+    await page.locator('#step-world').click();
+    await expect(choice).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#species-detail')).toHaveCount(0);
+    await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+    await choice.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(choice).toHaveCSS('outline-style', 'solid');
+    await page.screenshot({ path: testInfo.outputPath(`sole-species-collapsed-${theme}.png`) });
+    await choice.press('Space');
+    await expect(choice).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#species-detail')).toBeVisible();
+    await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', snapshot.species[0].id);
+    await page.screenshot({ path: testInfo.outputPath(`sole-species-expanded-${theme}.png`) });
+    await choice.press('Enter');
+  }
+});
+
 test('species energy labels, ordered genomes and collapsible details survive live updates', async ({ page }, testInfo) => {
   const world = setDay(generateWorld(settings), 1);
   const site = suitable(world);
@@ -281,9 +321,12 @@ test('plant introduction advances completed biology and prevents resetting livin
   const choice = page.locator('.species-choice');
   await expect(choice).toHaveAttribute('aria-expanded', 'true');
   await choice.click();
-  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
-  await choice.click();
+  await expect(choice).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#species-detail')).toHaveCount(0);
   await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+  await choice.click();
+  await expect(choice).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
   await expect(page.locator('#show-life, #organism-count, #variant-select, #life-processes, .model-badge')).toHaveCount(0);
   await expect(page.locator('.notebook')).not.toContainText(/Life introduced|Life is present|approximated|upkeep cost/);
   await expect(page.locator('#species-detail')).toContainText('Photosynthesis');

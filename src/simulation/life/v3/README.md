@@ -5,9 +5,11 @@ own directories; V3 imports neither implementation and cannot restore their
 checkpoints. It uses the same physical world, climate, 360-day calendar, three
 biological turns per ten days, and browser playback controls.
 
-Rules: `v3-populations-2`. Checkpoint: `emergence-life-v3-checkpoint-1`.
-Revision 2 tunes hunting, movement and ecological distinction; revision 1
-checkpoints are rejected rather than silently continued under different rules.
+Rules: `v3-populations-3`. Checkpoint: `emergence-life-v3-checkpoint-1`.
+Revision 3 charges additional upkeep and construction for mixed feeding,
+especially photosynthesis combined with plant feeding. Single-system costs
+and revision 2's hunting, movement and ecological distinction remain intact.
+Revision 1/2 checkpoints are rejected rather than continued under different rules.
 
 - [Population, ecology and evolution rules](docs/RULES.md)
 - [All 22 genes and their tradeoffs](genes/docs/GENES.md)

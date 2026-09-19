@@ -53,7 +53,8 @@ test('landing loads, both themes render, and the layout fits', async ({ page, re
   await expect(page.locator('#world-setup')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('group', { name: 'Language', exact: true }).getByRole('button', { name: 'PL' })).toBeEnabled();
-  await expect(page.getByRole('link', { name: 'robert.chaba@gmail.com' })).toHaveAttribute('href', 'mailto:robert.chaba@gmail.com');
+  await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'About this project', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Emergence on GitHub' })).toHaveAttribute('href', 'https://github.com/robertchaba/emergence');
   const licenceLink = page.getByRole('link', { name: 'BSD-3-Clause licence' });
   const licence = await request.get(new URL(await licenceLink.getAttribute('href'), page.url()).href);
@@ -69,6 +70,52 @@ test('landing loads, both themes render, and the layout fits', async ({ page, re
   expect(backgrounds[0]).not.toBe(backgrounds[1]);
   expect(errors).toEqual([]);
 });
+
+for (const path of ['/', '/world.html']) {
+  test(`About dialog is localized, scrollable and keyboard accessible on ${path}`, async ({ page }, testInfo) => {
+    await page.goto(path);
+    await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+    for (const theme of ['light', 'dark']) {
+      await chooseTheme(page, theme);
+      for (const locale of ['en', 'pl']) {
+        await page.locator(`[data-locale="${locale}"]`).click();
+        const opener = page.locator('[data-about]');
+        await opener.focus();
+        await page.keyboard.press('Enter');
+        const dialog = page.getByRole('dialog', { name: locale === 'en' ? 'About Emergence' : 'O Emergence', exact: true });
+        await expect(dialog).toBeVisible();
+        await expect(dialog.getByRole('heading')).toBeFocused();
+        await expect(dialog.locator('.about-copy p')).toHaveCount(8);
+        await expect(dialog).toContainText(locale === 'en'
+          ? "OpenAI's Astra model was used extensively while designing the model and creating much of the engine that runs it."
+          : 'Model Astra firmy OpenAI');
+        await page.keyboard.press('Tab');
+        const close = dialog.getByRole('button', { name: locale === 'en' ? 'Close' : 'Zamknij', exact: true });
+        await expect(close).toBeFocused();
+        await expect(close).toHaveCSS('outline-style', 'solid');
+        expect(await dialog.evaluate((element) => {
+          const box = element.getBoundingClientRect();
+          const content = element.querySelector('.about-copy');
+          return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight
+            && content.scrollWidth <= content.clientWidth;
+        })).toBe(true);
+        if (path === '/') await page.screenshot({ path: testInfo.outputPath(`about-${theme}-${locale}.png`) });
+        const profile = dialog.getByRole('link', { name: locale === 'en' ? 'GitHub' : 'GitHubie', exact: true });
+        await expect(profile).toHaveAttribute('href', 'https://github.com/robertchaba');
+        await profile.focus();
+        await expect(profile).toBeInViewport();
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(opener).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(dialog.locator('.about-copy')).toHaveJSProperty('scrollTop', 0);
+        await close.click();
+        await expect(dialog).toBeHidden();
+        await expect(opener).toBeFocused();
+      }
+    }
+  });
+}
 
 test('system changes apply until an explicit choice; reset restores system behavior', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });

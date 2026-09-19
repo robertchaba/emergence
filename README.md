@@ -65,6 +65,8 @@ The application uses plain JavaScript ES modules and native HTML/CSS. Vite and
 Playwright are development dependencies only. System fonts keep the page
 self-contained. Light and dark are complete themes; System follows the device
 preference, and an explicit choice is remembered when browser storage is available.
+Theme changes use a brief neon-like power flicker with uneven dimming and an
+edge glow. Reduced motion switches immediately; rapid choices never stack effects.
 
 The landing page presents the original logo over subtle circular lines, with
 paper grain in light mode and a quiet green glow in dark mode. Theme and language
@@ -73,6 +75,10 @@ choices. **EN / PL** switches between English and Polish on the landing page,
 during setup, and during atlas playback. Language selection is remembered when
 storage is available. Switching language preserves the world, day, playback,
 camera, selected layer, and pinned hex. Without JavaScript, static copy is English.
+
+The **About this project** link in the landing and setup footers opens the project story in a
+scrollable dialog, in English or Polish, with a GitHub profile link for contact.
+Close it with **Close** or **Escape** to return to the page.
 
 ## Explore a world
 
@@ -137,9 +143,10 @@ Pinning a hex reveals compact physical readings and all species living there, or
 an explicit empty-hex message. Species receive stable generated names. Click a
 name to open its compact population count (e.g. 21K) and present genes, and
 outline its whole occupied range;
-click it again to clear the highlight and collapse its details when several species
-share the hex. A sole local species stays open automatically, with highlighting
-still requiring a click. Coloured energy labels distinguish photosynthesis (green),
+click it again to clear the highlight and collapse its details. A sole local
+species starts expanded and can also be collapsed; that choice survives live
+updates and theme/language changes. Reopening highlights its range.
+Coloured energy labels distinguish photosynthesis (green),
 plant feeding (brown), and animal feeding (red); mixed feeders show each source.
 Established traits describe the whole species. Up to three
 possible adaptations appear in a collapsed **Possible adaptations** section.
@@ -212,8 +219,11 @@ there is no automatic conversion or model-selection control.
 See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
 calculation, evolutionary pressure, species criteria and experimental coefficients,
 and [validation](src/simulation/life/v3/docs/VALIDATION.md) for measured limits.
-V3 revision 2 strengthens ecological distinction and increases opportunities
-for carnivory and movement. Species diversity remains an outcome of the world;
+V3 revision 3 adds maintenance and construction costs for mixed feeding, with
+the strongest penalty on photosynthesis plus plant feeding. All combinations
+remain possible; single-system costs and revision 2's hunting/movement rules
+remain unchanged. Older V3 checkpoints are incompatible with the new revision.
+Species diversity remains an outcome of the world;
 there is no fixed count cap. To inspect a 60 × 40 world (now Large) through
 80 simulated years,
 run `node scripts/check-life-v3-balance.js 28800 large emergence water`.
@@ -235,7 +245,7 @@ reports failure if it cannot produce coherent land, rivers, and useful regions.
 
 ## Author and licence
 
-Created by **Robert Chaba** — [robert.chaba@gmail.com](mailto:robert.chaba@gmail.com).
+Created by **Robert Chaba** — [find me on GitHub](https://github.com/robertchaba).
 Repository: [robertchaba/emergence](https://github.com/robertchaba/emergence).
 
 Licensed under the [BSD-3-Clause licence](LICENSE), copyright © 2026 Robert Chaba.

@@ -10,6 +10,8 @@ export const TRAITS = Object.freeze([
 ].map(([key, min, max]) => Object.freeze({ key, min, max })));
 
 export const GENE_RULES = Object.freeze({ mixedSystemPenalty: 0.08,
+  additionalSystemCost: 0.06, additionalSystemConstructionCost: 0.30,
+  photosyntheticGrazingCost: 0.16, photosyntheticGrazingConstructionCost: 0.30,
   movementPhotosynthesisPenalty: 0.06, flightPhotosynthesisPenalty: 0.06 });
 
 const thermalRanges = [[-15, 5], [0, 15], [10, 25], [20, 35], [30, 45]];
@@ -88,6 +90,10 @@ export function deriveGenome(g) {
   const covering = coverings[g.armorType];
   const systems = g.photosynthesis + g.plantFeeding + g.animalFeeding;
   const allocation = 1 / ((systems || 1) * (1 + GENE_RULES.mixedSystemPenalty * Math.max(0, systems - 1)));
+  // Maintaining distinct acquisition machinery is paid even when one source
+  // supplies no food. Photosynthetic grazing has the strongest incompatibility.
+  const mixedCost = GENE_RULES.additionalSystemCost * Math.max(0, systems - 1)
+    + GENE_RULES.photosyntheticGrazingCost * g.photosynthesis * g.plantFeeding;
   const thermalCost = g.temperatureTolerance === null ? 0 : 0.02 + 0.008 * Math.abs(g.temperatureTolerance);
   const traitCost = 0.025 * g.photosynthesis + thermalCost + 0.012 * g.landAdaptation
     + 0.015 * g.trunk + 0.016 * g.movement ** 1.4 + 0.022 * g.plantFeeding + 0.038 * g.animalFeeding
@@ -95,8 +101,10 @@ export function deriveGenome(g) {
     + 0.025 * g.biteForce ** 1.2 + structure.upkeep + covering.upkeep
     + 0.023 * g.armor ** 1.3 * covering.protection + 0.065 * g.flight ** 1.4
     + 0.006 * g.eyesight + 0.02 * g.echolocation + 0.015 * g.thermalSensing
-    + 0.018 * g.sexualReproduction + 0.035 * g.elevationTolerance + 0.025 * g.depthTolerance;
+    + 0.018 * g.sexualReproduction + 0.035 * g.elevationTolerance + 0.025 * g.depthTolerance + mixedCost;
   const construction = 1 + 0.08 * (g.size - 1) + 1.3 * traitCost
+    + GENE_RULES.additionalSystemConstructionCost * Math.max(0, systems - 1)
+    + GENE_RULES.photosyntheticGrazingConstructionCost * g.photosynthesis * g.plantFeeding
     + structure.construction + covering.construction + 0.035 * g.trunk
     + 0.035 * g.movement + 0.035 * g.armor + 0.07 * g.flight;
   const flightEfficiency = g.movement ? g.flight * structure.flight
