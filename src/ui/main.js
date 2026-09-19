@@ -2,7 +2,9 @@ import { initTheme } from './theme.js';
 import { initLocale } from './locale.js';
 import { initWorldUI } from './world-ui.js';
 import { initAbout } from './about.js';
+import { initAnalytics } from './analytics.js';
 
+initAnalytics();
 initLocale();
 initTheme();
 initAbout();

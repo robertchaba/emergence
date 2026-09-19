@@ -83,6 +83,10 @@ links, so GitHub Pages publishing directly from the repository root works.
 The browser suite checks both arrangements under a strict subdirectory mount.
 Preview is a local verification server.
 
+Google tag `G-45PVLVFBRP` loads only on the HTTPS origin
+`https://robertchaba.github.io` under `/emergence/`, including the world page.
+Local development, previews, forks and other hosting paths do not load the tag.
+
 ## Project layout
 
 ```text

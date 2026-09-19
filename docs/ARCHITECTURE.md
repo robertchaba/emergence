@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Relative publishing paths and animated life silhouettes — 2026-09-19.**
+**Current: Google tag restricted to the public deployment — 2026-09-19.**
+Decision 054 adds the requested analytics tag only under the exact HTTPS
+GitHub Pages origin and `/emergence/` path.
+
+**Relative publishing paths and animated life silhouettes — 2026-09-19.**
 Decision 052 fixes source-page subdirectory links and adds detailed, illustrative
 population silhouettes with curved motion at closer map zoom.
 
@@ -2624,3 +2628,37 @@ Validation: `npm run build`, `npm test` and `git diff --check` passed, including
 89 Chromium checks and one existing skip. Final diff review confirms that the
 previous README details are preserved. Browser coverage is limited to Chromium;
 this documentation change makes no new biological-validation claim.
+
+
+## 054 — Google tag restricted to the public deployment — 2026-09-19
+
+The requested Google tag `G-45PVLVFBRP` initializes from the shared browser
+entry point only when `location.origin` is exactly
+`https://robertchaba.github.io` and the pathname starts with `/emergence/`.
+This includes the landing page, explicit `index.html`, and `world.html`, with
+query strings and fragments allowed. HTTP, non-default ports, other hosts,
+forks, localhost and other paths leave both the remote script and analytics
+globals absent. The trailing slash prevents matching `/emergence-preview/`.
+
+`src/ui/analytics.js` queues the supplied `js` and `config` commands, then
+appends the asynchronous Google script to the document head. Browser location,
+DOM access and the analytics timestamp stay in UI; simulation and rendering
+have no analytics dependency. No custom simulation events are added.
+
+**Qualifies 002's external-service statement:** the public deployment now
+optionally loads Google's analytics service. The application still runs
+without it; no runtime package or backend is introduced. Local/static copies
+outside the allowed URL retain their existing self-contained operation.
+
+Focused Chromium checks serve the actual build at allowed and disallowed
+browser URLs, verify the async script and initialization commands, and stub
+external requests so test runs send no analytics events. These checks verify
+the deployment gate, not receipt of events in the Google Analytics account.
+
+Validation: `npm run build` and `npm test` passed with 137 headless/rendering
+checks and 113 Chromium checks, including 24 analytics cases, plus one existing
+skip. The browser suite covers both themes, desktop/phone layouts, keyboard
+focus, assets and disabled controls. Both Vite development pages initialized
+without errors and without analytics globals. `git diff --check` and the final
+scope/dependency review passed. No deployment or live analytics-account
+verification was performed.
