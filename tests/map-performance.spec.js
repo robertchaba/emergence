@@ -12,6 +12,10 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
     contentType: 'text/javascript',
     body: readFileSync(new URL('../src/rendering/territory.js', import.meta.url), 'utf8'),
   }));
+  await page.route('**/life-marks.js', route => route.fulfill({
+    contentType: 'text/javascript',
+    body: readFileSync(new URL('../src/rendering/life-marks.js', import.meta.url), 'utf8'),
+  }));
   await page.goto('/');
   const geography = generateWorld({ seed: 'seasonal-rendering', size: 'small', waterAbundance: 1 });
   const snapshots = [0, 1, 45, 90, 180, 270, 359, 360].map(day => setDay(geography, day));

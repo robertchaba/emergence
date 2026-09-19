@@ -1,7 +1,7 @@
 # Rendering boundary
 
 The [life rendering notes](LIFE.md) describe implemented producer tinting,
-size-scaled aggregate dots, selected-species occupancy, and their original
+size-scaled population silhouettes, selected-species occupancy, and their original
 provisional brief. Rendering consumes the
 [common life observations](../simulation/life/CONTRACT.md), independently of a
 model's internal organism/cohort representation.
@@ -13,7 +13,11 @@ coordinates. Wrapped connections are clipped at both cylindrical edges.
 Optional `life`, `showLife` and `selectedSpeciesId` draw completed life observations
 without modifying physical geography. Role colours and both selection styles
 come from resolved theme tokens. Marker work is capped at thirty per occupied hex,
-with fewer at low zoom; dots are samples, not literal organism counts.
+with fewer at low zoom; marks are samples, not literal organism counts.
+`life-marks.js` owns cosmetic paths and the zoom-dependent drawing grammar:
+plant rosettes, rounded grazers, pointed predators and segmented mixed feeders.
+Observed habitat selects swimming tails/fins or stepping limbs for mobile groups.
+It reads no genes and consumes no biological randomness; anatomy is illustrative.
 
 `cover(world)` fills the viewport; `fit()` reveals every complete edge hex.
 During climate playback, UI also supplies the original read-only `geography`

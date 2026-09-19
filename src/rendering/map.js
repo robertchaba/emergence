@@ -1,6 +1,7 @@
 /* Read-only Canvas 2D presentation. UI supplies resolved CSS tokens, the camera,
    and snapshots. No browser style access, events, or simulation imports here. */
 import { territoryContours } from './territory.js';
+import { LIFE_MARKER_LIMIT, lifeMarkerPositions, drawLifeMarker } from './life-marks.js';
 const ROOT_THREE = Math.sqrt(3);
 const CORNERS = Array.from({ length: 6 }, (_, index) => {
   const angle = (index * 60 - 30) * Math.PI / 180;
@@ -14,50 +15,13 @@ export const MAP_TOKEN_NAMES = Object.freeze([
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
   'life-producer', 'life-plant', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
-  'life-selected', 'life-selected-fill', 'life-selection-halo', 'life-variant', 'life-variant-fill',
+  'life-detail', 'life-selected', 'life-selected-fill', 'life-selection-halo', 'life-variant', 'life-variant-fill',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
 ].map((name) => `--map-${name}`));
 
 const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
 const modulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
 const LIFE_ROLES = ['producer', 'grazer', 'predator', 'mixed', 'other'];
-const LIFE_MARKER_LIMIT = 30;
-
-// Cosmetic hashing never touches biological randomness. Each representative has
-// its own bounded sequence of positions inside the hex, independent of the camera.
-function markerPoint(seed, step) {
-  const hash = salt => {
-    let value = Math.imul(seed ^ Math.imul(step + 1, 1597334677) ^ salt, 2246822507);
-    value = Math.imul(value ^ (value >>> 16), 3266489909);
-    return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
-  };
-  const angle = hash(374761393) * Math.PI * 2;
-  const radius = Math.sqrt(hash(668265263)) * 0.66;
-  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
-}
-
-function lifeMarkerPositions(hexId) {
-  return Array.from({ length: LIFE_MARKER_LIMIT }, (_, index) => {
-    const seed = Math.imul(hexId + 1, 2654435761) ^ Math.imul(index + 1, 1597334677);
-    return { seed, offset: (seed >>> 0) / 4294967296 * 12 };
-  });
-}
-
-function animatedMarker(marker, slot, time) {
-  const clock = (time + slot.offset) / (marker.mobile ? 3.5 : 12);
-  const step = Math.floor(clock);
-  const progress = clock - step;
-  const from = markerPoint(slot.seed, step);
-  if (!marker.mobile) {
-    // Plants stay rooted: fade out and reappear elsewhere instead of crawling.
-    return { ...from, opacity: Math.min(1, progress * 12, (1 - progress) * 12) };
-  }
-  const to = markerPoint(slot.seed, step + 1);
-  const blend = progress * progress * (3 - 2 * progress);
-  return { x: from.x + (to.x - from.x) * blend,
-    y: from.y + (to.y - from.y) * blend, opacity: 1 };
-}
-
 function lifeSummary(observation) {
   const summaries = new Map();
   for (const hex of observation?.hexes ?? []) {
@@ -74,8 +38,9 @@ function lifeSummary(observation) {
         if (display.habitat === 'water') producerWater += display.population;
         else producerLand += display.population;
       }
-      const key = `${role}:${display.habitat === 'water' ? 'water' : 'land'}:${mobile}`;
-      const group = groups.get(key) ?? { key, role, mobile, population: 0, weightedSize: 0 };
+      const habitat = display.habitat === 'water' ? 'water' : 'land';
+      const key = `${role}:${habitat}:${mobile}`;
+      const group = groups.get(key) ?? { key, role, habitat, mobile, population: 0, weightedSize: 0 };
       group.population += display.population;
       group.weightedSize += size * display.population;
       groups.set(key, group);
@@ -90,7 +55,7 @@ function lifeSummary(observation) {
     const markers = [];
     for (let sample = 0; sample < 10 && markers.length < LIFE_MARKER_LIMIT; sample += 1) {
       for (const group of ordered) {
-        if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, size: group.size, mobile: group.mobile });
+        if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, habitat: group.habitat, size: group.size, mobile: group.mobile });
       }
     }
     const tint = Math.min(0.48, Math.min(0.44, Math.log1p(producerLand) / 26) + Math.min(0.20, Math.log1p(producerWater) / 40));
@@ -651,30 +616,7 @@ export function createMapRenderer(canvas, { tokens }) {
         const positions = geometry.get(id);
         const markerLimit = view.scale < 7 ? 6 : view.scale < 15 ? 15 : LIFE_MARKER_LIMIT;
         for (let index = 0; index < Math.min(markerLimit, markers.length); index += 1) {
-          const marker = markers[index];
-          const plant = marker.role === 'producer' && !marker.mobile;
-          const point = animatedMarker(marker, positions[index], motionTime);
-          const radius = clamp(view.scale * (0.024 + marker.size * 0.055) * (plant ? 0.8 : 1), 0.4, 3.5);
-          const phase = motionTime * 1.8 + id * 0.7 + index * 2.4;
-          const cx = x + point.x * view.scale;
-          const cy = y + point.y * view.scale;
-          context.globalAlpha = point.opacity;
-          // Appendages use the body's own colour, without an enclosing outline.
-          if (marker.mobile && view.scale >= 12) {
-            context.beginPath();
-            for (let leg = 0; leg < 6; leg += 1) {
-              const angle = leg * Math.PI / 3 + Math.sin(phase * 3 + leg) * 0.18;
-              context.moveTo(cx + Math.cos(angle) * radius * 0.6, cy + Math.sin(angle) * radius * 0.6);
-              context.lineTo(cx + Math.cos(angle + 0.2) * radius * 1.7, cy + Math.sin(angle + 0.2) * radius * 1.7);
-            }
-            context.strokeStyle = palette[`life-${marker.role}`];
-            context.lineWidth = clamp(radius * 0.2, 0.5, 1.1);
-            context.stroke();
-          }
-          context.beginPath();
-          context.arc(cx, cy, radius, 0, Math.PI * 2);
-          context.fillStyle = palette[plant ? 'life-plant' : `life-${marker.role}`];
-          context.fill();
+          drawLifeMarker(context, markers[index], positions[index], motionTime, x, y, view.scale, palette);
         }
         context.globalAlpha = 1;
       }

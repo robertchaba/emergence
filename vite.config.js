@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  // Keep pages, CSS, artwork and worker chunks portable to /emergence/ or any static subdirectory.
   base: './',
   build: {
     rolldownOptions: { input: { landing: 'index.html', world: 'world.html' } },

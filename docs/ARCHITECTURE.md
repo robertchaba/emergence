@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Theme flicker, universal species collapsing and mixed-feeding costs — 2026-09-19.**
+**Current: Relative publishing paths and animated life silhouettes — 2026-09-19.**
+Decision 052 fixes source-page subdirectory links and adds detailed, illustrative
+population silhouettes with curved motion at closer map zoom.
+
+**Theme flicker, universal species collapsing and mixed-feeding costs — 2026-09-19.**
 Decision 051 adds a brief neon-like theme effect, lets a sole species collapse,
 and activates V3 revision 3's stronger mixed-feeding tradeoffs.
 
@@ -2546,3 +2550,63 @@ keyboard focus. The full suite covers storage failure, disabled controls,
 original assets, responsive overflow and browser/headless equivalence.
 `git diff --check` and the final dependency/scope review passed. No runtime
 dependencies, shared physical rules, artwork or licence changes were introduced.
+
+
+## 052 — Relative publishing paths and animated life silhouettes — 2026-09-19
+
+The user requests correct publishing at `robertchaba.github.io/emergence/` and
+more interesting life visualization, especially animals. The live site was
+serving unbundled source HTML with `/src/` and `/resources/` links pointing outside
+the repository subdirectory. Both HTML entries now use `./` asset references.
+Vite's existing `base: './'` remains explicit, as do the relative navigation,
+licence and module-relative worker URLs. This supports direct source publishing
+as well as the recommended `dist/` build without hardcoding a hosting directory.
+There is no deployment, remote-setting change, backend or new dependency.
+
+**Supersedes 042's close-view dots/radial appendages, straight mobile paths and
+fixed eight-update animation cadence.** Rendering retains simple marks at wide
+views and reveals plant rosettes plus rounded grazer, pointed predator and
+segmented mixed/other silhouettes on zoom. Observed water habitat selects curved
+tails and fins; land selects alternating bent limbs for mobile groups. Bodies
+face the derivative of joined quadratic paths, whose shared tangents avoid
+abrupt changes at waypoint boundaries. Stationary consumers stay fixed; stationary
+producers retain fading, renewing patches. These are artistic population symbols,
+not a claim about evolved anatomy, species identity or individual journeys.
+
+`life-marks.js` owns cosmetic geometry and drawing. `map.js` retains aggregation,
+culling, damage repainting and selections, now preserving display habitat in
+marker summaries. Population-independent budgets remain 30 per hex, reduced to
+six/fifteen at wide zoom. Consumer base radius caps at six CSS pixels, plants at
+3.5; bounded appendages remain inside occupied cells. The new engraving colour
+is a root CSS token in both explicit themes and synchronized system fallback.
+Producer coverage, diagnostic fills and role-colour meanings are retained.
+
+The UI cosmetic clock uses up to 24 updates/s at zoom ≥3×, otherwise eight.
+Pause, document visibility and reduced motion continue to gate it. Simulation
+cadence, browser speed meanings, biological randomness, counts and rules are
+unchanged. Rendering reads only the common observations and supplied tokens;
+no engine implementation, gene interpretation, state migration or new ecological
+rule is involved. Research, original artwork and full licence remain preserved.
+
+Validation and limitations: focused renderer checks cover deterministic bounded
+paths and continuous headings, stationary consumers, habitat/role differentiation,
+zoom detail, fixed drawing budgets, camera invariance and frozen observations.
+A strict local static server checks both source and built pages in subdirectories,
+including artwork, navigation, direct entry, licence and both workers, returning
+404 for requests outside the mount. Canvas screenshots cover controlled consumer
+and producer observations in both themes at desktop and phone widths. These
+fixtures illustrate drawing only; shapes do not establish actual anatomy and
+browser checks do not validate ecology. Remote publishing remains a separate step.
+
+
+Final verification: `npm run build` and `npm test` passed with 137 headless/
+rendering checks, 89 Chromium checks and the existing desktop touch duplicate
+skipped. Light/dark population fixtures and the actual notebook/atlas were
+visually inspected at desktop and phone widths, including selection, readable
+wrapping, controls and original assets. Existing browser checks cover keyboard
+focus, disabled controls, reduced motion, both locales, storage failure and
+browser/headless equivalence. The Vite development server loaded both entry
+pages and initialized generation/life workers without browser errors.
+`git diff --check` and the final scope/dependency review passed. Browser validation
+is limited to Chromium; neither actual GitHub deployment nor cross-browser
+numerical equivalence was tested by this local change.

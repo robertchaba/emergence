@@ -5,6 +5,7 @@ import { territoryContours } from '../src/rendering/territory.js';
 import { createGrid } from '../src/simulation/grid.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../src/rendering/map.js';
 import { createLifeTrendSvg } from '../src/rendering/life-trend.js';
+import { lifeMarkerPositions, lifeMarkerPose, drawLifeMarker } from '../src/rendering/life-marks.js';
 
 const style = readFileSync(new URL('../src/ui/styles/tokens.css', import.meta.url), 'utf8');
 const tokenValue = (name) => {
@@ -356,7 +357,7 @@ test('life markers use a bounded population-independent budget and fixed world p
     const markerColors = ['plant', 'grazer', 'predator', 'mixed', 'other'].map(role => tokens[`--map-life-${role}`]);
     const markerCount = fills.filter(fill => markerColors.includes(fill)).length;
     assert.ok(markerCount > 0 && markerCount <= 30, `marker budget ${markerCount}`);
-    return calls.filter(([method]) => method === 'arc').slice(-markerCount);
+    return calls.filter(([method]) => method === 'translate').slice(-markerCount);
   };
   const camera = map.fit();
   const markers = capture(camera);
@@ -373,37 +374,52 @@ test('life markers use a bounded population-independent budget and fixed world p
   }
 });
 
-test('smaller, denser plant dots change patches while mobile markers travel smoothly within their hex', () => {
-  const { map, calls, fills } = renderer();
-  const world = fixture();
-  const camera = map.fit();
-  const plant = lifeFixture({ population: 100000, size: 0.7 });
-  const mobile = freezeDeep({ ...plant, hexes: plant.hexes.map(hex => ({ ...hex,
-    display: hex.display.map(group => ({ ...group, mobile: true })) })) });
-  const origin = map.cellCenter(world, 10, camera);
-  const neighbor = map.cellCenter(world, 11, camera);
-  const hexRadius = Math.abs(neighbor.x - origin.x) / Math.sqrt(3);
-  function positions(life, motionTime) {
-    map.setTokens(tokens); calls.length = 0; fills.length = 0;
-    map.draw(world, { geography: world, camera, life, motionTime });
-    const marks = calls.filter(([method]) => method === 'arc').slice(1); // skip river spring
-    for (const [, x, y, radius] of marks) {
-      assert.ok(radius <= 3.5);
-      assert.ok(Math.hypot(x - origin.x, y - origin.y) + radius < hexRadius * 0.87);
+test('population poses stay bounded, deterministic and smoothly oriented, while stationary consumers stay still', () => {
+  const positions = lifeMarkerPositions(10);
+  const plant = { role: 'producer', mobile: false };
+  const animal = { role: 'grazer', mobile: true };
+  const stationary = { role: 'grazer', mobile: false };
+  for (const slot of positions) {
+    const rooted = lifeMarkerPose(plant, slot, 0);
+    assert.deepEqual(lifeMarkerPose(plant, slot, 0), rooted);
+    assert.notDeepEqual(lifeMarkerPose(plant, slot, 12), rooted);
+    assert.deepEqual(lifeMarkerPose(stationary, slot, 20), lifeMarkerPose(stationary, slot, 0));
+    for (let time = 0; time < 50; time += 0.125) {
+      const pose = lifeMarkerPose(animal, slot, time);
+      const next = lifeMarkerPose(animal, slot, time + 0.00001);
+      assert.ok(Math.hypot(pose.x, pose.y) <= 0.66);
+      assert.ok(Math.hypot(next.x - pose.x, next.y - pose.y) < 0.00001);
+      const tangent = Math.atan2(next.y - pose.y, next.x - pose.x);
+      assert.ok(Math.cos(tangent - pose.heading) > 0.999, 'body faces its path');
     }
-    return marks;
+    const boundary = 35 - slot.offset;
+    const before = lifeMarkerPose(animal, slot, boundary - 0.00001);
+    const after = lifeMarkerPose(animal, slot, boundary + 0.00001);
+    assert.ok(Math.hypot(after.x - before.x, after.y - before.y) < 0.00001);
+    assert.ok(Math.cos(after.heading - before.heading) > 0.999, 'turns join smoothly');
   }
-  const plants = positions(plant, 0);
-  assert.equal(plants.length, 10, 'abundant groups previously had only four dots');
-  assert.ok(fills.includes(tokens['--map-life-plant']), 'stationary plants use translucent theme colour');
-  assert.notDeepEqual(positions(plant, 12), plants, 'stationary patches are renewed');
-  assert.deepEqual(positions(plant, 0), plants, 'placement is reproducible, without mutable random state');
-  const moving = positions(mobile, 0);
-  const next = positions(mobile, 0.125);
-  assert.notDeepEqual(moving, next);
-  for (let index = 0; index < moving.length; index += 1) {
-    assert.ok(Math.hypot(moving[index][1] - next[index][1], moving[index][2] - next[index][2]) < hexRadius * 0.08);
-  }
+});
+
+test('life silhouettes distinguish habitat and role, reveal detail on zoom, and keep bounded drawing work', () => {
+  const palette = Object.fromEntries(Object.entries(tokens).map(([key, value]) => [key.slice(6), value]));
+  const slot = lifeMarkerPositions(10)[0];
+  const capture = (marker, scale = 60, time = 1) => {
+    const calls = [];
+    const context = new Proxy({}, { get: (target, key) => target[key] ?? ((...args) => calls.push([key, ...args])) });
+    drawLifeMarker(context, marker, slot, time, 0, 0, scale, palette);
+    assert.ok(calls.length < 65, 'fixed work per representative, regardless of population');
+    return calls;
+  };
+  const land = { role: 'grazer', size: 0.8, mobile: true, habitat: 'land' };
+  const water = { ...land, habitat: 'water' };
+  assert.ok(capture(land).some(([key]) => key === 'lineTo'), 'stepping limbs');
+  assert.ok(capture(water).some(([key]) => key === 'bezierCurveTo'), 'flowing tail');
+  assert.notDeepEqual(capture(land), capture(water));
+  assert.notDeepEqual(capture(land), capture({ ...land, role: 'predator' }));
+  assert.notDeepEqual(capture(land), capture(land, 60, 1.125));
+  assert.deepEqual(capture(land), capture(land), 'frozen cosmetic time freezes pose');
+  assert.equal(capture(land, 8).filter(([key]) => key === 'arc').length, 1);
+  assert.equal(capture({ ...land, role: 'producer', mobile: false }).filter(([key]) => key === 'ellipse').length, 3);
 });
 
 test('independent trend scales retain small living counts alongside large extinct counts and occupied areas', () => {
@@ -458,15 +474,15 @@ test('species highlighting covers every occupied hex and cosmetic movement leave
   map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1' });
   assert.equal(strokes.filter(color => color === tokens['--map-life-selected']).length, 1);
   assert.ok(strokes.includes(tokens['--map-life-grazer']), 'legs use the body colour');
-  const first = calls.filter(([method]) => method === 'arc');
+  const first = calls.filter(([method]) => method === 'translate');
   calls.length = 0;
   fills.length = 0;
   map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1', motionTime: 0.5 });
   assert.ok(fills.length > 0, 'motion repaints the affected area even at the same biological day');
-  assert.notDeepEqual(calls.filter(([method]) => method === 'arc'), first);
+  assert.notDeepEqual(calls.filter(([method]) => method === 'translate'), first);
   calls.length = 0;
   map.draw(world, { geography: world, life, camera, selectedSpeciesId: 'species-1', motionTime: 0.5 });
-  assert.equal(calls.some(([method]) => method === 'arc'), false, 'paused motion reuses the frame');
+  assert.equal(calls.some(([method]) => method === 'translate'), false, 'paused motion reuses the frame');
   assert.equal(JSON.stringify(life), before);
 });
 

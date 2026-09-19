@@ -39,8 +39,12 @@ On Linux CI, `npx playwright install --with-deps chromium` also installs browser
 system dependencies. `npm test` owns port 4173: stop a running preview first.
 Test failures save screenshots and traces under `test-results/`.
 
-Deploy the contents of `dist/` to a static host. Asset paths are relative so a
-subdirectory deployment works. Preview is a local verification server.
+Deploy the contents of `dist/` to a static host. Pages, artwork, styles, scripts,
+workers and licence links use relative paths, including at
+`https://robertchaba.github.io/emergence/`. The source HTML also uses relative
+links, so GitHub Pages publishing directly from the repository root works.
+The browser suite checks both arrangements under a strict subdirectory mount.
+Preview is a local verification server.
 
 ## Project layout
 
@@ -164,13 +168,18 @@ languages. Live numerical readouts ease between observations over a brief transi
 reduced-motion preferences show each new value immediately. Selecting another hex
 or species shows its values immediately. This animation only changes presentation.
 
-Life always appears on the map as vivid green producer coverage at every body size and coloured dots
-without dark outlines. Bare land uses softly warm stone greys in both themes.
-Dots are smaller and more numerous, with softer translucent marks for stationary
-plants. Plant marks fade and reappear in scattered positions; mobile groups travel
-smoothly within each hex and have small appendages at closer zoom. Animation
-stops while paused, hidden, or using reduced motion. These marks represent
-population groups. On phones, pinning scrolls the local record into view; the
+Life always appears on the map as vivid green producer coverage at every body
+size. Zoom in to reveal small plant rosettes and animal silhouettes: rounded
+bodies for grazers, pointed bodies for predators, and engraved segments for mixed
+feeders. Mobile land groups step along curved paths; water groups swim with
+undulating tails and fins. Bodies face their direction of travel. Wide views keep
+simple coloured marks; details grow with body size and zoom, without dark outlines.
+Stationary plants fade and renew their patches, while stationary consumers stay
+still. Animation stops while paused, hidden, or using reduced motion, with smoother
+motion at closer zoom. The marks are illustrative population samples, not tracked
+individuals, measured anatomy or exact journeys; they stay inside occupied hexes.
+Bare land keeps its softly warm stone greys in both themes.
+On phones, pinning scrolls the local record into view; the
 notebook scrolls independently. Theme and language changes preserve the run and
 selection. Returning to setup and starting another world resets to day 1.
 

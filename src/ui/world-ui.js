@@ -423,8 +423,11 @@ export function initWorldUI() {
   // Every biological day executes; only completed observations reach the map.
   // The engine never reads this clock, and hidden tabs do not catch up.
   function animateClimate(timestamp) {
+    // Closer views reveal limbs and turning bodies; spend extra frames only
+    // there, where viewport culling also keeps the visible population small.
+    const motionInterval = camera.zoom >= 3 ? 1000 / 24 : 125;
     if (!workspace.hidden && !document.hidden && playing && hasVisibleLife && !reducedMotion.matches
-      && timestamp - lastMotionFrame >= 125) {
+      && timestamp - lastMotionFrame >= motionInterval) {
       motionTime += Math.min(0.125, (timestamp - lastMotionFrame) / 1000);
       lastMotionFrame = timestamp;
       queueDraw();

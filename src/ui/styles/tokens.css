@@ -93,6 +93,7 @@
   --map-life-predator: #a94237;
   --map-life-mixed: #795184;
   --map-life-other: #4a737d;
+  --map-life-detail: rgb(255 249 221 / 70%);
   --map-life-selected: #f5edd0;
   --map-life-selected-fill: rgb(245 237 208 / 6%);
   --map-life-selection-halo: rgb(26 55 39 / 70%);
@@ -213,6 +214,7 @@
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
   --map-life-other: #9bcbd1;
+  --map-life-detail: rgb(255 249 221 / 70%);
   --map-life-selected: #f5edd0;
   --map-life-selected-fill: rgb(245 237 208 / 6%);
   --map-life-selection-halo: rgb(17 34 27 / 75%);
@@ -335,6 +337,7 @@
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
   --map-life-other: #9bcbd1;
+  --map-life-detail: rgb(255 249 221 / 70%);
   --map-life-selected: #f5edd0;
   --map-life-selected-fill: rgb(245 237 208 / 6%);
   --map-life-selection-halo: rgb(17 34 27 / 75%);

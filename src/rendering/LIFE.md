@@ -1,5 +1,40 @@
 # Life rendering
 
+## Population silhouettes and curved motion — 2026-09-19
+
+Decision 052 supersedes 042's all-dot close views, radial mobile appendages,
+straight waypoint interpolation and eight-update close-view ceiling. Low zoom
+keeps simple dots, with the same 6 / 15 / 30 per-hex budget and abundance sampling.
+At closer zoom, stationary larger producers become translucent three-leaf rosettes;
+consumers become small illustrative silhouettes with rounded grazer bodies,
+pointed predator bodies and dorsal segments for mixed/other roles. Body size
+still scales marks, with a six-pixel consumer base radius cap and the existing
+3.5-pixel plant cap. There are no enclosing dark outlines. A root-defined
+`--map-life-detail` token supplies the light engraving in both themes and the
+system fallback; all other role colours and coverage meanings are retained.
+
+Mobile land groups have alternating bent limbs; mobile water groups have curved
+tails and fins. This uses the supplied display habitat, role, size and mobility,
+not model genomes or invented species. All anatomy is schematic. Groups remain
+pooled by role/habitat/mobility, not individually tracked or identified by shape.
+Joined quadratic curves give continuous positions and tangents; bodies turn to
+face the local path. Their convex hull and bounded appendage lengths keep them
+inside the occupied hex. No trails or journeys between hexes are inferred.
+Stationary producers keep scattered fade/renewal, while stationary consumers keep
+fixed positions. Neither idle consumers nor reduced-motion views animate limbs.
+
+UI supplies at most eight cosmetic updates per second at wide views and 24 when
+camera zoom reaches 3×. Pause, hidden tabs and reduced motion freeze this clock.
+The renderer remains read-only, caches the same bounded summaries, and repaints
+changed cells through the existing damage path. All biological state, randomness,
+counts, climate and actual inter-hex dispersal are unchanged.
+
+Validation covers deterministic bounded paths, tangent continuity, fixed
+stationary consumers, habitat/role distinction, drawing budgets, zoom detail,
+frozen observations, paused frames and damage repaint equivalence. Controlled
+common-observation screenshots cover both themes on desktop and phone; they are
+rendering fixtures, not evidence of naturally evolved species or calibrated biology.
+
 ## Compact notebook and all-size producer coverage — 2026-09-19
 
 Decision 047 supersedes the portrait, adaptation note and tiny-producer-only
