@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const tagURL = 'https://www.googletagmanager.com/gtag/js?id=G-45PVLVFBRP';
+const tagURL = 'https://www.googletagmanager.com/gtag/js?id=G-YWYZTQZ4V3';
 
 // Serve the real build at each browser URL, stubbing all external traffic.
 // These checks never load Google's script or send real analytics events.
@@ -34,7 +34,7 @@ for (const path of ['', 'index.html?source=test#main', 'world.html']) {
     expect(await page.evaluate(() => ({
       commands: window.dataLayer.map(args => [...args].map(value => value instanceof Date ? 'date' : value)),
       gtag: typeof window.gtag,
-    }))).toEqual({ commands: [['js', 'date'], ['config', 'G-45PVLVFBRP']], gtag: 'function' });
+    }))).toEqual({ commands: [['js', 'date'], ['config', 'G-YWYZTQZ4V3']], gtag: 'function' });
   });
 }
 

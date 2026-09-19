@@ -6,10 +6,10 @@ export function initAnalytics() {
   window.dataLayer = window.dataLayer || [];
   window.gtag = function gtag() { window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
-  window.gtag('config', 'G-45PVLVFBRP');
+  window.gtag('config', 'G-YWYZTQZ4V3');
 
   const script = document.createElement('script');
   script.async = true;
-  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-45PVLVFBRP';
+  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-YWYZTQZ4V3';
   document.head.append(script);
 }

@@ -2662,3 +2662,17 @@ focus, assets and disabled controls. Both Vite development pages initialized
 without errors and without analytics globals. `git diff --check` and the final
 scope/dependency review passed. No deployment or live analytics-account
 verification was performed.
+
+
+## 055 — Replace the Google tag ID — 2026-09-19
+
+At the user's request, `G-YWYZTQZ4V3` replaces `G-45PVLVFBRP` in both the
+Google script URL and the configuration command. This supersedes only the tag
+ID in 054; its exact HTTPS origin and `/emergence/` path restriction remain.
+The README and existing browser expectations use the new ID. This change stays
+within the browser adapter and does not alter simulation or rendering.
+
+Validation: `npm run build`, `npm test` and `git diff --check` passed, with
+137 headless/rendering checks and 113 Chromium checks plus one existing skip.
+The analytics checks verify the new ID and the preserved URL restriction using
+stubbed external requests; live analytics receipt and deployment were not tested.
