@@ -39,7 +39,7 @@ export function createLifeTrendSvg(samples = [], { metric = 'species', series, l
       const base = [...lower].reverse().map((point, index) => index ? `V${point.y}H${point.x}` : `L${point.x} ${point.y}`).join('');
       const end = points.at(-1)[key] > 0
         ? `<path data-energy="${escapeAttribute(key)}" d="M${last.x} ${lower.at(-1).y}V${upper.at(-1).y}" fill="none" stroke="currentColor" stroke-width="3"/>` : '';
-      return `<path class="life-trend-band" data-energy="${escapeAttribute(key)}" d="${top}${base}Z" fill="currentColor"/>${end}`;
+      return `<path class="life-trend-band" data-energy="${escapeAttribute(key)}" d="${top}${base}Z" fill="currentColor"/><path class="life-trend-line" data-energy="${escapeAttribute(key)}" d="${top}" fill="none" stroke="currentColor" stroke-width="1.2"/>${end}`;
     }).join('');
   }
   const accessibility = label === undefined ? 'aria-hidden="true"' : `role="img" aria-label="${escapeAttribute(label)}"`;

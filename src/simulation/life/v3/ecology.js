@@ -5,7 +5,8 @@ const outside = (value, range) => Math.max(range[0] - value, value - range[1], 0
 export const ECOLOGY_RULES = Object.freeze({ lightBudget: 2400, waterLightBudget: 2000,
   photosynthesisRate: 1.6, grazingFraction: 0.45, preyFraction: 0.12,
   conversion: 0.6, backgroundMortality: 0.008, reproductionRate: 0.18,
-  huntingEffort: 2.8, captureBase: 0.5, captureSpeed: 0.14 });
+  huntingEffort: 3.2, captureBase: 0.5, captureSpeed: 0.14,
+  stationaryForaging: 1, movementForaging: 0.7 });
 
 export const hasWater = hex => hex.waterType !== 'none' || hex.runoff > 0;
 export const hasLand = hex => hex.waterType === 'none';
@@ -120,7 +121,8 @@ export function evaluateCommunity(hex, habitat, community = []) {
   const predationFood = rows.map(() => 0);
   const preyLoss = rows.map(() => 0);
   const grazingDemand = rows.map(row => row.population * row.derived.cells * row.derived.grazingShare
-    * row.environment * 2.2);
+    * row.environment * 2.2 * (ECOLOGY_RULES.stationaryForaging
+      + ECOLOGY_RULES.movementForaging * row.derived.speed / (1 + row.derived.speed)));
   const predationDemand = rows.map(row => row.population * row.derived.cells * row.derived.predationShare
     * row.environment * ECOLOGY_RULES.huntingEffort);
 

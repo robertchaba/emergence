@@ -94,9 +94,12 @@ export function deriveGenome(g) {
   // supplies no food. Photosynthetic grazing has the strongest incompatibility.
   const mixedCost = GENE_RULES.additionalSystemCost * Math.max(0, systems - 1)
     + GENE_RULES.photosyntheticGrazingCost * g.photosynthesis * g.plantFeeding;
+  // A consumer can repurpose the investment released by losing photosynthesis
+  // into basic locomotion. The gene must still evolve; higher levels stay paid.
+  const paidMovement = Math.max(0, g.movement - Number(!g.photosynthesis && systems > 0));
   const thermalCost = g.temperatureTolerance === null ? 0 : 0.02 + 0.008 * Math.abs(g.temperatureTolerance);
   const traitCost = 0.025 * g.photosynthesis + thermalCost + 0.012 * g.landAdaptation
-    + 0.015 * g.trunk + 0.016 * g.movement ** 1.4 + 0.022 * g.plantFeeding + 0.038 * g.animalFeeding
+    + 0.015 * g.trunk + 0.016 * paidMovement ** 1.4 + 0.022 * g.plantFeeding + 0.038 * g.animalFeeding
     + 0.025 * g.poison ** 1.2 + 0.018 * g.spines + 0.02 * g.detoxification
     + 0.025 * g.biteForce ** 1.2 + structure.upkeep + covering.upkeep
     + 0.023 * g.armor ** 1.3 * covering.protection + 0.065 * g.flight ** 1.4
@@ -106,7 +109,7 @@ export function deriveGenome(g) {
     + GENE_RULES.additionalSystemConstructionCost * Math.max(0, systems - 1)
     + GENE_RULES.photosyntheticGrazingConstructionCost * g.photosynthesis * g.plantFeeding
     + structure.construction + covering.construction + 0.035 * g.trunk
-    + 0.035 * g.movement + 0.035 * g.armor + 0.07 * g.flight;
+    + 0.035 * paidMovement + 0.035 * g.armor + 0.07 * g.flight;
   const flightEfficiency = g.movement ? g.flight * structure.flight
     / (1 + 0.12 * (g.size - 1) + covering.drag * g.armor + 0.15 * g.trunk) : 0;
   const speed = g.movement * (1 + structure.speed) * (1 + 0.2 * flightEfficiency)

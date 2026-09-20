@@ -5,11 +5,14 @@ own directories; V3 imports neither implementation and cannot restore their
 checkpoints. It uses the same physical world, climate, 360-day calendar, three
 biological turns per ten days, and browser playback controls.
 
-Rules: `v3-populations-3`. Checkpoint: `emergence-life-v3-checkpoint-1`.
-Revision 3 charges additional upkeep and construction for mixed feeding,
-especially photosynthesis combined with plant feeding. Single-system costs
-and revision 2's hunting, movement and ecological distinction remain intact.
-Revision 1/2 checkpoints are rejected rather than continued under different rules.
+Rules: `v3-populations-4`. Checkpoint: `emergence-life-v3-checkpoint-1`.
+Revision 4 includes reachable new habitats in adaptation pressure, gives consumers
+a cost-free first movement level and movement-assisted grazing, directs mobile
+consumers toward food, and allows smaller viable carnivore founding populations.
+Hunting effort rises modestly; finite food, prey withdrawal caps, mixed-feeding
+costs and ecological novelty remain in force. Revision 1–3 checkpoints are rejected
+rather than continued under different rules. Revision 3's mixed-feeding changes
+remain documented in the rules and validation history.
 
 - [Population, ecology and evolution rules](docs/RULES.md)
 - [All 22 genes and their tradeoffs](genes/docs/GENES.md)

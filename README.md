@@ -293,10 +293,11 @@ there is no automatic conversion or model-selection control.
 See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
 calculation, evolutionary pressure, species criteria and experimental coefficients,
 and [validation](src/simulation/life/v3/docs/VALIDATION.md) for measured limits.
-V3 revision 3 adds maintenance and construction costs for mixed feeding, with
-the strongest penalty on photosynthesis plus plant feeding. All combinations
-remain possible; single-system costs and revision 2's hunting/movement rules
-remain unchanged. Older V3 checkpoints are incompatible with the new revision.
+V3 revision 4 lets adaptation respond to reachable empty land, rewards consumer
+movement through foraging and a free first movement level, and supports smaller
+viable carnivore populations with food-directed dispersal. Mixed-feeding costs
+from revision 3 remain. Saves from earlier V3 rules are incompatible; start a new
+world to use the revised biology.
 Species diversity remains an outcome of the world;
 there is no fixed count cap. To inspect a 60 × 40 world (now Large) through
 80 simulated years,

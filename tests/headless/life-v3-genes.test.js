@@ -48,7 +48,7 @@ test('V3 highland and deep-water specialization have independent benefits and re
   assert.ok(deriveGenome(highland).reproductionCost > deriveGenome(lowland).reproductionCost);
 });
 
-test('V3 every additional capability has upkeep and construction costs', () => {
+test('V3 producers pay upkeep and construction for every additional capability', () => {
   const original = founderGenome();
   const baseline = deriveGenome(original);
   for (const trait of TRAITS.filter(({ key }) => !['size', 'photosynthesis'].includes(key))) {
@@ -165,7 +165,7 @@ test('V3 defenses and sensing act through paid predator/prey interactions', () =
   assert.ok(outputs.every(output => output.predationLoss <= ECOLOGY_RULES.preyFraction + 1e-8));
 });
 
-test('V3 movement earns its upkeep through hunting only when accessible prey exists', () => {
+test('V3 consumers gain basic movement without extra construction and earn further movement through food', () => {
   const producer = genome();
   const grazer = genome({ photosynthesis: 0, plantFeeding: 1 });
   const hunter = genome({ photosynthesis: 0, animalFeeding: 1 });
@@ -176,8 +176,17 @@ test('V3 movement earns its upkeep through hunting only when accessible prey exi
   const moving = scoreSpecies(movingHunter, land(), 'land', community);
   assert.ok(stationary.score > 0, 'a rare carnivore can live on actual consumer prey');
   assert.ok(moving.score > stationary.score + 0.005, 'pursuit can fund a selectable movement advantage');
-  assert.ok(deriveGenome(movingHunter).upkeep > deriveGenome(hunter).upkeep);
-  assert.ok(deriveGenome(movingHunter).reproductionCost > deriveGenome(hunter).reproductionCost);
+  assert.equal(deriveGenome(movingHunter).upkeep, deriveGenome(hunter).upkeep);
+  assert.equal(deriveGenome(movingHunter).reproductionCost, deriveGenome(hunter).reproductionCost);
+  assert.ok(deriveGenome({ ...hunter, movement: 2 }).upkeep > deriveGenome(hunter).upkeep);
+  assert.ok(deriveGenome({ ...hunter, movement: 2 }).reproductionCost > deriveGenome(hunter).reproductionCost);
+  assert.ok(deriveGenome({ ...producer, movement: 1 }).upkeep > deriveGenome(producer).upkeep,
+    'retaining photosynthesis also retains the cost of basic movement');
+  const stationaryGrazer = scoreSpecies(grazer, land(), 'land', community.slice(0, 1));
+  const movingGrazer = scoreSpecies({ ...grazer, movement: 1 }, land(), 'land', community.slice(0, 1));
+  assert.ok(movingGrazer.score > stationaryGrazer.score + 0.005,
+    'movement improves access to real plant production even before predators evolve');
+  assert.equal(scoreSpecies({ ...grazer, movement: 1 }, land(), 'land').food, 0);
   for (const genome of [hunter, movingHunter]) {
     const noPrey = scoreSpecies(genome, land(), 'land', community.slice(0, 1));
     assert.equal(noPrey.predationFood, 0, 'producers alone cannot feed a carnivore');

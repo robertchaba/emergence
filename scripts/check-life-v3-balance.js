@@ -15,13 +15,15 @@ const site = world.hexes.filter(hex => (hex.waterType === 'none') === (habitat =
 if (!site) throw new Error('No suitable introduction site in this world.');
 const life = createLifeModel(world);
 life.introduce(site.id);
+// The land-surface selector includes rivers; introduction uses their water pool.
+const introductionHabitat = life.exportState().populations[0].habitat;
 for (let elapsed = Math.min(3600, horizon); ; elapsed = Math.min(elapsed + 3600, horizon)) {
   life.advanceTo(world.day + elapsed);
   const state = life.exportState();
   const ids = new Set(state.populations.map(row => row.speciesId));
   const living = state.species.filter(row => ids.has(row.id));
   const count = predicate => living.filter(row => predicate(row.genome)).length;
-  process.stdout.write(`${JSON.stringify({ rules: state.rulesRevision, seed, size, habitat, hexId: site.id,
+  process.stdout.write(`${JSON.stringify({ rules: state.rulesRevision, seed, size, habitat, introductionHabitat, hexId: site.id,
     elapsedDays: elapsed, species: living.length,
     animalFeeding: count(g => g.animalFeeding > 0),
     mixedFeeding: count(g => g.photosynthesis + g.plantFeeding + g.animalFeeding > 1),
@@ -31,8 +33,14 @@ for (let elapsed = Math.min(3600, horizon); ; elapsed = Math.min(elapsed + 3600,
     purePredators: count(g => g.animalFeeding && !g.photosynthesis && !g.plantFeeding),
     pureGrazers: count(g => g.plantFeeding && !g.photosynthesis && !g.animalFeeding),
     mobile: count(g => g.movement > 0),
+    mobileGrazers: count(g => g.plantFeeding && !g.photosynthesis && !g.animalFeeding && g.movement > 0),
+    mobilePredators: count(g => g.animalFeeding && !g.photosynthesis && !g.plantFeeding && g.movement > 0),
     organisms: state.populations.reduce((sum, row) => sum + row.count, 0),
     occupiedHexes: new Set(state.populations.map(row => row.hexId)).size,
+    occupiedLandHexes: new Set(state.populations.filter(row => row.habitat === 'land').map(row => row.hexId)).size,
+    predatorHexes: new Set(state.populations.filter(row => living.some(species => species.id === row.speciesId
+      && species.genome.animalFeeding && !species.genome.photosynthesis && !species.genome.plantFeeding))
+      .map(row => row.hexId)).size,
     predationDeaths: state.stats.predationDeaths })}\n`);
   if (elapsed === horizon) break;
 }

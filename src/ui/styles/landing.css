@@ -1,6 +1,6 @@
 * { box-sizing: border-box; }
 
-html { background: var(--color-ground); }
+html { background: var(--color-ground); scrollbar-color: var(--color-muted) var(--color-panel); }
 
 body {
   position: relative;

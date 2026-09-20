@@ -1,6 +1,84 @@
 # V3 validation — 2026-09-19
 
-## Revision 3: mixed-feeding maintenance and construction
+## Revision 4: habitat expansion, consumer movement and predator establishment — 2026-09-20
+
+`npm run build` and `npm test` passed: 146 headless/rendering checks and 121
+Chromium checks, with the existing duplicate desktop touch check skipped.
+Light/dark notebook screenshots were inspected at desktop and phone widths;
+light chart bands are pale with distinct outlines, and dark fills retain their
+previous colours. Existing browser checks cover EN/PL wrapping through 320 px,
+visible keyboard focus, disabled controls, original artwork, save rejection and
+browser/headless continuation. `git diff --check` and the dependency/determinism
+review passed. The pre-existing package version edit was preserved.
+
+New controlled fixtures establish that:
+
+- A persistent land-adaptation direction can settle a reachable shore or the
+  land component of its river hex, transferring existing organisms and retaining
+  its aquatic parent. Opportunity queries leave state and PRNG unchanged, and
+  saved/restored continuation agrees.
+- Absent land, permanent ice, a steep connection with inadequate settlement
+  support, and an insufficient parent pool do not receive a new land population.
+- Basic consumer movement has zero additional maintenance/construction cost,
+  while higher levels and photosynthetic movement remain paid. Moving grazers
+  obtain a selectable advantage from real plants, and moving hunters from prey;
+  empty food pools still give zero intake.
+- Mobile grazers and predators send more than five times as many emigrants to
+  a food-bearing neighbour as to an otherwise comparable empty neighbour in the
+  fixed one-turn fixture. Census totals still reconcile to births minus deaths.
+- A carnivore branch can establish at a smaller viable density when a quarter
+  of its parent pool would overpopulate the prey niche. Actual post-transfer
+  growth is positive and total population is conserved.
+
+Existing defended-tissue, finite-budget, conversion-loss, label-splitting,
+branch-novelty, candidate-budget and deterministic replay checks also pass.
+Revision 3 checkpoints are explicitly rejected; no biological state migration
+or automatic species conversion is tested or offered.
+
+### Same-world comparison
+
+Pre-change revision 3 and final revision 4 used `physical-world-4`, seed
+`emergence`, current Medium (42 × 28), identical life seeds and introduction sites,
+with no seeded consumers or supplied adaptation directions. Both ran for 14,400
+elapsed days (40 years), observing each decade. The sea selector chooses hex 546;
+the land-surface selector chooses river hex 555, whose founders actually occupy
+**water**. Thus these are two aquatic introductions, not an aquatic-versus-dry-land
+experiment. The script now reports `introductionHabitat` to make that distinction
+explicit; its historical site selection remains unchanged.
+
+| Source / revision | Living species | Occupied land hexes | Mobile / all pure grazers | Pure predators | Hexes with pure predators |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sea 546 / 3 | 27 | 0 | 0 / 16 | 0 | 0 |
+| Sea 546 / 4 | 60 | 285 | 27 / 27 | 1 | 4 |
+| River 555 / 3 | 26 | 0 | 0 / 13 | 1 | 33 |
+| River 555 / 4 | 91 | 324 | 50 / 50 | 4 | 42 |
+
+At year 10, the revised sea run already occupied 326 land hexes; its baseline
+occupied none at all four samples. By year 20 the revised sea run had 33 pure
+grazer species, all mobile, and one pure predator. At year 30 it had three pure
+predators on 15 hexes, declining to one on four hexes at year 40. The revised
+river run's four final pure predators were all mobile; cumulative recorded
+predation deaths were 511,950 versus 79,598 before. Final organisms/occupied hexes
+were 138,550/733 for the revised sea run and 264,154/770 for the river run.
+Photosynthesis plus grazing was absent at all eight revised decade samples;
+transient lineages between samples are not ruled out.
+
+Reproduce the current panel:
+
+```sh
+node scripts/check-life-v3-balance.js 14400 medium emergence water
+node scripts/check-life-v3-balance.js 14400 medium emergence land
+```
+
+These observations support the intended direction in two sites of one world.
+They do not prove universal colonization, eventual mobility in every lineage,
+persistent carnivory, or a species-count target. Colonization expands the
+available range and can increase diversity and simulation work. The movement
+subsidy, settlement weights and ecological scores are explicit game-model
+approximations, not biological measurements. Browser validation covers Chromium;
+no cross-browser numerical identity or runtime speed improvement is claimed.
+
+## Historical revision 3: mixed-feeding maintenance and construction
 
 `npm run build` and `npm test` passed: 136 headless/rendering checks and 83
 Chromium checks, with the existing duplicate desktop touch check skipped.

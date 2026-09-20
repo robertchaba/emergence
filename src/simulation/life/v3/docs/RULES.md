@@ -6,7 +6,7 @@ authorized for this independent version, not measured biological constants.
 V1/V2 research remains intact. Shared physics, weather, calendar and speed
 meanings are unchanged.
 
-Identifiers: `modelId: v3`, `rulesRevision: v3-populations-3`, checkpoint format
+Identifiers: `modelId: v3`, `rulesRevision: v3-populations-4`, checkpoint format
 `emergence-life-v3-checkpoint-1`, common contract `life-observations-1`.
 
 ## State and introduction
@@ -105,7 +105,11 @@ by movement, sensing, flight, defenses, poison and handling. Per-source withdraw
 is bounded at 12% of prey population each turn; capture accessibility and demand
 further constrain it. Tissue accounting uses `1.4 × prey body cells`, with 60%
 conversion. Feeding effort is population × cells × acquisition share ×
-environmental performance, multiplied by 2.2 for grazing and 2.8 for hunting.
+environmental performance, multiplied by `2.2 × [1+0.7speed/(1+speed)]`
+for grazing and 3.2 for hunting. Revision 4 supersedes the former fixed grazing
+effort and 2.8 hunting effort. The first movement level has no additional upkeep
+or construction cost for consumers without photosynthesis; higher levels remain
+paid, and the gene must still evolve.
 Capture starts at 0.50, with a 0.14 coefficient on predator-minus-prey speed;
 other capture effects and the 12% withdrawal cap remain unchanged. Same-species feeding is excluded. Finite resource
 allocation is shared across consumers; it never loops over individual hunters.
@@ -143,7 +147,12 @@ Surviving adults disperse over physical neighbor connections. Base per-route
 conductance is `0.004 + 0.003 × movement`; a same-hex river habitat switch uses
 half that rate. Total outward conductance is capped at 0.12. Destination habitat
 must be supported; poor but nonzero performance permits arrival and subsequent
-demographic loss.
+demographic loss. In revision 4, mobile non-photosynthetic consumers multiply
+each route by `0.15 + 2.85 × clamp((destinationScore+0.008)/0.12, 0, 1)`, then
+apply the same total 0.12 cap. Destination score is a rare conspecific probe
+against the frozen start-of-turn community. Foodless or losing destinations
+retain a small exploratory flow; viable food-rich sites attract stronger flow.
+This redirects real emigrants without creating food or population.
 
 Ground steps of at least 1,000 m, surfaces at least 3,500 m, permanent ice and
 disconnected water channels are difficult connections. Their conductance is
@@ -162,7 +171,8 @@ changes barrier and founder-effect dynamics.
 
 Every 12 biological turns (40 physical days), each living species samples up to
 12 occupied population locations. Sampling retains temperature, humidity,
-elevation and actual-water-depth extremes, supplemented with stable positions.
+elevation and actual-water-depth extremes, one shoreline/river source for each
+adjacent habitat when available, supplemented with stable positions.
 It is deterministic and not driven by camera or inspection. Small refuges can
 enter the sample even when most organisms live elsewhere.
 
@@ -172,7 +182,15 @@ Both gains and losses use these weights, without replacement within the pass.
 This changes exploration frequency, not ecological acceptance or food supply. A
 candidate and its parent phenotype are both evaluated as equally rare additions
 to the same frozen resident community. The parent remains in that community;
-competition is not removed to make a candidate look successful. A proposed
+competition is not removed to make a candidate look successful. Revision 4 also
+assesses habitats reachable through the existing routes that a changed
+land-adaptation trait supports but the parent cannot occupy. Each prospective
+destination has analysis weight `sourcePopulation × min(0.25, conductance /
+0.004 × 0.25)`. These weights express settlement opportunities, never extra
+organisms; several destinations may describe alternatives from one source.
+Same-hex river switching, difficult connections, ice and finite destination
+resources retain their existing limits. An unsupported parent receives its
+ordinary negative habitat score at that site. A proposed
 distinct feeding lineage may consume existing parent resources, while neither
 probe can manufacture its own food.
 
@@ -206,11 +224,14 @@ body. All candidate directions are cleared and reassessed later.
 
 A feeding-system change always needs a separate lineage. A same-feeding
 specialist can branch only when support is below 80%, there are locations where
-the parent wins, and the genomes differ by at least two mutation steps. Gene
-distance alone never establishes a species.
+the parent wins, and the genomes differ by at least two mutation steps. Revision 4 exempts a
+newly accessible habitat from the two-step minimum, while still requiring
+complementary performance and ecological novelty. Gene distance or habitat
+access alone never establishes a species.
 
 Novelty compares a bounded sample of both the parent's and each incumbent's
-occupied conditions. Both compared phenotypes use the same independent rare
+occupied conditions and reachable habitats supported by only one of the compared
+phenotypes. Both compared phenotypes use the same independent rare
 lineage probe, retaining all existing competition. Exact genome duplicates are
 rejected. A branch must also pass this comparison against its own parent;
 whole-species replacement excludes only the parent being replaced. Otherwise,
@@ -224,24 +245,38 @@ whole-species fixation so adaptation cannot erase that distinction.
 Within target hexes, a candidate entering an already occupied acquisition
 signature must beat its incumbents by at least 0.005 as well as its parent.
 
-Before branching, all occupied parent locations are checked. Qualifying locations
-must have positive candidate growth and advantage at least 0.005. Each proposed
-25% transfer is also evaluated at its actual proposed density in the full
-recomputed community; the child must retain positive growth after that split.
-A branch transfers 25% (rounded down per pool) of parent organisms at the
-qualifying locations, requiring at least 20 transferred organisms. Total population is conserved;
-candidate evaluation itself never adds organisms. The new lineage is exposed to
-ordinary competition and can go extinct. At most one accepted change per species
-occurs in one assessment. There is no protected minimum species count or branch
-deadline, and established identities are not merged. Changing environmental
-conditions can still alter the ecological distinction after establishment.
+Before branching, all occupied parent locations and their newly accessible
+habitats are checked. Qualifying destinations must have positive candidate growth
+and advantage at least 0.005, including the incumbent-niche check. Destinations
+are considered by strongest advantage with stable location tie-breaking; each
+source can supply only one founding transfer per branch.
+
+Normal branches test a 25% source transfer. Frontier transfers use the
+route-weighted settlement amount above. Revision 4 animal-feeding candidates try
+25%, 12.5%, 6.25%, then 3.125%, accepting the largest viable density at each source.
+Every proposed transfer is evaluated at its actual density in the recomputed
+community, removing transferred parents from the source when it is also the
+destination. Multiple sources arriving at one destination are assessed together,
+so they cannot each spend the same food budget. At least 20 organisms must
+transfer in total. Non-carnivorous branches retain the single 25% density check.
+This supersedes the fixed-density branching rule from revisions 1–3.
+
+A branch conserves total represented population. A habitat branch settles real
+transferred descendants at the reachable destination while the aquatic parent
+can remain in water. Candidate evaluation itself never adds organisms. The new
+lineage faces ordinary competition and can go extinct. At most one accepted
+change per species occurs in one assessment. There is no protected minimum
+species count or branch deadline, and established identities are not merged.
+Changing environmental conditions can still alter ecological distinction.
 
 ## Observation, continuation and limits
 
 The accepted genome supplies actual species traits. Candidate
 directions supply separate descriptions and estimated favourable ranges, with
 no exact carrier counts or genetic percentages. Ranges are deterministic
-analyses of current occupied locations, not tracked variant territories. Querying
+analyses of current occupied sources, including opportunity to establish in a
+newly reachable habitat; highlighted locations remain the occupied sources, not
+invented carriers at a destination. These are not tracked variant territories. Querying
 does not advance candidates or consume biological randomness.
 
 Checkpoints include identity/version, full PRNG state, partial turn credit,

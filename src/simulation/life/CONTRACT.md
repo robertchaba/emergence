@@ -212,7 +212,10 @@ Optional `species[].tendencies` contains at most three prospective directions
 per species. Each has a stable ID, described candidate traits, changed traits,
 diagnostic strength, `roleChange`, `rangeQuality: estimated`, and `locations`
 containing favourable physical hex IDs. Those locations are estimates of current
-ecological opportunity within occupied range, not observations of carriers.
+ecological opportunity at occupied sources, not observations of carriers. V3
+revision 4 includes opportunities to establish in a newly reachable habitat;
+the estimate still identifies the occupied source, not a fictional population
+at the destination.
 They contain no carrier population and are never included in population totals.
 Strength describes pressure, not a carrier percentage or probability of success.
 

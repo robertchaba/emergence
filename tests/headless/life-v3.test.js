@@ -78,6 +78,7 @@ test('v3 introduction and incompatible checkpoint rejection are atomic and model
   assert.throws(() => restoreLifeModel(world, createV2(world).exportState()), /Incompatible/);
   assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'other-v3-rules' }), /Incompatible/);
   assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v3-populations-2' }), /Incompatible/);
+  assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v3-populations-3' }), /Incompatible/);
   const changedWorld = fixture();
   changedWorld.hexes[18].bedElevation -= 1;
   assert.throws(() => restoreLifeModel(changedWorld, introduced), /Incompatible/);
@@ -431,4 +432,112 @@ test('v3 energy census partitions living identities and preserves optional histo
   assert.deepEqual(legacy.observe().history.at(-1).speciesByEnergy, expected);
   checkpoint.history.at(-1).speciesByEnergy.other += 1;
   assert.throws(() => restoreLifeModel(world, checkpoint), /Invalid checkpoint metadata/);
+});
+
+function frontierFixture(kind = 'coast') {
+  const world = fixture();
+  for (const hex of world.hexes) { hex.bedElevation = -5; hex.neighbors = []; }
+  if (kind === 'river') Object.assign(world.hexes[18], { waterType: 'none', bedElevation: 0, runoff: 1 });
+  else if (kind !== 'ocean') {
+    Object.assign(world.hexes[19], { waterType: 'none', bedElevation: kind === 'barrier' ? 1500 : 0,
+      row: kind === 'ice' ? 0 : 3 });
+    world.hexes[18].neighbors = [19]; world.hexes[19].neighbors = [18];
+  }
+  const initial = createLifeModel(world); initial.introduce(18);
+  const state = initial.exportState();
+  state.species[0].genome = { ...founderGenome(), size: 1, temperatureTolerance: 1 };
+  state.species[0].candidates = [{ id: 'direction-1',
+    genome: { ...state.species[0].genome, landAdaptation: 1 }, originDay: 0, lastEvaluation: 0,
+    age: 3, support: 0, advantage: 0, steps: 1 }];
+  state.populations[0].count = 400;
+  state.day = 37; state.biologicalTurns = 11; state.turnCredit = 1; state.nextCandidate = 2;
+  return { world, state };
+}
+
+test('v3 shoreline and river directions establish real land populations without creating organisms', () => {
+  for (const kind of ['coast', 'river']) {
+    const { world, state } = frontierFixture(kind);
+    const model = restoreLifeModel(world, state);
+    const before = model.exportState();
+    const direction = model.observe().species[0].tendencies[0];
+    assert.ok(direction.advantage >= EVOLUTION_RULES.minimumAdvantage);
+    assert.deepEqual(direction.locations, [{ hexId: 18 }], 'the estimated opportunity belongs to an occupied source');
+    assert.deepEqual(model.exportState(), before, 'frontier analysis is a pure query');
+    model.advanceTo(40);
+    const saved = model.exportState();
+    assert.equal(saved.stats.speciations, 1);
+    const child = saved.populations.find(row => row.speciesId !== 'species-1');
+    assert.equal(child.habitat, 'land');
+    assert.equal(child.hexId, kind === 'river' ? 18 : 19);
+    assert.equal(saved.species[0].genome.landAdaptation, 0, 'the aquatic parent remains aquatic');
+    assert.equal(saved.populations.reduce((sum, row) => sum + row.count, 0),
+      400 + saved.stats.births - saved.stats.deaths);
+    const resumed = restoreLifeModel(world, saved);
+    model.advanceTo(240); resumed.advanceTo(240);
+    assert.deepEqual(model.exportState(), resumed.exportState());
+    reconcile(model);
+  }
+});
+
+test('v3 frontier opportunity requires reachable viable habitat and sufficient source population', () => {
+  for (const kind of ['ocean', 'ice', 'barrier']) {
+    const { world, state } = frontierFixture(kind);
+    const model = restoreLifeModel(world, state);
+    model.advanceTo(40);
+    assert.equal(model.observe().stats.speciations, 0, kind);
+    assert.ok(model.exportState().populations.every(row => row.habitat === 'water'));
+  }
+  const { world, state } = frontierFixture();
+  state.populations[0].count = 20;
+  const small = restoreLifeModel(world, state); small.advanceTo(40);
+  assert.equal(small.observe().stats.speciations, 0, 'opportunity alone cannot supply a founding population');
+});
+
+test('v3 a predator direction can establish below the prey-density split and still conserve population', () => {
+  const { world, state } = frontierFixture('ocean');
+  const plant = { ...state.species[0].genome };
+  const grazer = { ...plant, photosynthesis: 0, plantFeeding: 1, movement: 1 };
+  const predator = { ...grazer, plantFeeding: 0, animalFeeding: 1 };
+  state.species[0].genome = grazer;
+  Object.assign(state.species[0].candidates[0], { genome: predator, steps: 2 });
+  state.species.push({ ...state.species[0], id: 'species-2', name: 'Fixture producer',
+    genome: plant, candidates: [] });
+  state.nextSpecies = 3;
+  state.populations[0].count = 1000;
+  state.populations.push({ ...state.populations[0], speciesId: 'species-2', count: 2000 });
+  const model = restoreLifeModel(world, state);
+  model.advanceTo(40);
+  const saved = model.exportState();
+  assert.equal(saved.stats.speciations, 1);
+  const parent = saved.populations.find(row => row.speciesId === 'species-1');
+  const child = saved.populations.find(row => row.speciesId === 'species-3');
+  assert.ok(child.count >= 20 && child.count < (parent.count + child.count) * 0.25);
+  const scores = evaluateCommunity({ ...world.hexes[18], ...climateAt(world, world.hexes[18], 40) }, 'water',
+    saved.populations.map(row => ({ ...row, genome: saved.species.find(species => species.id === row.speciesId).genome })));
+  assert.ok(scores[saved.populations.indexOf(child)].score > 0, 'the real founding density can feed itself');
+  assert.equal(model.observe().counts.organisms, 3000 + saved.stats.births - saved.stats.deaths);
+  reconcile(model);
+});
+
+test('v3 mobile consumers disperse preferentially toward usable food without creating population', () => {
+  for (const feeding of ['plantFeeding', 'animalFeeding']) {
+    const { world, state } = frontierFixture('ocean');
+    world.hexes[18].neighbors = [19, 20];
+    const base = createLifeModel(world); base.introduce(18);
+    const checkpoint = base.exportState();
+    const plant = { ...state.species[0].genome };
+    const consumer = { ...plant, photosynthesis: 0, [feeding]: 1, movement: 1 };
+    checkpoint.species[0].genome = consumer;
+    checkpoint.populations[0].count = 1000;
+    checkpoint.species.push({ ...checkpoint.species[0], id: 'species-2', name: 'Fixture food',
+      genome: feeding === 'plantFeeding' ? plant : { ...plant, photosynthesis: 0, plantFeeding: 1 } });
+    checkpoint.populations.push({ ...checkpoint.populations[0], speciesId: 'species-2', hexId: 19, count: 1000 });
+    checkpoint.nextSpecies = 3;
+    const model = restoreLifeModel(world, checkpoint);
+    model.advanceTo(4);
+    const saved = model.exportState();
+    const arrivals = hexId => saved.populations.find(row => row.speciesId === 'species-1' && row.hexId === hexId)?.count ?? 0;
+    assert.ok(arrivals(19) > 5 * arrivals(20), feeding);
+    assert.equal(model.observe().counts.organisms, 2000 + saved.stats.births - saved.stats.deaths);
+  }
 });

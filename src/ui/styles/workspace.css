@@ -230,6 +230,10 @@ button.gene-expression[aria-pressed='true']:hover { background: var(--color-high
 .life-trend-drawing [data-energy='plantFeeding'] { color: var(--color-energy-plant-feeding); }
 .life-trend-drawing [data-energy='animalFeeding'] { color: var(--color-energy-animal-feeding); }
 .life-trend-drawing [data-energy='other'] { color: var(--color-energy-other); }
+.life-trend-band[data-energy='photosynthesis'] { fill: var(--color-energy-area-photosynthesis); }
+.life-trend-band[data-energy='plantFeeding'] { fill: var(--color-energy-area-plant-feeding); }
+.life-trend-band[data-energy='animalFeeding'] { fill: var(--color-energy-area-animal-feeding); }
+.life-trend-band[data-energy='other'] { fill: var(--color-energy-area-other); }
 .trend-living { color: var(--color-accent); }
 .trend-axis { font-size: var(--text-compact); font-family: var(--font-readout); color: var(--color-muted); }
 .life-trend-baseline { opacity: 0.25; color: var(--color-muted); }

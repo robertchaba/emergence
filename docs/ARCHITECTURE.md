@@ -2,7 +2,10 @@
 
 ## Status
 
-**Current: Species inspection and energy-source chart — 2026-09-20.**
+**Current: Habitat expansion, consumer movement and carnivore establishment — 2026-09-20.**
+Decision 060 activates V3 revision 4 and lightens the notebook chart in light mode.
+
+**Species inspection and energy-source chart — 2026-09-20.**
 Decision 059 adds local population, automatic range selection, a stronger selected
 hex rim, and a stacked living-species census by acquisition strategy.
 
@@ -2869,3 +2872,136 @@ explicit/system dark tokens match; final dependency/scope review and
 Limits: acquisition categories describe established capabilities, not actual
 energy shares or ecological calibration. Older saves cannot supply unrecorded
 historical breakdowns. Browser validation covers Chromium only.
+
+
+## 060 — Habitat expansion, consumer movement and carnivore establishment — 2026-09-20
+
+The user requested stronger land colonization, stronger selection for movement
+in herbivores and carnivores, modest help for carnivores, and a lighter filled
+species chart in the light theme. The active implementation is V3, despite the
+older V1 description in the contributor contract. V1/V2 and their research are
+preserved. **V3 revision `v3-populations-4` supersedes the occupied-location-only
+assessment and fixed branch density from 046, the movement/effort portions of
+047, and revision 3's movement cost accounting from 051.** Its mixed-feeding
+penalties remain. Revision 1–3 saves are rejected under the existing explicit
+rules-compatibility policy; no silent migration changes a continuing run.
+
+Three mechanisms explained the reported behavior. An aquatic lineage paid for
+land adaptation in water, while the adaptation search could not see empty
+adjacent land. Grazers paid for locomotion without any grazing encounter benefit.
+Every prospective carnivore also had to support an initial population equal to
+25% of its parent pool, often exceeding the prey supply that could support a
+smaller predator population.
+
+### Biological changes and boundaries
+
+Habitat-changing candidates now assess reachable destinations that the parent
+cannot inhabit, including the land component of river hexes. Route-weighted
+opportunity contributes to selection and ecological novelty; samples retain
+shoreline sources. A persistent new-habitat direction can branch after one gene
+change if it also passes complementarity, novelty, incumbent competition and
+actual-density resource checks. A branch transfers real parent population to
+the destination, taking from each source at most once and evaluating combined
+arrivals against one food budget. No population appears during candidate scoring.
+Ordinary barriers, ice, moisture, elevation and finite light still apply.
+
+Grazing encounter effort gains the diminishing-return factor
+`1 + 0.7speed/(1+speed)`. Non-photosynthetic consumers receive a free first
+movement level in upkeep and construction; movement must still evolve and
+higher levels remain paid. This implements the requested loss-of-photosynthesis
+bonus without rewriting a second locus or inventing an unreported mobility
+trait. Movement continues to aid pursuit and escape and impede photosynthesis.
+Mobile consumers direct aggregate dispersal toward viable food supply, using a
+same-day rare-conspecific score. Low-quality sites retain exploratory flow;
+route barriers and the 12% total outward cap remain.
+
+Hunting effort increases from 2.8 to 3.2. Animal-feeding branches can test smaller
+12.5%, 6.25% and 3.125% transfers when 25% fails local viability, retaining the
+20-organism total minimum. Capture defenses, conversion loss and the 12% prey
+withdrawal cap remain. This lowers the density barrier without free food,
+population floors, automatic predators or guaranteed coexistence.
+
+All biological calculations remain inside `life/v3/`; shared physical geography,
+calendar, seeded PRNG ownership, model boundary and browser commands keep their
+meanings. Estimates still highlight occupied source hexes, now including the
+opportunity to settle nearby habitat, rather than asserting carriers at an empty
+destination. Observation counts and detached snapshots retain their meanings.
+The model rules, gene catalogue, common contract and usage README document these
+changes, and the observational panel reports land coverage and consumer mobility.
+
+### Chart presentation
+
+Light-theme species bands use separate 15%-alpha colour tokens with crisp dark
+category outlines. Labels and swatches retain their readable colours. Dark fills
+retain their previous colours, including the no-JavaScript system fallback.
+Renderer markup only consumes CSS; every authored colour stays in root theme
+tokens. The chart continues to show the actual disjoint census and discrete days.
+
+### Validation and limits
+
+Focused checks exercise shoreline and same-hex river establishment, unreachable
+or icy habitat, insufficient source population, population conservation,
+checkpoint continuation, query purity, movement-assisted grazing, the cost of
+higher movement, food-directed grazer/predator dispersal, and a viable smaller
+predator founding population. Existing finite resource, protected tissue,
+label-splitting, novelty, browser/headless and deterministic replay checks remain.
+
+Full-world measurements and final verification are recorded in
+[V3 validation](../src/simulation/life/v3/docs/VALIDATION.md). These coefficients
+are experimental model choices. New-habitat opportunity is a bounded spatial
+approximation, its weights are not measured migration probabilities, and branch
+viability checks immediate support rather than perpetual survival. More occupied
+habitats and mobile communities can also increase simulation work. No universal
+species count, ecological realism or cross-browser numerical equivalence is
+claimed.
+
+
+Final verification: `npm run build` and `npm test` passed (146 headless/rendering
+checks, 121 Chromium checks, one existing desktop touch duplicate skipped).
+Visual review covered the chart in both themes and both viewport sizes, with
+existing browser coverage for focus, assets, disabled controls and EN/PL wrapping.
+In the 40-year sea/river introduction panel, revision 4 occupied 285/324 land
+hexes versus 0/0 before; all 27/50 surviving pure grazer species were mobile,
+and pure predator counts were 1/4 versus 0/1. These are two sites of one world,
+not a universal-balance claim. Final scope and dependency review preserved
+V1/V2, world rules, artwork, licensing and the existing package version edit;
+`git diff --check` passed.
+
+## 061 — Field notebook scrollbar theme — 2026-09-20
+
+The notebook's native scrollbar uses `--color-muted` for its thumb and
+`--color-panel` for its track through CSS `scrollbar-color`. This keeps an
+overflowing notebook consistent with the paper/sepia and green dark palettes,
+including System theme changes, without adding colours outside root tokens.
+The change is scoped to UI styling; native scrollbar width, visibility and
+scrolling behavior remain browser-controlled. Browsers that ignore the property
+retain their native styling; forced-colour mode can use system colours.
+
+Validation: `npm run build` passed. All 146 headless/rendering checks and 121
+Chromium checks passed, with the existing desktop touch duplicate skipped.
+The default test attempt found port 4173 occupied; the successful `npm test`
+run used a temporary config pointing the same suite and preview at port 4175.
+Visual inspection covered overflowing notebooks in both themes at desktop and
+phone widths. Targeted browser checks confirmed scrolling, no horizontal page
+overflow and automatic system scrollbar colours in forced-colour mode.
+
+## 062 — Shared page scrollbar theme — 2026-09-20
+
+The landing page and world setup now use the same native scrollbar colours as
+the field notebook. **Supersedes 061's notebook-only selector:** the shared
+`html` rule in `landing.css` owns `scrollbar-color`, which nested scroll containers
+inherit. The notebook's duplicate declaration is removed. Existing root theme
+tokens still supply the thumb and track colours; native widths, visibility,
+input behavior and forced-colour fallback remain browser-controlled.
+
+This is a UI stylesheet change with no simulation or rendering changes. Visual
+inspection covered both pages in light and dark themes at desktop and phone
+widths. Browser checks confirmed page scrolling, no horizontal page overflow,
+the notebook inheriting identical colours, and system colours in forced-colour
+mode. Browsers without support retain their native scrollbar appearance.
+
+`npm run build` and `npm test` passed: 146 headless/rendering checks and 121
+Chromium checks, with the existing desktop touch duplicate skipped. The suite
+used a temporary port-4175 configuration to avoid the existing preview on 4173;
+the temporary configuration was removed after verification. `git diff --check`
+passed.

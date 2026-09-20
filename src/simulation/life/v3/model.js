@@ -2,12 +2,12 @@ import { climateAt } from '../../climate.js';
 import { hashSeed } from '../../noise.js';
 import { candidateMutations, deriveGenome, describeGenome, geneticDistance,
   genomeKey, validateGenome } from './genes/genome.js';
-import { environmentalPerformance, evaluateCommunity, founderForSite, scoreSpecies, waterDepth } from './ecology.js';
+import { environmentalPerformance, evaluateCommunity, founderForSite, scoreSpecies, supportsHabitat, waterDepth } from './ecology.js';
 import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
 
 export const MODEL_ID = 'v3';
-export const RULES_REVISION = 'v3-populations-3';
+export const RULES_REVISION = 'v3-populations-4';
 export const CONTRACT_VERSION = 'life-observations-1';
 const FORMAT = 'emergence-life-v3-checkpoint-1';
 export const EVOLUTION_RULES = Object.freeze({ maximumCandidates: 3, assessmentTurns: 12,
@@ -279,9 +279,18 @@ function buildModel(world, state) {
 
   function disperse(rows) {
     const result = [];
+    const community = communities();
     for (const row of rows) {
       const genome = speciesById.get(row.speciesId).genome;
       const choices = routes(row, genome);
+      if (genome.movement > 0 && !genome.photosynthesis && (genome.plantFeeding || genome.animalFeeding)) {
+        for (const choice of choices) {
+          // Active foragers favour destinations that actually feed them. A
+          // small exploratory flow remains; barriers keep their route penalty.
+          const score = scoreAt(genome, choice, community, row.speciesId);
+          choice.conductance *= 0.15 + 2.85 * clamp((score.score + 0.008) / 0.12);
+        }
+      }
       const available = row.count - (row.newborns ?? 0);
       let left = available;
       const total = choices.reduce((sum, choice) => sum + choice.conductance, 0);
@@ -304,6 +313,13 @@ function buildModel(world, state) {
     // Extremes retain small environmental refuges; evenly spaced stable IDs
     // supplement them. No random query or population-weighted resampling.
     const selected = new Map();
+    // Retain a shoreline/river source even if it is not a climate extreme.
+    for (const habitat of ['land', 'water']) {
+      const edge = rows.find(row => row.habitat !== habitat
+        && [row.hexId, ...geography.hexes[row.hexId].neighbors].some(id => habitat === 'land'
+          ? hasLand(geography.hexes[id]) : hasWater(geography.hexes[id])));
+      if (edge) selected.set(populationKey(edge), edge);
+    }
     for (const reading of [hex => hex.temperature ?? 0, hex => hex.humidity ?? 0,
       hex => hex.bedElevation ?? 0, waterDepth]) {
       const ranked = [...rows].sort((a, b) => reading(environment(a.hexId))
@@ -318,9 +334,19 @@ function buildModel(world, state) {
     return [...selected.values()].sort(populationOrder);
   }
 
+  function frontierRows(parentGenome, genome, rows) {
+    if (parentGenome.landAdaptation === genome.landAdaptation) return [];
+    return rows.flatMap(sourceRow => routes(sourceRow, genome)
+      .filter(route => !supportsHabitat(parentGenome, environment(route.hexId), route.habitat))
+      .map(route => ({ ...sourceRow, hexId: route.hexId, habitat: route.habitat,
+        // At most a quarter of a source supports a prospective settlement.
+        // River switching and difficult crossings retain their lower rates.
+        count: sourceRow.count * Math.min(0.25, route.conductance / 0.004 * 0.25), sourceRow })));
+  }
+
   function assess(record, genome, rows, community, baseline) {
     let weight = 0; let supported = 0; let gain = 0; let viableScore = 0; let opposing = 0;
-    const evaluations = rows.map((row, index) => {
+    const evaluations = [...rows, ...frontierRows(record.genome, genome, rows)].map((row, index) => {
       const resident = baseline?.[index] ?? scoreAt(record.genome, row, community, record.id);
       const candidate = scoreAt(genome, row, community, record.id, rolesDiffer(record.genome, genome));
       const difference = candidate.score - resident.score;
@@ -329,7 +355,7 @@ function buildModel(world, state) {
       viableScore += row.count * candidate.score;
       if (candidate.score > 0 && difference >= EVOLUTION_RULES.minimumAdvantage) supported += row.count;
       if (difference <= -EVOLUTION_RULES.minimumAdvantage) opposing += row.count;
-      return { row, resident, candidate, difference };
+      return { row, resident, candidate, difference, sourceRow: row.sourceRow ?? row };
     });
     return { evaluations, support: weight ? supported / weight : 0,
       opposing: weight ? opposing / weight : 0, advantage: weight ? gain / weight : 0,
@@ -348,7 +374,9 @@ function buildModel(world, state) {
         if (!occupied.has(key)) occupied.set(key, { ...row });
         else occupied.get(key).count += row.count;
       }
-      const samples = sampleRows([...occupied.values()].sort(populationOrder));
+      const residentSamples = sampleRows([...occupied.values()].sort(populationOrder));
+      const samples = [...residentSamples, ...frontierRows(other.genome, genome, residentSamples),
+        ...frontierRows(genome, other.genome, residentSamples)];
       let sum = 0; let squared = 0; let dietDifference = 0; let weight = 0;
       let bestDifference = -Infinity; let worstDifference = Infinity;
       for (const row of samples) {
@@ -466,7 +494,9 @@ function buildModel(world, state) {
           break;
         }
         const specialized = analysis.support < EVOLUTION_RULES.broadSupport && analysis.opposing > 0;
-        if ((!roleChange && (!specialized || geneticDistance(record.genome, candidate.genome) < 2))
+        const habitatExpansion = analysis.evaluations.some(item => item.row.sourceRow
+          && item.candidate.score > 0 && item.difference >= EVOLUTION_RULES.minimumAdvantage);
+        if ((!roleChange && (!specialized || (!habitatExpansion && geneticDistance(record.genome, candidate.genome) < 2)))
           || !novel(record, candidate.genome, community, true)) continue;
         const actual = assess(record, candidate.genome, rows, community);
         const targets = actual.evaluations.filter(item => {
@@ -479,16 +509,32 @@ function buildModel(world, state) {
             return item.candidate.score >= comparison.score + EVOLUTION_RULES.minimumAdvantage;
           });
         });
-        const transfers = targets.map(({ row }) => ({ row, count: Math.floor(row.count * 0.25) }))
-          .filter(({ row, count }) => {
-            if (!count) return false;
-            const projected = (community.get(habitatKey(row)) ?? []).map(resident => ({ ...resident,
-              population: resident.population - (resident.speciesId === record.id ? count : 0) }));
+        const transfers = [];
+        const sources = new Set();
+        const projectedPools = new Map();
+        targets.sort((a, b) => b.difference - a.difference || populationOrder(a.row, b.row));
+        for (const { row, sourceRow } of targets) {
+          if (sources.has(sourceRow)) continue;
+          const key = habitatKey(row);
+          const previous = projectedPools.get(key) ?? (community.get(key) ?? []);
+          // Predators cannot start at the same density as their prey. Back off
+          // only when the larger split fails its real finite-food check.
+          const fractions = candidate.genome.animalFeeding ? [0.25, 0.125, 0.0625, 0.03125] : [0.25];
+          for (const fraction of fractions) {
+            const count = Math.floor((row.sourceRow ? row.count / 0.25 : row.count) * fraction);
+            if (!count) continue;
+            const projected = previous.filter(resident => resident.speciesId !== '__prospective_branch__')
+              .map(resident => ({ ...resident, population: resident.population
+                - (habitatKey(sourceRow) === key && resident.speciesId === record.id ? count : 0) }));
+            const established = previous.find(resident => resident.speciesId === '__prospective_branch__')?.population ?? 0;
             projected.push({ speciesId: '__prospective_branch__', genome: candidate.genome,
-              derived: phenotype(candidate.genome), population: count, habitat: row.habitat });
-            const result = evaluateCommunity(environment(row.hexId), row.habitat, projected).at(-1);
-            return result.score > 0;
-          });
+              derived: phenotype(candidate.genome), population: count + established, habitat: row.habitat });
+            if (evaluateCommunity(environment(row.hexId), row.habitat, projected).at(-1).score <= 0) continue;
+            transfers.push({ row: sourceRow, destination: row, count });
+            sources.add(sourceRow); projectedPools.set(key, projected);
+            break;
+          }
+        }
         const supportPopulation = transfers.reduce((sum, item) => sum + item.row.count, 0);
         const transferPopulation = transfers.reduce((sum, item) => sum + item.count, 0);
         if (supportPopulation < EVOLUTION_RULES.minimumPopulation
@@ -497,9 +543,9 @@ function buildModel(world, state) {
         // body, food or demographic activity existed before this acceptance.
         const child = newSpecies(candidate.genome, record.id);
         const childRows = [];
-        for (const { row, count } of transfers) {
+        for (const { row, destination, count } of transfers) {
           row.count -= count;
-          childRows.push({ ...row, speciesId: child.id, count,
+          childRows.push({ ...row, hexId: destination.hexId, habitat: destination.habitat, speciesId: child.id, count,
             reserve: Math.min(row.reserve, phenotype(child.genome).cells) });
         }
         state.populations = merge([...state.populations, ...childRows]);
@@ -602,7 +648,7 @@ function buildModel(world, state) {
       const tendencies = record.candidates.map(candidate => {
         const analysis = assess(record, candidate.genome, rows, community);
         const favorable = [...new Set(analysis.evaluations.filter(item => item.candidate.score > 0
-          && item.difference >= EVOLUTION_RULES.minimumAdvantage).map(item => item.row.hexId))].sort((a, b) => a - b);
+          && item.difference >= EVOLUTION_RULES.minimumAdvantage).map(item => item.sourceRow.hexId))].sort((a, b) => a - b);
         return { id: candidate.id, traits: describeGenome(candidate.genome),
           changes: describeGenome(candidate.genome).filter(trait => trait.value !== record.genome[trait.key])
             .map(trait => ({ ...trait, from: record.genome[trait.key], to: trait.value })),

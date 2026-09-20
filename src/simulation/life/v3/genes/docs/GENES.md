@@ -13,10 +13,13 @@ For size `s`, body cells are `C = 1 + 3s(s−1)`. Add the trait-cost contributio
 `T` below, including the mixed-acquisition charge described below. Per-turn upkeep
 is `C × [0.42 + 0.016(s−1) + T]`. Construction cost is
 `C × [1 + 0.08(s−1) + 1.3T + skeletonConstruction + armorMaterialConstruction
-+ 0.035trunk + 0.035movement + 0.035armor + 0.07flight
++ 0.035trunk + 0.035paidMovement + 0.035armor + 0.07flight
 + 0.30max(0,n−1) + 0.30PG]`. Here `n` counts acquisition systems, and `P/G`
-indicate photosynthesis/plant feeding. Thus every acquired
-capability increases both budgets even when the local conditions give no benefit.
+indicate photosynthesis/plant feeding. In revision 4, `paidMovement` is
+`max(0, movement−1)` for non-photosynthetic consumers, otherwise `movement`.
+This is an explicit basic-locomotion subsidy after losing photosynthesis; the
+movement gene must still evolve. Other acquired capabilities and higher movement
+levels increase both budgets even when local conditions give no benefit.
 These are rate-model energy budgets, not stored energy tracked for each organism.
 
 | Key | Values | Benefit, limitation, and contribution to `T` |
@@ -26,7 +29,7 @@ These are rate-model energy budgets, not stored energy tracked for each organism
 | `trunk` | 0–10 | Increases land light-competition weight and canopy height; slows movement and flight. Requires photosynthesis. Cost `0.015x`, plus construction above. |
 | `temperatureTolerance` | absent, −2…2 | Selects a temperature range with smooth loss outside it. Absent costs zero; expressed cost `0.02 + 0.008×abs(x)`. |
 | `landAdaptation` | 0–3 | Aquatic, wet-land overlap, terrestrial overlap, and dry land. Water efficiencies are 1, 0.85, 0.55, 0; land moisture requirements are unavailable, 0.75, 0.45, 0.2. Cost `0.012x`. |
-| `movement` | 0–4 | Improves dispersal, pursuit and escape; enables flight. Reduces photosynthetic efficiency. Cost `0.016x^1.4`, plus construction above. |
+| `movement` | 0–4 | Improves grazing encounters, dispersal, pursuit and escape; enables flight. Reduces photosynthetic efficiency. Cost `0.016paidMovement^1.4`, plus construction above. The first level is free only for consumers without photosynthesis. |
 | `plantFeeding` | 0–1 | Accesses finite edible production from other species, subject to height and defenses. Cost `0.022x`. |
 | `animalFeeding` | 0–1 | Accesses consumer prey within the size limit; hunting removes represented prey and loses energy in conversion. Cost `0.038x`. |
 | `poison` | 0–3 | Reduces grazing access and capture unless opponents have detoxification. Cost `0.025x^1.2`. |
@@ -103,8 +106,9 @@ and the additional machinery charges above both apply. Compared with revision 2:
 
 No combination is invalidated and mutation sampling is unchanged. The charges
 reduce net growth and ecological acceptance, especially for photosynthetic
-grazing. Single-system feeding, intake allocation, prey/plant access and finite
-resource budgets retain revision 2 behavior. Exact prevalence depends on the
+grazing. Revision 3 retained revision 2 single-system behavior; revision 4
+supersedes movement costs and encounter effort as described here. Intake
+allocation, defended access and finite resource budgets remain unchanged. Exact prevalence depends on the
 community and evolutionary path; these coefficients are experimental tuning.
 
 Land light weight is `(1+0.12size×trunk)×(1+0.012eyesight)`; canopy height is
@@ -137,8 +141,10 @@ applied as a whole-parent replacement.
 For each eligible prey source, successful hunting effort is limited to
 `remainingPredationDemand / preyTissue × captureProbability`, where prey tissue
 is `1.4×preyCells`. All predators share the same 12%-of-prey withdrawal budget.
-Hunting effort is `population×cells×predationShare×environment×2.8`;
-grazing retains its 2.2 effort factor. These efforts do not create prey or food.
+Revision 4 hunting effort is `population×cells×predationShare×environment×3.2`
+(up from 2.8). Grazing effort multiplies its existing 2.2 factor by
+`1 + 0.7speed/(1+speed)`: moving grazers encounter more real production, with
+diminishing returns. Stationary feeding remains possible. These efforts do not create prey or food.
 Capture therefore scales population-proportional effort; splitting unchanged
 hunters into more species cannot multiply their source access allowance.
 After a withdrawal, attempted effort `eaten×preyTissue/captureProbability` is
