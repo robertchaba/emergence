@@ -57,3 +57,14 @@ aggregate demographic events, candidate directions, and inferred ranges are
 approximations. They do not reconstruct individual variation or promise the
 same trajectories as V2. Ecological coefficients are experimental model choices;
 survival, diversification and eventual outcomes are not guaranteed.
+
+
+## Energy-source census
+
+Current counts and new daily history expose `speciesByEnergy`: photosynthesis,
+plant feeding, animal feeding, and other. The model counts each established
+living identity once using its existing phenotype role; mixed and zero-system
+species belong to other. Candidate directions and occupied locations do not add
+species. This observation-only extension leaves the rules revision and random
+stream unchanged. Old checkpoints remain compatible; absent past breakdowns
+remain unavailable, and new daily samples include the partition.

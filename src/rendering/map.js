@@ -649,7 +649,7 @@ export function createMapRenderer(canvas, { tokens }) {
       if (id === null || !world.hexes[id]) continue;
       const pinned = id === pinnedId;
       const position = cellCenter(world, id, camera);
-      const outline = clamp(view.scale * 0.10, 1.6, pinned ? 3.6 : 2.4);
+      const outline = pinned ? clamp(view.scale * 0.22, 4.5, 7) : clamp(view.scale * 0.10, 1.6, 2.4);
       const radius = Math.max(view.scale * 0.6, view.scale - outline / ROOT_THREE - 0.6);
       polygon(context, position.x, position.y, radius);
       if (pinned) {
@@ -660,7 +660,7 @@ export function createMapRenderer(canvas, { tokens }) {
       context.lineWidth = outline;
       context.stroke();
       context.strokeStyle = palette.pin;
-      context.lineWidth = outline * (pinned ? 0.45 : 0.3);
+      context.lineWidth = outline * (pinned ? 0.55 : 0.3);
       context.stroke();
     }
     context.restore();

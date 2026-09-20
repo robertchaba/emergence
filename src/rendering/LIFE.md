@@ -1,5 +1,23 @@
 # Life rendering
 
+## Selected hex and energy chart — 2026-09-20
+
+Decision 059 supersedes the historical single-total living-species chart and
+sole-species auto-expansion without highlighting. Opening a sole local species
+now also selects its occupied range; explicit collapse remains persistent.
+Notebook details show both total species population and the selected hex's count.
+The selected hex renders last with a thicker gold rim, dark contrast edge and
+slightly stronger translucent fill, distinct from the pale species contours.
+Theme tokens supply all colours, including the system-dark fallback.
+
+The SVG trend optionally stacks disjoint model-supplied energy-source counts
+using discrete day steps and a zero-based total scale. UI supplies translated
+legend counts and an accessible explanation; mixed strategies are labelled Other.
+No renderer or UI classifies genomes. Models without the extension retain their
+total chart; legacy V3 history lacks the breakdown until new observations exist.
+The chart is a species census, not energy intake or organism abundance.
+
+
 ## Population silhouettes and curved motion — 2026-09-19
 
 Decision 052 supersedes 042's all-dot close views, radial mobile appendages,

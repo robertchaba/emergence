@@ -330,6 +330,8 @@ test('life revisions and extinction repaint affected hexes without stale markers
   assert.equal(fills.includes(tokens['--map-life-predator']), false);
   map.draw(world, { geography: world, life, selectedSpeciesId: 'species-1', pinnedId: 10 });
   assert.ok(strokes.includes(tokens['--map-life-selected']));
+  assert.deepEqual(strokes.slice(-2), [tokens['--map-pin-outline'], tokens['--map-pin']],
+    'the contrasting selected hex rim stays above the species territory');
   assert.ok(fills.includes(tokens['--map-pin-fill']), 'physical selection remains above life');
   fills.length = 0;
   strokes.length = 0;
@@ -504,4 +506,19 @@ test('carrier overlay adds to the species outline and repaints when carriers mov
   map.draw(world, { ...options, selectedVariantHexIds: [] });
   assert.ok(strokes.includes(tokens['--map-life-selected']));
   assert.equal(strokes.includes(tokens['--map-life-variant']), false);
+});
+
+
+test('stacked energy trends use disjoint counts and preserve discrete lower boundaries', () => {
+  const series = ['photosynthesis', 'plantFeeding', 'animalFeeding', 'other'];
+  const samples = freezeDeep([
+    { day: 1, photosynthesis: 1, plantFeeding: 1, animalFeeding: 0, other: 0 },
+    { day: 2, photosynthesis: 2, plantFeeding: 0, animalFeeding: 1, other: 1 },
+  ]);
+  const svg = createLifeTrendSvg(samples, { series, label: 'Energy source' });
+  assert.match(svg, /life-trend-stacked/);
+  assert.match(svg, />4<\/text>/);
+  assert.match(svg, /data-energy="photosynthesis" d="M48 53H312V38L312 68V68H48Z"/);
+  assert.match(svg, /data-energy="plantFeeding" d="M48 38H312V38L312 38V53H48Z"/);
+  assert.equal(/NaN|Infinity|undefined/.test(createLifeTrendSvg([], { series })), false);
 });

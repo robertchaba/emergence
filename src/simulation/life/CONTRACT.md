@@ -228,3 +228,21 @@ V3's exact count quality describes the integer represented census, not exact
 ecology. Approximation metadata identifies aggregate populations, pooled energy,
 stochastic rounding and estimated directions. V3 owns its independent checkpoint
 format and rules revision; V1/V2 continuation is intentionally rejected.
+
+
+## Optional species census by energy acquisition — 2026-09-20
+
+The active V3 model supplies `counts.speciesByEnergy` and completed-day
+`history[].speciesByEnergy`, with integer `photosynthesis`, `plantFeeding`,
+`animalFeeding`, and `other` counts. These are disjoint counts of living species,
+not organisms, occupied hexes, candidate directions, or measured energy intake.
+Each established species appears exactly once; the four values sum to `species`.
+Single-system species use their matching source; multiple or absent acquisition
+systems use `other`. Model-owned phenotype classification determines membership.
+
+This is an optional observation extension. Preserved V1/V2 observations and older
+V3 history can omit it; absence means unavailable, not zero. UI can retain the
+single-total chart when the current breakdown is unavailable. Old history must
+not be reconstructed from current diets. V3 checkpoints keep new census samples
+without changing biological rules or random state, validate the partition when
+present, and continue accepting history records without the extension.

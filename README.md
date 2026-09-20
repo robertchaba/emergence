@@ -200,15 +200,20 @@ life here** becomes available again for an explicit new beginning on the same
 world at the current day. Life is never introduced or restarted automatically.
 
 The notebook shows the living-species count and its chart over the last 180
-completed days of the current life attempt. Extinct species and the percentage
-of all hexes occupied appear as counts only.
+completed days of the current life attempt. The chart stacks photosynthesis, plant
+feeding, animal feeding, and Other (mixed strategies or no acquisition system),
+with current counts in its legend. Each living species counts once. Older saves
+begin the breakdown from restoration; missing historical shares are not inferred.
+Extinct species and the percentage of all hexes occupied appear as counts only.
 Pinning a hex reveals compact physical readings and all species living there, or
 an explicit empty-hex message. Species receive stable generated names. Click a
-name to open its compact population count (e.g. 21K) and present genes, and
-outline its whole occupied range;
+name to open its total population, population on the selected hex (both in compact
+notation, e.g. 21K), and present genes, and outline its whole occupied range;
 click it again to clear the highlight and collapse its details. A sole local
-species starts expanded and can also be collapsed; that choice survives live
-updates and theme/language changes. Reopening highlights its range.
+species starts expanded with its range highlighted and can also be collapsed;
+that choice survives live updates and theme/language changes. Reopening highlights
+its range. The selected hex has a thick gold rim above the species and adaptation
+highlights.
 Coloured energy labels distinguish photosynthesis (green),
 plant feeding (brown), and animal feeding (red); mixed feeders show each source.
 Established traits describe the whole species. Up to three

@@ -16,6 +16,7 @@
   --color-energy-photosynthesis: #35633b;
   --color-energy-plant-feeding: #785024;
   --color-energy-animal-feeding: #9b4036;
+  --color-energy-other: #675887;
   --color-rule: rgb(90 73 43 / 25%);
   --color-rule-strong: rgb(90 73 43 / 42%);
   --color-rule-terminal: rgb(90 73 43 / 30%);
@@ -67,9 +68,9 @@
   --map-spring: #91aaa7;
   --map-spring-ring: #527c87;
   --map-grid: rgb(50 58 49 / 18%);
-  --map-pin: #fff8dd;
+  --map-pin: #ffd45f;
   --map-pin-outline: #3c3b28;
-  --map-pin-fill: rgb(255 248 221 / 16%);
+  --map-pin-fill: rgb(255 212 95 / 24%);
   --map-temperature-cold: #477aca;
   --map-temperature-hot: #be463f;
   --map-humidity-dry: #bb9656;
@@ -154,6 +155,7 @@
   --color-energy-photosynthesis: #a5d78d;
   --color-energy-plant-feeding: #e0b481;
   --color-energy-animal-feeding: #efaaa0;
+  --color-energy-other: #c5b7ec;
   --color-rule: rgb(196 219 165 / 17%);
   --color-rule-strong: rgb(196 219 165 / 32%);
   --color-rule-terminal: rgb(196 219 165 / 23%);
@@ -188,9 +190,9 @@
   --map-spring: #91aaa7;
   --map-spring-ring: #587f87;
   --map-grid: rgb(218 233 218 / 15%);
-  --map-pin: #dce8c8;
+  --map-pin: #ffe08a;
   --map-pin-outline: #263a29;
-  --map-pin-fill: rgb(220 232 200 / 15%);
+  --map-pin-fill: rgb(255 224 138 / 23%);
   --map-temperature-cold: #618fe0;
   --map-temperature-hot: #e1665b;
   --map-humidity-dry: #c8a563;
@@ -277,6 +279,7 @@
     --color-energy-photosynthesis: #a5d78d;
     --color-energy-plant-feeding: #e0b481;
     --color-energy-animal-feeding: #efaaa0;
+    --color-energy-other: #c5b7ec;
     --color-rule: rgb(196 219 165 / 17%);
     --color-rule-strong: rgb(196 219 165 / 32%);
     --color-rule-terminal: rgb(196 219 165 / 23%);
@@ -311,9 +314,9 @@
     --map-spring: #91aaa7;
     --map-spring-ring: #587f87;
     --map-grid: rgb(218 233 218 / 15%);
-    --map-pin: #dce8c8;
+    --map-pin: #ffe08a;
     --map-pin-outline: #263a29;
-    --map-pin-fill: rgb(220 232 200 / 15%);
+    --map-pin-fill: rgb(255 224 138 / 23%);
     --map-temperature-cold: #618fe0;
     --map-temperature-hot: #e1665b;
     --map-humidity-dry: #c8a563;

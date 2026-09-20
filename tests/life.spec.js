@@ -11,7 +11,9 @@ test('a sole species opens by default and remembers a keyboard collapse through 
   const site = suitable(world);
   const model = createActiveLifeModel(world);
   model.introduce(site.id);
-  const snapshot = model.observe();
+  const saved = model.exportState();
+  saved.populations.push({ ...saved.populations[0], hexId: site.neighbors[0], count: 7 });
+  const snapshot = restoreActiveLifeModel(world, saved).observe();
   await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
     body: `const observation = ${JSON.stringify(snapshot)};
       self.onmessage = ({data}) => { if (data.command === 'advance') { observation.day += 1; observation.revision += 1; }
@@ -23,6 +25,10 @@ test('a sole species opens by default and remembers a keyboard collapse through 
   await expect(choice).toHaveCount(1);
   await expect(choice).toHaveAttribute('aria-expanded', 'true');
   await expect(choice).toHaveAttribute('data-collapsible', 'true');
+  await expect(choice).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', snapshot.species[0].id);
+  await expect(page.locator('.species-population')).toHaveText('Total population: 27');
+  await expect(page.locator('.species-local-population')).toHaveText('On this hex: 20');
   await choice.press('Enter');
   await expect(choice).toHaveAttribute('aria-expanded', 'false');
   for (const theme of ['light', 'dark']) {
@@ -41,9 +47,17 @@ test('a sole species opens by default and remembers a keyboard collapse through 
     await expect(choice).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#species-detail')).toBeVisible();
     await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', snapshot.species[0].id);
+    await expect(page.locator('.species-local-population')).toHaveText(theme === 'light' ? 'On this hex: 20' : 'W tym heksie: 20');
     await page.screenshot({ path: testInfo.outputPath(`sole-species-expanded-${theme}.png`) });
+    await page.locator('.species-local-population').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath(`local-population-${theme}.png`) });
     await choice.press('Enter');
   }
+  await pinHex(page, world.hexes[site.neighbors[0]], world.width, world.height);
+  await expect(choice).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', snapshot.species[0].id);
+  await expect(page.locator('.species-population')).toHaveAttribute('data-count', '27');
+  await expect(page.locator('.species-local-population')).toHaveAttribute('data-count', '7');
 });
 
 test('species energy labels, ordered genomes and collapsible details survive live updates', async ({ page }, testInfo) => {
@@ -81,6 +95,10 @@ test('species energy labels, ordered genomes and collapsible details survive liv
   await expect(choices.first()).toHaveAttribute('aria-expanded', 'true');
   await page.locator('#step-world').click();
   await expect(choices).toHaveCount(4);
+  await expect(page.locator('.life-trend-legend li')).toHaveCount(4);
+  expect(await page.locator('.life-trend-legend li').evaluateAll(nodes => nodes.map(node => Number(node.dataset.count))))
+    .toEqual([1, 1, 1, 1]);
+  await expect(page.locator('.life-trend-band')).toHaveCount(4);
   await choices.first().click();
   await expect(page.locator('#species-detail')).toHaveCount(0);
   const first = choices.first();
@@ -92,6 +110,8 @@ test('species energy labels, ordered genomes and collapsible details survive liv
       ? ['Photosynthesis', 'Plant feeding', 'Animal feeding'] : ['Fotosynteza', 'Roślinożerność', 'Mięsożerność']);
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
+      await page.locator('.life-overview').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: testInfo.outputPath(`energy-chart-${locale}-${theme}.png`) });
       await mixed.focus();
       await page.keyboard.press('Enter');
       await expect(mixed).toHaveAttribute('aria-expanded', 'true');
@@ -116,6 +136,8 @@ test('species energy labels, ordered genomes and collapsible details survive liv
   }
   await page.locator('#step-world').click();
   await expect(page.locator('#world-day')).toHaveAttribute('data-day', '3');
+  expect(await page.locator('.life-trend-legend li').evaluateAll(nodes => nodes.map(node => Number(node.dataset.count))))
+    .toEqual([0, 1, 1, 2]);
   await expect(page.locator('#species-detail')).toHaveCount(0);
   await page.locator('[data-locale="en"]').click();
   await expect(page.locator('#species-detail')).toHaveCount(0);
@@ -148,12 +170,12 @@ test('population counts ease towards observations, retarget smoothly and respect
   await openLifeWorld(page);
   await pinHex(page, site, world.width, world.height);
   const population = page.locator('.species-population');
-  await expect(population).toHaveText('Population: 20');
+  await expect(population).toHaveText('Total population: 20');
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   await page.locator('#step-world').click();
   await expect(population).toHaveAttribute('data-count', '32');
-  await expect(population).toHaveText('Population: 20');
+  await expect(population).toHaveText('Total population: 20');
   await page.clock.runFor(80);
   const intermediate = Number((await population.textContent()).replace(/\D/g, ''));
   expect(intermediate).toBeGreaterThan(20);
@@ -161,15 +183,15 @@ test('population counts ease towards observations, retarget smoothly and respect
   await page.locator('#step-world').click();
   await expect(population).toHaveAttribute('data-count', '24');
   await page.locator('[data-locale="pl"]').click();
-  await expect(population).toHaveText(`Populacja: ${intermediate}`);
+  await expect(population).toHaveText(`Łączna populacja: ${intermediate}`);
   await page.clock.runFor(300);
-  await expect(population).toHaveText('Populacja: 24');
+  await expect(population).toHaveText('Łączna populacja: 24');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('#step-world').click();
   await expect(population).toHaveAttribute('data-count', '50');
-  await expect(population).toHaveText('Populacja: 50');
+  await expect(population).toHaveText('Łączna populacja: 50');
   await page.clock.runFor(300);
-  await expect(population).toHaveText('Populacja: 50');
+  await expect(population).toHaveText('Łączna populacja: 50');
 });
 
 test('V3 distinguishes estimated adaptation ranges from inherited traits in both languages and themes', async ({ page }, testInfo) => {
@@ -317,7 +339,7 @@ test('plant introduction advances completed biology and prevents resetting livin
   await expect(page.locator('#occupied-count')).toHaveText('0.3%');
   await expect(page.locator('#pause-world')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#species-panel')).toBeVisible();
-  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+  await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
   const choice = page.locator('.species-choice');
   await expect(choice).toHaveAttribute('aria-expanded', 'true');
   await choice.click();
@@ -504,7 +526,7 @@ test('local species list excludes distant species and shows partial gene carrier
   await choices.first().click();
   await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', 'species-1');
   await expect(page.locator('.species-population')).toHaveAttribute('data-count', '21000');
-  await expect(page.locator('.species-population')).toHaveText('Population: 21K');
+  await expect(page.locator('.species-population')).toHaveText('Total population: 21K');
   await expect(page.locator('.gene-expression[data-gene="movement"]')).toHaveText('Expression 1 · 20%');
   await expect(page.locator('.gene-expression[data-gene="plantFeeding"]')).toHaveText('2%');
   await expect(page.locator('.gene-list')).not.toContainText(/Animal feeding|Trunk|Absent/);

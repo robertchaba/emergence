@@ -80,6 +80,9 @@ export function restoreLifeModel(world, checkpoint) {
     || JSON.stringify(state.worldIdentity) !== JSON.stringify(worldIdentity(world))
     || !Array.isArray(state.history) || state.history.length > 180
     || state.history.some((row, index) => !row || !['day', 'population', 'species', 'extinctSpecies', 'variants', 'occupiedHexes'].every(key => count(row[key]))
+      || row.speciesByEnergy !== undefined && (!row.speciesByEnergy
+        || !['photosynthesis', 'plantFeeding', 'animalFeeding', 'other'].every(key => count(row.speciesByEnergy[key]))
+        || Object.values(row.speciesByEnergy).reduce((sum, value) => sum + value, 0) !== row.species)
       || row.day > state.day || index > 0 && row.day <= state.history[index - 1].day)
     || !Array.isArray(state.previousAttempts)
     || state.previousAttempts.some(attempt => !attempt || !text(attempt.runId)
@@ -507,6 +510,14 @@ function buildModel(world, state) {
     }
   }
 
+  // Count established living identities once, regardless of occupied hexes.
+  function speciesByEnergy(ids) {
+    const counts = { photosynthesis: 0, plantFeeding: 0, animalFeeding: 0, other: 0 };
+    const roles = { producer: 'photosynthesis', grazer: 'plantFeeding', predator: 'animalFeeding' };
+    for (const id of ids) counts[roles[phenotype(speciesById.get(id).genome).role] ?? 'other'] += 1;
+    return counts;
+  }
+
   function updateHistory() {
     const population = state.populations.reduce((sum, row) => sum + row.count, 0);
     const living = new Set(state.populations.map(row => row.speciesId));
@@ -516,7 +527,7 @@ function buildModel(world, state) {
       }
     }
     if (state.introduced) {
-      state.history.push({ day: state.day, population, species: living.size,
+      state.history.push({ day: state.day, population, species: living.size, speciesByEnergy: speciesByEnergy(living),
         extinctSpecies: state.species.filter(record => record.extinctDay !== null).length,
         variants: living.size, occupiedHexes: new Set(state.populations.map(row => row.hexId)).size });
       if (state.history.length > 180) state.history.splice(0, state.history.length - 180);
@@ -626,7 +637,7 @@ function buildModel(world, state) {
       contractVersion: CONTRACT_VERSION, day: state.day, startDay: state.startDay, revision: state.revision,
       biologicalTurns: state.biologicalTurns, attempt: state.attempt, previousAttempts: state.previousAttempts,
       status: !state.introduced ? 'not-introduced' : organisms ? 'living' : 'extinct',
-      counts: { organisms, species: speciesRows.length, occupiedHexes: hexRows.length,
+      counts: { organisms, species: speciesRows.length, speciesByEnergy: speciesByEnergy(speciesRows.map(row => row.id)), occupiedHexes: hexRows.length,
         variants: speciesRows.length, extinctSpecies: state.species.filter(record => record.extinctDay !== null).length },
       countQuality: 'exact', species: speciesRows, hexes: hexRows,
       extinctSpecies: state.species.filter(record => record.extinctDay !== null).map(record => ({

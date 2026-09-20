@@ -40,13 +40,14 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   const detail = element('div', 'species-detail');
   detail.id = 'species-detail';
   const population = element('p', 'species-population');
+  const localPopulation = element('p', 'species-local-population');
   const heading = element('h4', 'gene-heading');
   const traits = element('dl', 'gene-list');
   const tendencies = element('details', 'species-tendencies');
   const tendencyHeading = element('summary', 'gene-heading');
   const tendencyList = element('ul', 'tendency-list');
   tendencies.append(tendencyHeading, tendencyList);
-  detail.append(population, heading, traits, tendencies);
+  detail.append(population, localPopulation, heading, traits, tendencies);
   const buttons = new Map();
   const numbers = createNumberAnimator();
   let observation = null;
@@ -65,6 +66,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   let busy = false;
   let totalHexes = 0;
   let populationSpeciesId = null;
+  let populationHexId = null;
 
   function highlight(id) {
     if (highlightedId === id) return;
@@ -219,6 +221,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     if (!ids.has(highlightedId)) highlight(null);
     if (expandedId !== null && !ids.has(expandedId)) {
       expandedId = occupants.length === 1 ? occupants[0].id : undefined;
+      if (expandedId !== undefined) highlight(expandedId);
     }
     for (const [id, button] of buttons) {
       if (!ids.has(id)) { button.parentElement.remove(); buttons.delete(id); }
@@ -269,6 +272,11 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
         numbers.set(population, species.population,
           value => t('speciesPopulation', { population: formatNumber(Math.round(value), 'compact') }),
           { immediate: populationSpeciesId !== species.id });
+        numbers.set(localPopulation, occupant.population,
+          value => t('speciesLocalPopulation', { population: formatNumber(Math.round(value), 'compact') }),
+          { immediate: populationSpeciesId !== species.id || populationHexId !== pinnedId });
+        localPopulation.dataset.count = String(occupant.population);
+        populationHexId = pinnedId;
         populationSpeciesId = species.id;
         population.dataset.count = String(species.population);
         heading.textContent = t('geneHeading');
@@ -303,12 +311,39 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     const key = failed ? retryAvailable ? 'lifeInitializationError' : 'lifeError' : messageKey;
     message.textContent = key ? t(key) : '';
     message.hidden = !key;
-    const history = observation?.history?.length ? observation.history : [{ day: observation?.day ?? 1, species: 0, extinctSpecies: 0, occupiedHexes: 0 }];
-    document.querySelector('.life-trend-drawing').innerHTML = createLifeTrendSvg(history, {
-      metric: 'species',
-      label: t('lifeTrendLabel', { metric: t('extantSpecies'), first: integer(history[0].day), last: integer(history.at(-1).day), count: integer(counts.species) }),
+    const categories = [...energyKeys, 'other'];
+    const energyCounts = counts.speciesByEnergy;
+    const history = observation?.history?.length ? observation.history : [{ day: observation?.day ?? 1, species: 0 }];
+    // Historical saves may predate the energy census. Do not invent past shares.
+    const energyHistory = history.filter(sample => sample.speciesByEnergy)
+      .map(sample => ({ day: sample.day, ...sample.speciesByEnergy }));
+    if (energyCounts && energyHistory.at(-1)?.day !== observation.day) {
+      energyHistory.push({ day: observation.day, ...energyCounts });
+    }
+    const split = !!energyCounts;
+    const plotted = split ? energyHistory : history;
+    const label = t('lifeTrendLabel', { metric: t('extantSpecies'), first: integer(plotted[0]?.day ?? 1),
+      last: integer(plotted.at(-1)?.day ?? 1), count: integer(counts.species) });
+    const drawing = document.querySelector('.life-trend-drawing');
+    drawing.innerHTML = createLifeTrendSvg(plotted, {
+      metric: 'species', series: split ? categories : undefined,
+      label: split ? `${label} ${t('energyTrendDescription')}` : label,
       format: value => formatNumber(value, 'compact'), formatDay: integer,
     });
+    if (split) {
+      const legend = element('ul', 'life-trend-legend');
+      for (const key of categories) {
+        const item = element('li');
+        item.dataset.energy = key;
+        item.dataset.count = String(energyCounts[key]);
+        item.append(element('span', 'life-trend-swatch'),
+          element('span', '', t('energySpeciesCount', {
+            energy: t(geneKeys[key] ?? 'energyOther'), count: integer(energyCounts[key]),
+          })));
+        legend.append(item);
+      }
+      drawing.append(legend);
+    }
     renderControls();
     renderSpecies();
   }

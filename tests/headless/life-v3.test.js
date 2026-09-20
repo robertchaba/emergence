@@ -395,3 +395,40 @@ test('v3 extinction remains empty until explicit deterministic restart', () => {
   assert.deepEqual(resumed.exportState(), model.exportState());
   reconcile(model);
 });
+
+
+test('v3 energy census partitions living identities and preserves optional historical counts', () => {
+  const world = fixture();
+  const model = createLifeModel(world);
+  assert.deepEqual(model.observe().counts.speciesByEnergy,
+    { photosynthesis: 0, plantFeeding: 0, animalFeeding: 0, other: 0 });
+  model.introduce(18);
+  const saved = model.exportState();
+  const original = saved.species[0];
+  // Every combination, including no intake, plus duplicate habitat/location rows.
+  saved.species = Array.from({ length: 8 }, (_, bits) => ({ ...original,
+    id: `diet-${bits}`, candidates: [], genome: { ...founderGenome(),
+      photosynthesis: bits & 1, plantFeeding: (bits >> 1) & 1, animalFeeding: (bits >> 2) & 1 } }));
+  saved.populations = saved.species.flatMap(species => [18, 19].map(hexId => ({
+    ...saved.populations[0], speciesId: species.id, hexId, count: 12,
+  })));
+  saved.nextSpecies = 9;
+  const restored = restoreLifeModel(world, saved);
+  const before = restored.exportState();
+  const expected = { photosynthesis: 1, plantFeeding: 1, animalFeeding: 1, other: 5 };
+  assert.deepEqual(restored.observe().counts.speciesByEnergy, expected);
+  assert.deepEqual(restored.exportState(), before, 'observation consumes no random state');
+  restored.advanceTo(1); // No biological turn; all eight established identities remain.
+  const snapshot = reconcile(restored);
+  assert.deepEqual(snapshot.history.at(-1).speciesByEnergy, expected);
+  assert.equal(Object.values(snapshot.counts.speciesByEnergy).reduce((a, b) => a + b), snapshot.counts.species);
+  const checkpoint = restored.exportState();
+  assert.deepEqual(restoreLifeModel(world, checkpoint).observe(), snapshot);
+  delete checkpoint.history[0].speciesByEnergy;
+  const legacy = restoreLifeModel(world, checkpoint);
+  assert.equal(legacy.observe().history[0].speciesByEnergy, undefined);
+  legacy.advanceTo(2);
+  assert.deepEqual(legacy.observe().history.at(-1).speciesByEnergy, expected);
+  checkpoint.history.at(-1).speciesByEnergy.other += 1;
+  assert.throws(() => restoreLifeModel(world, checkpoint), /Invalid checkpoint metadata/);
+});

@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Restore directly from the landing page — 2026-09-19.**
+**Current: Species inspection and energy-source chart — 2026-09-20.**
+Decision 059 adds local population, automatic range selection, a stronger selected
+hex rim, and a stacked living-species census by acquisition strategy.
+
+**Restore directly from the landing page — 2026-09-19.**
 Decision 057 replaces the landing restore link with a panel-style button and
 opens the upload dialog without navigating to setup.
 
@@ -2813,3 +2817,55 @@ unchanged. Browser inspection is limited to Chromium.
 `npm run build`, `npm test` (121 Chromium checks passed, one existing skip,
 plus the headless/rendering suite) and `git diff --check` passed. Final scope
 review preserved the pre-existing save/restore work in the working tree.
+
+
+## 059 — Local population, distinct hex selection and energy census — 2026-09-20
+
+**Supersedes 037's automatic sole-species expansion without highlighting and
+039's single-total living-species chart; refines 048/051's notebook disclosure.**
+The user requested local counts alongside global population, a more pronounced
+selected hex, automatic species-range highlighting on sole-occupant selection,
+and a chart partition by energy acquisition with mixed strategies in Other.
+
+Expanded details now show Total population and On this hex from the same completed
+observation. Both use compact locale formatting and the existing brief animator;
+changing hexes immediately displays the new local count. Automatic expansion
+selects the species range through the same UI callback as explicit selection.
+Collapsing still clears it and remains collapsed through live/theme/locale updates.
+The map paints a wider gold selected-hex rim with a dark contrasting edge and
+stronger translucent fill above territory and carrier/adaptation contours.
+Colours and typography stay in root tokens; explicit and system dark agree.
+
+V3 adds an optional disjoint `speciesByEnergy` partition to current counts and
+each newly completed day's history. Existing phenotype roles identify pure
+photosynthesis, plant feeding and animal feeding; mixed and zero-system roles
+count as Other. Living identities count once regardless of population, habitats
+or occupied hexes, and candidates are excluded. This aggregation remains inside
+V3; UI and rendering never classify biological state. No ecological coefficients,
+random draws, cadence, model rules revision or physical world behavior change.
+
+The living-species chart uses four stacked step areas with a total scale, a
+translated text legend and current category counts. Its accessible description
+explains the grouping. The last 180 daily samples remain authoritative. Older V3
+checkpoints are still accepted; optional partitions are validated when present.
+Missing historical breakdowns remain missing, and the split chart starts at the
+first available breakdown (the restored current census initially). Preserved
+models without this extension keep the total chart. History is never estimated
+from today's species, and UI does not invent zero counts for unavailable data.
+
+Validation: `npm run build` and `npm test` passed: 142 headless/renderer checks,
+121 Chromium checks, and one existing desktop touch duplicate skipped. Focused
+coverage verifies all eight acquisition combinations, disjoint counting across
+hexes, query purity, historical partition persistence and validation, legacy
+history compatibility, stacked step geometry, automatic range selection, explicit
+collapse persistence, and different global/local counts after changing hexes.
+Visual review confirmed the gold rim, both population readouts, chart legend,
+keyboard focus and EN/PL wrapping in both themes at desktop and phone widths.
+The suite also covers 320 px overflow, assets, disabled controls, storage failure,
+real-worker continuation, and partial map repaint equivalence. EN/PL keys and
+explicit/system dark tokens match; final dependency/scope review and
+`git diff --check` passed.
+
+Limits: acquisition categories describe established capabilities, not actual
+energy shares or ecological calibration. Older saves cannot supply unrecorded
+historical breakdowns. Browser validation covers Chromium only.
