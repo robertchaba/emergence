@@ -1,5 +1,89 @@
 # V3 validation — 2026-09-19
 
+## Revision 5: canopy browsing, hunting effort and stationary plants — 2026-09-20
+
+`npm run build` and `npm test` passed: 150 headless/rendering checks and 121
+Chromium checks, with the existing desktop touch duplicate skipped. Inspected
+small, medium and mixed-size plant fixtures in both themes at desktop and phone
+widths, plus the real notebook's wrapping, keyboard focus and controls. Existing
+browser checks cover EN/PL, assets, disabled controls, save rejection, reduced
+motion and worker/headless continuation. No setup/build wiring changed.
+
+New focused fixtures establish that:
+
+- A size-5 mobile grazer can live on size-10, trunk-6 plants, and a single step
+  to size 6 improves its net growth score by more than the 0.005 selection
+  threshold. Small grazers retain a score advantage on tiny plants in both land
+  and water. The benefit comes from real food after the ordinary body costs.
+- Splitting tall plants into more source identities cannot supply repeated free
+  foraging effort. Splitting short, vulnerable grazers cannot unlock protected
+  tall-plant production. Existing finite-budget and conversion checks remain.
+- Hunting effort's 12.5% increase improves an effort-limited predator's growth,
+  while empty prey pools still give zero intake and negative growth. The existing
+  prey-size rule denies size-8 grazers to a size-6 hunter without bite force,
+  while a size-7 hunter can feed and grow. Extra size remains a cost where a
+  smaller hunter already reaches the available prey.
+- A single large stationary plant retains a large rosette beside a million
+  tiny producers. Separate drawing budgets remain independent of organism count,
+  stationary poses stay fixed, cosmetic-only frames skip static vegetation,
+  extinction erases old marks, and maximum-zoom caps retain size differences.
+  Browser damage repaint agrees with a fresh frame within the existing small
+  antialiasing tolerance, including mobile neighbours and mixed plant sizes.
+
+Revision 4 checkpoints are explicitly rejected; the existing continuation tests
+exercise new revision-5 checkpoints with complete PRNG state. All biological
+changes stay inside V3. Rendered size bands do not alter the common observations,
+species classification, census or biological random stream.
+
+### Same-world comparison
+
+The observational panel compares pre-change revision 4 and revision 5 on
+`physical-world-4`, seed `emergence`, Medium (42 × 28), with identical life seeds
+and introduction sites: sea hex 546 and river hex 555. Both actually introduce
+life in water. Each runs 14,400 elapsed days (40 years), sampled every decade,
+without seeded consumers or supplied candidate directions. The script now also
+reports `sizesByHabitat`: counts of pure producer/grazer/predator species at
+each body-size level 1–10. A species occupying both habitats appears in both
+habitat histograms; these are species counts, not population-weighted averages.
+
+| Source / revision | Living species | Pure predators | Predator hexes | Land grazers size ≥4 / all |
+| --- | ---: | ---: | ---: | ---: |
+| Sea 546 / 4 | 60 | 1 | 4 | 2 / 11 |
+| Sea 546 / 5 | 84 | 6 | 123 | 5 / 25 |
+| River 555 / 4 | 91 | 4 | 42 | 3 / 27 |
+| River 555 / 5 | 89 | 7 | 162 | 2 / 29 |
+
+Final land grazer size histograms, levels 1–10:
+
+- Sea / 4: `7,1,1,1,0,1,0,0,0,0`; sea / 5: `8,10,2,2,2,1,0,0,0,0`.
+- River / 4: `10,9,5,2,1,0,0,0,0,0`; river / 5: `12,7,8,2,0,0,0,0,0,0`.
+
+The sea run retained size-6 land grazers in both revisions, with more medium
+and larger grazing identities in revision 5. The river run did **not** show a
+uniform shift to larger grazers (maximum 4 rather than 5), and its plant
+community remained mostly small. Final predators occupied size levels 1–3 in
+both revised runs; the controlled prey-size fixture demonstrates the potential
+for larger hunters, not an observed giant-predator outcome in this panel.
+Final revision-5 organisms/occupied hexes were 194,139/744 and 551,107/784.
+Photosynthesis-plus-grazing was absent at every revised decade sample; transient
+lineages between observations are not excluded.
+
+Reproduce the current panel:
+
+```sh
+node scripts/check-life-v3-balance.js 14400 medium emergence water
+node scripts/check-life-v3-balance.js 14400 medium emergence land
+```
+
+The conditional size-selection fixtures and these two introductions do not
+establish universal large herbivores, permanent carnivory, or calibrated rarity.
+Plant communities, demographic paths and size distributions also change through
+feedback; a local advantage is not a guaranteed full-world trajectory. No runtime
+speed improvement or cross-browser numerical equivalence is claimed. More
+stationary marks increase bounded full-frame work, while plant-only cells avoid
+cosmetic repaints. The original artwork, world physics, V1/V2 and dependencies
+are retained. Final `git diff --check` and scope/dependency review passed.
+
 ## Revision 4: habitat expansion, consumer movement and predator establishment — 2026-09-20
 
 `npm run build` and `npm test` passed: 146 headless/rendering checks and 121

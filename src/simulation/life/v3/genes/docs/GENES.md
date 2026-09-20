@@ -108,7 +108,8 @@ No combination is invalidated and mutation sampling is unchanged. The charges
 reduce net growth and ecological acceptance, especially for photosynthetic
 grazing. Revision 3 retained revision 2 single-system behavior; revision 4
 supersedes movement costs and encounter effort as described here. Intake
-allocation, defended access and finite resource budgets remain unchanged. Exact prevalence depends on the
+allocation and finite resource budgets remain unchanged; revision 5 supersedes
+the height cutoff as described below. Exact prevalence depends on the
 community and evolutionary path; these coefficients are experimental tuning.
 
 Land light weight is `(1+0.12size×trunk)×(1+0.012eyesight)`; canopy height is
@@ -121,12 +122,19 @@ Defense is `0.6armor×protection+0.42spines+skeletonDefense`; handling is
 `0.7biteForce+skeletonHandling`. Sensing sums the three sensory contributions.
 
 Grazing reach is `consumerSize×(2.2+0.3biteForce+0.1flightEfficiency)`.
-Accessible plant production is divided by
+Revision 5 replaces the earlier zero/full height test with reachable canopy
+fraction `min(1,(reach/plantHeight)²)`. Accessible plant production is that
+fraction divided by
 `1+0.8unmatchedPoison+0.6unmatchedSpines+0.15plantArmorProtection`, where
 unmatched poison is `max(0,plantPoison−detoxification)` and unmatched spines
 `max(0,plantSpines−0.7biteForce−0.2consumerArmor)`. The ecological allocator
 uses nested accessibility bands, so multiplying vulnerable consumer species
 cannot unlock protected production.
+Successful foraging demand is also limited by the reachable fraction, and each
+withdrawal spends `removedFood/reachableFraction` of the remaining grazing effort.
+This lets size improve rare-browser fitness on tall plants without granting more
+food or free retries against additional identical source labels. Small plants
+are fully accessible to small grazers, retaining their lower body costs.
 
 Predators target species with at least one consumer system. Prey cells must be
 at most `predatorCells×(1.6+0.6biteForce)`. Capture probability, limited to
@@ -141,8 +149,9 @@ applied as a whole-parent replacement.
 For each eligible prey source, successful hunting effort is limited to
 `remainingPredationDemand / preyTissue × captureProbability`, where prey tissue
 is `1.4×preyCells`. All predators share the same 12%-of-prey withdrawal budget.
-Revision 4 hunting effort is `population×cells×predationShare×environment×3.2`
-(up from 2.8). Grazing effort multiplies its existing 2.2 factor by
+Revision 5 hunting effort is `population×cells×predationShare×environment×3.6`,
+12.5% above revision 4's 3.2 (which had superseded 2.8).
+Grazing effort multiplies its existing 2.2 factor by
 `1 + 0.7speed/(1+speed)`: moving grazers encounter more real production, with
 diminishing returns. Stationary feeding remains possible. These efforts do not create prey or food.
 Capture therefore scales population-proportional effort; splitting unchanged

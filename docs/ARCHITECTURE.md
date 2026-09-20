@@ -2,7 +2,10 @@
 
 ## Status
 
-**Current: Habitat expansion, consumer movement and carnivore establishment — 2026-09-20.**
+**Current: Canopy browsing, modest hunting help and visible stationary plants — 2026-09-20.**
+Decision 064 activates V3 revision 5 and preserves plant size bands in the atlas.
+
+**Habitat expansion, consumer movement and carnivore establishment — 2026-09-20.**
 Decision 060 activates V3 revision 4 and lightens the notebook chart in light mode.
 
 **Species inspection and energy-source chart — 2026-09-20.**
@@ -3026,3 +3029,85 @@ checks, 121 Chromium checks, one existing skip). Visual inspection confirmed
 smooth bands and no dark right border in light/dark themes at desktop and phone
 widths. Existing browser checks cover EN/PL layout, focus and controls.
 `git diff --check` passed; the pre-existing package version edit was preserved.
+
+## 064 — Canopy browsing, hunting effort and visible stationary plants — 2026-09-20
+
+The user requests a modest advantage for carnivores, stronger selection for
+larger plant eaters where large plants occur, and clearer stationary vegetation.
+**Supersedes 060's active rules revision and hunting coefficient, and 042/052's
+stationary-plant animation, size averaging, radius cap and shared marker budget.**
+
+### V3 ecology
+
+Active rules become `v3-populations-5`. Hunting effort rises from 3.2 to 3.6
+(12.5%); capture, prey eligibility, the 12% prey withdrawal cap, 60% conversion,
+mixed-feeding costs, movement and founding-density rules retain their meanings.
+The checkpoint format stays the same, with its strict rules-revision check now
+rejecting revision 1–4 checkpoints. There is no implicit migration.
+
+The former all-or-nothing grazing height cutoff could block small browsers
+without rewarding greater reach once any food became fully accessible. It is
+replaced by reachable fraction `min(1,(consumerReach/plantHeight)²)`, using the
+existing size/bite/flight reach and plant size/trunk height. This fraction limits
+both available production (alongside existing defenses) and successful foraging
+per unit of effort. A withdrawal spends removed food divided by reachable
+fraction, preventing extra free attempts when identical plants have several
+species labels. The nested allocator still shares one finite protected source.
+This creates a gradual size incentive on tall plants while leaving tiny plants
+fully accessible to small grazers. Larger bodies still pay their existing costs.
+
+Predators already need sufficient body cells to access larger consumer prey;
+the existing eligibility and tissue-energy calculation provides the requested
+link from larger grazers to potentially larger carnivores. No separate bonus,
+forced size trajectory, ecological biome or predefined species is added.
+All ecological changes stay inside `life/v3/`. V1/V2, geography, climate, calendar,
+candidate search, model observations and biological PRNG ownership are retained.
+
+### Read-only rendering
+
+Stationary producer groups now preserve three normalized-size bands per habitat,
+instead of averaging a few large plants into abundant tiny plants. Groups retain
+population-weighted size within a band. Largest bands receive representatives
+first, with up to 16 samples per group and 24 per hex, independently of the
+existing 30 other marks. Wider views reduce these budgets to 6/6 or 12/15.
+Plants render beneath animals with larger, fuller three-leaf rosettes and the
+existing resolved plant/detail tokens. Size-dependent radius caps preserve
+size differences at close zoom, topping out at 10 CSS pixels for the largest.
+
+Stationary marks have fixed positions and opacity. Cosmetic time invalidates
+only hexes containing mobile display groups; biological changes, extinction,
+camera, theme and selection still repaint normally. This spends additional
+bounded drawing work where stationary plants actually change. The renderer
+uses common role/size/habitat/mobility observations, with no genome access,
+simulation imports, state writes or new palette. Marks remain illustrative
+samples rather than organism counts or measured anatomy.
+
+### Validation and limitations
+
+Focused checks cover selectable single-step grazer growth on tall plants,
+small-body advantage on tiny land/water plants, larger prey requiring a larger
+hunter, modest hunting gains with real food, defended source limits, and
+invariance to splitting plant, prey or consumer labels. Existing deterministic
+replay, census, checkpoint, candidate and browser/headless checks remain.
+Renderer checks cover rare large plants beside abundant tiny plants, independent
+budgets, fixed poses, size-dependent caps, extinction invalidation and cosmetic
+frame reuse. Browser fixtures cover mixed sizes and mobile neighbours in both
+themes and viewport sizes, comparing damage repaint with a fresh frame using
+the existing small antialiasing tolerance.
+
+Full-world observations and final check results are recorded in
+[V3 validation](../src/simulation/life/v3/docs/VALIDATION.md). These are experimental
+selection pressures, not guarantees of large herbivores or persistent predators.
+Canopy access remains a coarse approximation; no vertical layers or individual
+feeding are simulated. More static marks can cost more on full repaints, and no
+runtime performance gain or cross-browser equivalence is claimed.
+
+Final verification: `npm run build` and `npm test` passed (150 headless/rendering
+checks, 121 Chromium checks, one existing desktop touch duplicate skipped).
+Visual inspection covered plant-size fixtures and the real notebook in both
+themes at desktop/phone widths. The 40-year sea/river panel ended with 6/7 pure
+predator species versus 1/4 before. Land grazer size distributions changed in
+both directions across sites; stronger conditional selection does not guarantee
+a larger-body outcome. V3 validation records full comparisons and limits.
+`git diff --check` passed; no dependencies, V1/V2, shared physics, original artwork
+or licence files changed.

@@ -1,6 +1,8 @@
 // Illustrative population marks, not organisms or inferred anatomy. All input
 // comes from common display observations; motion is a separate cosmetic clock.
-export const LIFE_MARKER_LIMIT = 30;
+export const LIFE_PLANT_MARKER_LIMIT = 24;
+export const LIFE_CONSUMER_MARKER_LIMIT = 30;
+export const LIFE_MARKER_LIMIT = LIFE_PLANT_MARKER_LIMIT + LIFE_CONSUMER_MARKER_LIMIT;
 const TAU = Math.PI * 2;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 
@@ -23,17 +25,14 @@ export function lifeMarkerPositions(hexId) {
 }
 
 export function lifeMarkerPose(marker, slot, time) {
-  const clock = (time + slot.offset) / (marker.mobile ? 3.5 : 12);
+  const heading = slot.offset / 12 * TAU;
+  if (!marker.mobile) {
+    return { ...markerPoint(slot.seed, 0), heading, phase: heading, opacity: 1 };
+  }
+  const clock = (time + slot.offset) / 3.5;
   const step = Math.floor(clock);
   const progress = clock - step;
   const point = markerPoint(slot.seed, step);
-  const heading = slot.offset / 12 * TAU;
-  if (!marker.mobile) {
-    // Only rooted producers renew their patches. Stationary consumers stay put.
-    return marker.role === 'producer'
-      ? { ...point, heading, phase: heading, opacity: Math.min(1, progress * 12, (1 - progress) * 12) }
-      : { ...markerPoint(slot.seed, 0), heading, phase: heading, opacity: 1 };
-  }
   const previous = markerPoint(slot.seed, step - 1);
   const next = markerPoint(slot.seed, step + 1);
   const from = { x: (previous.x + point.x) / 2, y: (previous.y + point.y) / 2 };
@@ -53,14 +52,15 @@ export function lifeMarkerPose(marker, slot, time) {
 export function drawLifeMarker(context, marker, slot, time, x, y, scale, palette) {
   const plant = marker.role === 'producer' && !marker.mobile;
   const point = lifeMarkerPose(marker, slot, time);
-  const radius = clamp(scale * (0.03 + marker.size * 0.05) * (plant ? 0.8 : 1), 0.4, plant ? 3.5 : 6);
+  const radius = plant ? clamp(scale * (0.024 + marker.size * 0.14), 0.4, 2.5 + 7.5 * marker.size)
+    : clamp(scale * (0.03 + marker.size * 0.05), 0.4, 6);
   const cx = x + point.x * scale;
   const cy = y + point.y * scale;
   const colour = palette[plant ? 'life-plant' : `life-${marker.role}`];
   context.globalAlpha = point.opacity;
   context.fillStyle = colour;
   // Keep a quiet, inexpensive atlas at low zoom. Detail appears as space allows.
-  if (scale < 18 || radius < 0.85 || plant && (scale < 28 || marker.size < 0.35)) {
+  if (scale < (plant ? 10 : 18) || radius < 0.85 || plant && marker.size < 0.35) {
     context.beginPath();
     context.arc(cx, cy, radius, 0, TAU);
     context.fill();
@@ -75,16 +75,27 @@ export function drawLifeMarker(context, marker, slot, time, x, y, scale, palette
   context.lineCap = 'round';
   context.lineJoin = 'round';
   if (plant) {
-    // A small engraved rosette; the silhouette does not imply a plant species.
+    // A fixed canopy rosette; its 1.25-radius leaves stay inside the hex even
+    // at the largest size. The silhouette does not imply a plant species.
     context.beginPath();
     for (let leaf = 0; leaf < 3; leaf += 1) {
       const angle = leaf * TAU / 3;
       const lx = Math.cos(angle) * 0.45;
       const ly = Math.sin(angle) * 0.45;
       context.moveTo(lx + Math.cos(angle) * 0.8, ly + Math.sin(angle) * 0.8);
-      context.ellipse(lx, ly, 0.8, 0.34, angle, 0, TAU);
+      context.ellipse(lx, ly, 0.8, 0.48, angle, 0, TAU);
     }
     context.fill();
+    if (radius >= 2) {
+      context.strokeStyle = palette['life-detail'];
+      context.beginPath();
+      for (let leaf = 0; leaf < 3; leaf += 1) {
+        const angle = leaf * TAU / 3;
+        context.moveTo(0, 0);
+        context.lineTo(Math.cos(angle) * 0.95, Math.sin(angle) * 0.95);
+      }
+      context.stroke();
+    }
   } else {
     const swim = marker.habitat === 'water';
     const gait = Math.sin(point.phase);

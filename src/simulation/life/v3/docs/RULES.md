@@ -6,7 +6,7 @@ authorized for this independent version, not measured biological constants.
 V1/V2 research remains intact. Shared physics, weather, calendar and speed
 meanings are unchanged.
 
-Identifiers: `modelId: v3`, `rulesRevision: v3-populations-4`, checkpoint format
+Identifiers: `modelId: v3`, `rulesRevision: v3-populations-5`, checkpoint format
 `emergence-life-v3-checkpoint-1`, common contract `life-observations-1`.
 
 ## State and introduction
@@ -100,20 +100,38 @@ accessibility bands are shared once across all eligible consumers: adding more
 vulnerable species cannot unlock defended tissue. Grazing subtracts source
 production and transfers 60% of removed energy to consumers.
 
+Revision 5 supersedes the all-or-nothing grazing height cutoff. Reach remains
+`consumerSize × (2.2 + 0.3biteForce + 0.1flightEfficiency)`; the reachable canopy
+fraction is `min(1, (reach/plantHeight)²)`. This fraction multiplies defended
+access and caps successful foraging at remaining effort times the fraction.
+Removing food spends `removedFood/reachableFraction` of effort, so splitting
+identical plant supply into more species cannot give free repeated attempts.
+Poison, spines and armor retain their existing nested protection calculation.
+Larger browsers can obtain a selectable benefit from tall plants even when rare;
+tiny plants provide full reach without paying for a large body. The curve is a
+coarse canopy-access approximation, applied to observed plant height in either
+habitat, not a claim of simulated vertical layers or actual plant anatomy.
+
 Predators consume eligible feeding species, with size limits and capture affected
 by movement, sensing, flight, defenses, poison and handling. Per-source withdrawal
 is bounded at 12% of prey population each turn; capture accessibility and demand
 further constrain it. Tissue accounting uses `1.4 × prey body cells`, with 60%
 conversion. Feeding effort is population × cells × acquisition share ×
 environmental performance, multiplied by `2.2 × [1+0.7speed/(1+speed)]`
-for grazing and 3.2 for hunting. Revision 4 supersedes the former fixed grazing
-effort and 2.8 hunting effort. The first movement level has no additional upkeep
+for grazing and 3.6 for hunting. Revision 5 increases hunting effort by 12.5%
+from revision 4's 3.2 (which superseded 2.8). Revision 4's movement-assisted
+grazing is retained. The first movement level has no additional upkeep
 or construction cost for consumers without photosynthesis; higher levels remain
 paid, and the gene must still evolve.
 Capture starts at 0.50, with a 0.14 coefficient on predator-minus-prey speed;
 other capture effects and the 12% withdrawal cap remain unchanged. Same-species feeding is excluded. Finite resource
 allocation is shared across consumers; it never loops over individual hunters.
 Pairwise ecological work can still grow with the number of coexisting species.
+
+The existing prey eligibility rule requires enough predator body cells for the
+prey's size (`preyCells ≤ predatorCells × (1.6 + 0.6biteForce)`). Thus larger
+grazers can support selection for larger hunters; the size gate, tissue energy,
+capture rules and larger-body costs are retained, with no unconditional size bonus.
 
 Successful predation requests are capped at remaining effort divided by prey
 tissue, multiplied by capture probability. An allocated withdrawal spends

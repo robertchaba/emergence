@@ -135,7 +135,7 @@ test('V3 finite community resources respond to competitors and transfer food wit
 });
 
 test('V3 splitting vulnerable grazers into more species cannot unlock protected tissue', () => {
-  const plant = { speciesId: 'plant', genome: genome({ poison: 3, spines: 3 }), population: 200, habitat: 'land' };
+  const plant = { speciesId: 'plant', genome: genome({ size: 8, trunk: 3, poison: 3, spines: 3 }), population: 200, habitat: 'land' };
   const grazer = genome({ photosynthesis: 0, plantFeeding: 1 });
   const one = [plant, { speciesId: 'one', genome: grazer, population: 1000, habitat: 'land' }];
   const many = [plant, ...Array.from({ length: 10 }, (_, index) => ({
@@ -148,6 +148,61 @@ test('V3 splitting vulnerable grazers into more species cannot unlock protected 
   const accessible = singleOutput[0].grossProduction * plant.population * ECOLOGY_RULES.grazingFraction
     * grazingAccess(grazer, plant.genome) * ECOLOGY_RULES.conversion;
   assert.ok(intake(splitOutput, many) <= accessible + 1e-8);
+});
+
+test('V3 taller plants reward larger browsers while tiny food keeps smaller grazers competitive', () => {
+  const tall = genome({ size: 10, trunk: 6 });
+  const small = genome({ size: 1 });
+  const grazer = genome({ size: 5, photosynthesis: 0, plantFeeding: 1, movement: 1 });
+  const larger = { ...grazer, size: 6 };
+  const community = plant => [{ speciesId: 'plants', genome: plant, population: 100 }];
+  const score = (consumer, plant) => scoreSpecies(consumer, land(), 'land', community(plant));
+  assert.ok(grazingAccess(grazer, tall) > 0, 'short browsers can reach a limited lower canopy');
+  assert.ok(grazingAccess(larger, tall) > grazingAccess(grazer, tall));
+  assert.ok(score(grazer, tall).score > 0);
+  assert.ok(score(larger, tall).score > score(grazer, tall).score + 0.005,
+    'a single size step earns a selectable benefit after paying the larger body costs');
+  assert.ok(score({ ...grazer, size: 2 }, small).score > score({ ...grazer, size: 3 }, small).score);
+  assert.ok(grazingAccess({ ...grazer, biteForce: 1 }, tall) > grazingAccess(grazer, tall));
+  assert.equal(scoreSpecies(larger, land(), 'land').food, 0);
+  const water = land({ waterType: 'sea', bedElevation: -5, waterLevel: 0 });
+  const aquatic = { ...grazer, size: 1, landAdaptation: 0 };
+  const aquaticPlants = [{ speciesId: 'plankton', genome: { ...small, landAdaptation: 0 }, population: 1000 }];
+  assert.ok(scoreSpecies(aquatic, water, 'water', aquaticPlants).score
+    > scoreSpecies({ ...aquatic, size: 2 }, water, 'water', aquaticPlants).score);
+});
+
+test('V3 splitting tall plant sources cannot give short browsers repeated free foraging effort', () => {
+  const plant = genome({ size: 10, trunk: 6 });
+  const grazer = { speciesId: 'browser', genome: genome({ photosynthesis: 0, plantFeeding: 1 }), population: 1 };
+  const one = evaluateCommunity(land(), 'land', [{ speciesId: 'plant', genome: plant, population: 100 }, grazer]);
+  const many = evaluateCommunity(land(), 'land', [...Array.from({ length: 10 }, (_, index) => ({
+    speciesId: `plant-${index}`, genome: plant, population: 10,
+  })), grazer]);
+  assert.ok(one.at(-1).grazingFood > 0);
+  assert.ok(Math.abs(one.at(-1).grazingFood - many.at(-1).grazingFood) < 1e-8);
+});
+
+test('V3 modest hunting help still needs prey and larger prey can reward a larger predator', () => {
+  const hunter = genome({ photosynthesis: 0, animalFeeding: 1, movement: 1 });
+  const prey = { speciesId: 'prey', genome: genome({ photosynthesis: 0, plantFeeding: 1 }), population: 100 };
+  const derived = deriveGenome(hunter);
+  const current = scoreSpecies(hunter, land(), 'land', [prey]);
+  const previousEffort = scoreSpecies(hunter, land(), 'land', [prey], { derived: {
+    ...derived, predationShare: derived.predationShare * 3.2 / 3.6,
+  } });
+  assert.ok(current.score > previousEffort.score + 0.005);
+  assert.ok(current.food > previousEffort.food && current.food <= previousEffort.food * 1.126);
+  const largePrey = { ...prey, genome: { ...prey.genome, size: 8 } };
+  const tooSmall = { ...hunter, size: 6 };
+  const larger = { ...hunter, size: 7 };
+  assert.equal(scoreSpecies(tooSmall, land(), 'land', [largePrey]).predationFood, 0);
+  assert.ok(scoreSpecies(larger, land(), 'land', [largePrey]).score > 0);
+  assert.equal(scoreSpecies(larger, land(), 'land').predationFood, 0);
+  assert.ok(scoreSpecies(larger, land(), 'land').score < 0);
+  assert.ok(scoreSpecies({ ...hunter, size: 3 }, land(), 'land', [prey]).score
+    > scoreSpecies({ ...hunter, size: 4 }, land(), 'land', [prey]).score,
+  'extra predator size still costs more when smaller prey already meets demand');
 });
 
 test('V3 defenses and sensing act through paid predator/prey interactions', () => {

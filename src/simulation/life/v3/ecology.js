@@ -5,7 +5,7 @@ const outside = (value, range) => Math.max(range[0] - value, value - range[1], 0
 export const ECOLOGY_RULES = Object.freeze({ lightBudget: 2400, waterLightBudget: 2000,
   photosynthesisRate: 1.6, grazingFraction: 0.45, preyFraction: 0.12,
   conversion: 0.6, backgroundMortality: 0.008, reproductionRate: 0.18,
-  huntingEffort: 3.2, captureBase: 0.5, captureSpeed: 0.14,
+  huntingEffort: 3.6, captureBase: 0.5, captureSpeed: 0.14,
   stationaryForaging: 1, movementForaging: 0.7 });
 
 export const hasWater = hex => hex.waterType !== 'none' || hex.runoff > 0;
@@ -73,12 +73,17 @@ function allocateAccessible(entries, budget) {
   return total;
 }
 
+function grazingReachFraction(genome, consumer, plant) {
+  const reach = genome.size * (2.2 + 0.3 * genome.biteForce + 0.1 * consumer.flightEfficiency);
+  return Math.min(1, (reach / plant.height) ** 2);
+}
+
 export function grazingAccess(consumerGenome, plantGenome, consumer = deriveGenome(consumerGenome), plant = deriveGenome(plantGenome)) {
   if (!consumerGenome.plantFeeding || !plantGenome.photosynthesis) return 0;
-  if (plant.height > consumerGenome.size * (2.2 + 0.3 * consumerGenome.biteForce + 0.1 * consumer.flightEfficiency)) return 0;
   const poison = Math.max(0, plantGenome.poison - consumerGenome.detoxification);
   const spines = Math.max(0, plantGenome.spines - 0.7 * consumerGenome.biteForce - 0.2 * consumerGenome.armor);
-  return 1 / (1 + 0.8 * poison + 0.6 * spines + 0.15 * plant.armorProtection);
+  return grazingReachFraction(consumerGenome, consumer, plant)
+    / (1 + 0.8 * poison + 0.6 * spines + 0.15 * plant.armorProtection);
 }
 
 export function preyEligible(predatorGenome, preyGenome, predator = deriveGenome(predatorGenome), prey = deriveGenome(preyGenome)) {
@@ -132,12 +137,16 @@ export function evaluateCommunity(hex, habitat, community = []) {
     const demands = rows.map((consumer, index) => {
       if (consumer.speciesId != null && consumer.speciesId === rows[source].speciesId) return { cap: 0, weight: 0, access: 0 };
       const access = grazingAccess(consumer.genome, rows[source].genome, consumer.derived, rows[source].derived);
-      return { cap: grazingDemand[index], weight: grazingDemand[index] * access, access };
+      const reach = grazingReachFraction(consumer.genome, consumer.derived, rows[source].derived);
+      // Short browsers reach only part of a canopy per unit of foraging effort,
+      // even when rare. Defenses still protect nested portions of that food.
+      return { cap: grazingDemand[index] * reach, weight: grazingDemand[index] * access, access, reach };
     });
     const eaten = allocateAccessible(demands, available);
     for (let consumer = 0; consumer < rows.length; consumer += 1) {
       remainingPhoto[source] -= eaten[consumer];
-      grazingDemand[consumer] = Math.max(0, grazingDemand[consumer] - eaten[consumer]);
+      const effort = demands[consumer].reach > 0 ? eaten[consumer] / demands[consumer].reach : 0;
+      grazingDemand[consumer] = Math.max(0, grazingDemand[consumer] - effort);
       food[consumer] += ECOLOGY_RULES.conversion * eaten[consumer];
       grazingFood[consumer] += ECOLOGY_RULES.conversion * eaten[consumer];
     }

@@ -358,7 +358,9 @@ test('life markers use a bounded population-independent budget and fixed world p
     map.draw(world, { geography: world, life, camera });
     const markerColors = ['plant', 'grazer', 'predator', 'mixed', 'other'].map(role => tokens[`--map-life-${role}`]);
     const markerCount = fills.filter(fill => markerColors.includes(fill)).length;
-    assert.ok(markerCount > 0 && markerCount <= 30, `marker budget ${markerCount}`);
+    assert.ok(markerCount > 0 && markerCount <= 54, `marker budget ${markerCount}`);
+    assert.ok(fills.filter(fill => fill === tokens['--map-life-plant']).length <= 24);
+    assert.ok(fills.filter(fill => markerColors.slice(1).includes(fill)).length <= 30);
     return calls.filter(([method]) => method === 'translate').slice(-markerCount);
   };
   const camera = map.fit();
@@ -376,7 +378,7 @@ test('life markers use a bounded population-independent budget and fixed world p
   }
 });
 
-test('population poses stay bounded, deterministic and smoothly oriented, while stationary consumers stay still', () => {
+test('population poses stay bounded, deterministic and smoothly oriented, while all stationary marks stay still', () => {
   const positions = lifeMarkerPositions(10);
   const plant = { role: 'producer', mobile: false };
   const animal = { role: 'grazer', mobile: true };
@@ -384,7 +386,8 @@ test('population poses stay bounded, deterministic and smoothly oriented, while 
   for (const slot of positions) {
     const rooted = lifeMarkerPose(plant, slot, 0);
     assert.deepEqual(lifeMarkerPose(plant, slot, 0), rooted);
-    assert.notDeepEqual(lifeMarkerPose(plant, slot, 12), rooted);
+    assert.deepEqual(lifeMarkerPose(plant, slot, 12), rooted);
+    assert.equal(rooted.opacity, 1);
     assert.deepEqual(lifeMarkerPose(stationary, slot, 20), lifeMarkerPose(stationary, slot, 0));
     for (let time = 0; time < 50; time += 0.125) {
       const pose = lifeMarkerPose(animal, slot, time);
@@ -400,6 +403,29 @@ test('population poses stay bounded, deterministic and smoothly oriented, while 
     assert.ok(Math.hypot(after.x - before.x, after.y - before.y) < 0.00001);
     assert.ok(Math.cos(after.heading - before.heading) > 0.999, 'turns join smoothly');
   }
+});
+
+test('large stationary plants survive tiny-plant aggregation and need no cosmetic repaints', () => {
+  const { map, calls, fills } = renderer();
+  const world = fixture();
+  const life = freezeDeep({ runId: 'canopy', revision: 1, hexes: [{ hexId: 10, population: 1000001,
+    species: [], display: [
+      { role: 'producer', habitat: 'land', size: 0, population: 1000000 },
+      { role: 'producer', habitat: 'land', size: 1, population: 1 },
+    ],
+  }] });
+  map.draw(world, { geography: world, life });
+  assert.ok(calls.some(([key]) => key === 'ellipse'), 'a rare large plant retains its canopy silhouette');
+  assert.equal(calls.filter(([key]) => key === 'ellipse').length, 3, 'one large plant gives one rosette');
+  assert.ok(calls.some(([key]) => key === 'arc'), 'tiny plants keep their smaller dots');
+  assert.ok(fills.filter(fill => fill === tokens['--map-life-plant']).length > 10, 'static plants gain extra samples');
+  calls.length = 0;
+  fills.length = 0;
+  map.draw(world, { geography: world, life, motionTime: 24 });
+  assert.equal(fills.length, 0, 'plant-only hexes reuse their frame during playback');
+  assert.equal(calls.some(([key]) => key === 'clearRect'), false);
+  map.draw(world, { geography: world, life: { ...life, revision: 2, hexes: [] }, motionTime: 24 });
+  assert.ok(fills.length > 0, 'real biological changes still erase the former plants');
 });
 
 test('life silhouettes distinguish habitat and role, reveal detail on zoom, and keep bounded drawing work', () => {
@@ -422,6 +448,14 @@ test('life silhouettes distinguish habitat and role, reveal detail on zoom, and 
   assert.deepEqual(capture(land), capture(land), 'frozen cosmetic time freezes pose');
   assert.equal(capture(land, 8).filter(([key]) => key === 'arc').length, 1);
   assert.equal(capture({ ...land, role: 'producer', mobile: false }).filter(([key]) => key === 'ellipse').length, 3);
+  const plant = { ...land, role: 'producer', mobile: false };
+  const radius = size => capture({ ...plant, size }).find(([key]) => key === 'scale')[1];
+  assert.ok(radius(1) > radius(0.4) * 1.7, 'large canopies remain visibly larger at close zoom');
+  assert.ok(capture({ ...plant, size: 1 }, 500).find(([key]) => key === 'scale')[1]
+    > capture({ ...plant, size: 0.5 }, 500).find(([key]) => key === 'scale')[1] * 1.5,
+  'size-dependent caps preserve the distinction at maximum zoom');
+  assert.ok(radius(1) > 3.5, 'the former plant radius cap no longer hides large sizes');
+  assert.deepEqual(capture(plant, 60, 0), capture(plant, 60, 120));
 });
 
 test('independent trend scales retain small living counts alongside large extinct counts and occupied areas', () => {

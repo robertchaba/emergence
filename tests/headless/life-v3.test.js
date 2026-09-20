@@ -78,7 +78,7 @@ test('v3 introduction and incompatible checkpoint rejection are atomic and model
   assert.throws(() => restoreLifeModel(world, createV2(world).exportState()), /Incompatible/);
   assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'other-v3-rules' }), /Incompatible/);
   assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v3-populations-2' }), /Incompatible/);
-  assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v3-populations-3' }), /Incompatible/);
+  assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v3-populations-4' }), /Incompatible/);
   const changedWorld = fixture();
   changedWorld.hexes[18].bedElevation -= 1;
   assert.throws(() => restoreLifeModel(changedWorld, introduced), /Incompatible/);

@@ -12,8 +12,11 @@ pin. Geometry methods fit the map, locate hex centers, and pick a hex from point
 coordinates. Wrapped connections are clipped at both cylindrical edges.
 Optional `life`, `showLife` and `selectedSpeciesId` draw completed life observations
 without modifying physical geography. Role colours and both selection styles
-come from resolved theme tokens. Marker work is capped at thirty per occupied hex,
-with fewer at low zoom; marks are samples, not literal organism counts.
+come from resolved theme tokens. Marker work is capped at 24 stationary plant
+marks plus 30 other marks per occupied hex, with fewer at low zoom; marks are
+samples, not literal organism counts. Three plant size bands preserve large
+canopies beside abundant tiny producers. Stationary marks do not animate, and
+stationary-only hexes need no cosmetic-clock repaint.
 `life-marks.js` owns cosmetic paths and the zoom-dependent drawing grammar:
 plant rosettes, rounded grazers, pointed predators and segmented mixed feeders.
 Observed habitat selects swimming tails/fins or stepping limbs for mobile groups.

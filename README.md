@@ -233,13 +233,14 @@ reduced-motion preferences show each new value immediately. Selecting another he
 or species shows its values immediately. This animation only changes presentation.
 
 Life always appears on the map as vivid green producer coverage at every body
-size. Zoom in to reveal small plant rosettes and animal silhouettes: rounded
+size. Larger stationary plants form larger canopy rosettes, with separate size
+bands so abundant tiny plants cannot hide them. Zoom in to reveal animal silhouettes: rounded
 bodies for grazers, pointed bodies for predators, and engraved segments for mixed
 feeders. Mobile land groups step along curved paths; water groups swim with
 undulating tails and fins. Bodies face their direction of travel. Wide views keep
 simple coloured marks; details grow with body size and zoom, without dark outlines.
-Stationary plants fade and renew their patches, while stationary consumers stay
-still. Animation stops while paused, hidden, or using reduced motion, with smoother
+Stationary plants and consumers stay still. Plants have a separate drawing budget
+and appear beneath animals. Animation stops while paused, hidden, or using reduced motion, with smoother
 motion at closer zoom. The marks are illustrative population samples, not tracked
 individuals, measured anatomy or exact journeys; they stay inside occupied hexes.
 Bare land keeps its softly warm stone greys in both themes.
@@ -293,7 +294,10 @@ there is no automatic conversion or model-selection control.
 See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
 calculation, evolutionary pressure, species criteria and experimental coefficients,
 and [validation](src/simulation/life/v3/docs/VALIDATION.md) for measured limits.
-V3 revision 4 lets adaptation respond to reachable empty land, rewards consumer
+V3 revision 5 modestly increases hunting effort and rewards larger grazers through
+better access to tall plants. Small food retains an incentive for smaller bodies;
+larger prey can favour larger predators through the existing prey-size limit.
+It retains revision 4's adaptation to reachable empty land and rewards consumer
 movement through foraging and a free first movement level, and supports smaller
 viable carnivore populations with food-directed dispersal. Mixed-feeding costs
 from revision 3 remain. Saves from earlier V3 rules are incompatible; start a new

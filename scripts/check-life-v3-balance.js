@@ -23,8 +23,17 @@ for (let elapsed = Math.min(3600, horizon); ; elapsed = Math.min(elapsed + 3600,
   const ids = new Set(state.populations.map(row => row.speciesId));
   const living = state.species.filter(row => ids.has(row.id));
   const count = predicate => living.filter(row => predicate(row.genome)).length;
+  const sizesByHabitat = Object.fromEntries(['land', 'water'].map(habitat => [habitat,
+    Object.fromEntries(['producer', 'grazer', 'predator'].map(role => [role,
+      Array.from({ length: 10 }, (_, index) => living.filter(({ id, genome: g }) =>
+        g.size === index + 1 && g.photosynthesis + g.plantFeeding + g.animalFeeding === 1
+        && g[role === 'producer' ? 'photosynthesis' : role === 'grazer' ? 'plantFeeding' : 'animalFeeding']
+        && state.populations.some(row => row.speciesId === id && row.habitat === habitat)).length),
+    ])),
+  ]));
   process.stdout.write(`${JSON.stringify({ rules: state.rulesRevision, seed, size, habitat, introductionHabitat, hexId: site.id,
     elapsedDays: elapsed, species: living.length,
+    sizesByHabitat,
     animalFeeding: count(g => g.animalFeeding > 0),
     mixedFeeding: count(g => g.photosynthesis + g.plantFeeding + g.animalFeeding > 1),
     photosynthesisAndPlants: count(g => g.photosynthesis && g.plantFeeding),

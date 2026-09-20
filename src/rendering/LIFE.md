@@ -1,5 +1,31 @@
 # Life rendering
 
+## Visible stationary canopies — 2026-09-20
+
+Decision 064 supersedes 042/052's fading stationary plants, their 3.5-pixel
+radius cap and their shared 30-mark budget. Stationary producers now have
+three display size bands (below 0.35, below 0.7, and larger), separately for
+land and water. Population-weighted size is retained within each band, so a
+few large plants no longer disappear into an average dominated by tiny plants.
+These are visual groupings of supplied normalized sizes, not ecological types.
+
+Stationary plants receive up to 16 abundance samples per group, bounded to
+24 per hex (6/12 at wider views), independently of the existing 30 other marks
+(6/15 at wider views). Larger bands receive representatives first. Plants draw
+beneath consumers using the existing translucent plant and engraving tokens.
+Their radius grows from `scale × (0.024 + 0.14size)` to a size-dependent cap of
+`2.5 + 7.5size` CSS pixels, preserving size differences even at maximum zoom;
+three-leaf canopies appear earlier as zoom allows and stay inside the hex.
+Counts still come from the notebook, not the number of rosettes.
+
+All stationary marks now keep fixed positions and opacity during playback.
+Only mobile groups invalidate a hex on cosmetic-clock changes. Real observation
+changes, extinction, camera and theme changes still repaint through the existing
+damage path. Mobile silhouettes and paths retain their previous behavior. No
+model internals, simulation commands, new colours or biological rules enter
+rendering. Controlled browser views compare small, medium and mixed-size plant
+cover in both themes at desktop and phone widths; they are visual fixtures.
+
 ## Smooth notebook curves — 2026-09-20
 
 Decision 063 supersedes the discrete chart steps below. Curves pass through

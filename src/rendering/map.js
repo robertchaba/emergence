@@ -1,7 +1,7 @@
 /* Read-only Canvas 2D presentation. UI supplies resolved CSS tokens, the camera,
    and snapshots. No browser style access, events, or simulation imports here. */
 import { territoryContours } from './territory.js';
-import { LIFE_MARKER_LIMIT, lifeMarkerPositions, drawLifeMarker } from './life-marks.js';
+import { LIFE_PLANT_MARKER_LIMIT, LIFE_CONSUMER_MARKER_LIMIT, lifeMarkerPositions, drawLifeMarker } from './life-marks.js';
 const ROOT_THREE = Math.sqrt(3);
 const CORNERS = Array.from({ length: 6 }, (_, index) => {
   const angle = (index * 60 - 30) * Math.PI / 180;
@@ -39,29 +39,39 @@ function lifeSummary(observation) {
         else producerLand += display.population;
       }
       const habitat = display.habitat === 'water' ? 'water' : 'land';
-      const key = `${role}:${habitat}:${mobile}`;
-      const group = groups.get(key) ?? { key, role, habitat, mobile, population: 0, weightedSize: 0 };
+      const plant = role === 'producer' && !mobile;
+      // Keep large stationary plants visible beside abundant tiny producers.
+      // These are display bands, never species or ecological classifications.
+      const band = plant ? size < 0.35 ? 0 : size < 0.7 ? 1 : 2 : 0;
+      const key = `${role}:${habitat}:${mobile}:${band}`;
+      const group = groups.get(key) ?? { key, role, habitat, mobile, plant, band, population: 0, weightedSize: 0 };
       group.population += display.population;
       group.weightedSize += size * display.population;
       groups.set(key, group);
     }
-    // At most twenty role/habitat/mobility groups share a thirty-marker budget.
-    // Allocate representatives before extra abundance samples. A dot never means one organism.
-    const ordered = [...groups.values()].sort((a, b) => a.key.localeCompare(b.key, 'en'));
+    // Fixed plants have their own budget and draw beneath consumers. Show a
+    // representative of each band before adding abundance samples, largest first.
+    const ordered = [...groups.values()].sort((a, b) => b.band - a.band || a.key.localeCompare(b.key, 'en'));
     for (const group of ordered) {
       group.size = group.weightedSize / group.population;
-      group.samples = Math.min(group.population, 10, 2 + 2 * Math.floor(Math.log10(group.population)));
+      group.samples = Math.min(group.population, group.plant ? 16 : 10,
+        (group.plant ? 4 : 2) * (1 + Math.floor(Math.log10(group.population))));
     }
-    const markers = [];
-    for (let sample = 0; sample < 10 && markers.length < LIFE_MARKER_LIMIT; sample += 1) {
-      for (const group of ordered) {
-        if (sample < group.samples && markers.length < LIFE_MARKER_LIMIT) markers.push({ role: group.role, habitat: group.habitat, size: group.size, mobile: group.mobile });
+    const sampleGroups = (groups, limit) => {
+      const markers = [];
+      for (let sample = 0; sample < 16 && markers.length < limit; sample += 1) {
+        for (const group of groups) {
+          if (sample < group.samples && markers.length < limit) markers.push({ role: group.role, habitat: group.habitat, size: group.size, mobile: group.mobile });
+        }
       }
-    }
+      return markers;
+    };
+    const plants = sampleGroups(ordered.filter(group => group.plant), LIFE_PLANT_MARKER_LIMIT);
+    const markers = sampleGroups(ordered.filter(group => !group.plant), LIFE_CONSUMER_MARKER_LIMIT);
     const tint = Math.min(0.48, Math.min(0.44, Math.log1p(producerLand) / 26) + Math.min(0.20, Math.log1p(producerWater) / 40));
     const species = new Set((hex.species ?? []).filter(row => row.population > 0).map(row => row.id));
-    const signature = JSON.stringify([tint, markers, [...species].sort()]);
-    summaries.set(hex.hexId, { tint, markers, species, signature });
+    const signature = JSON.stringify([tint, plants, markers, [...species].sort()]);
+    summaries.set(hex.hexId, { tint, plants, markers, animated: markers.some(marker => marker.mobile), species, signature });
   }
   return summaries;
 }
@@ -437,7 +447,7 @@ export function createMapRenderer(canvas, { tokens }) {
     if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
       const changed = new Set(frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : []);
       if (motionTime !== previousFrame.motionTime) {
-        for (const [id, summary] of lifeHexes) if (summary.markers.length) changed.add(id);
+        for (const [id, summary] of lifeHexes) if (summary.animated) changed.add(id);
       }
       if (lifeHexes !== previousFrame.lifeHexes) {
         for (const id of new Set([...(lifeHexes?.keys() ?? []), ...(previousFrame.lifeHexes?.keys() ?? [])])) {
@@ -610,13 +620,16 @@ export function createMapRenderer(canvas, { tokens }) {
         const x = view.x + position.x * view.scale;
         const y = view.y + position.y * view.scale;
         if (x + view.scale < 0 || x - view.scale > width || y + view.scale < 0 || y - view.scale > height) continue;
-        const markers = summary.markers;
-        if (!markers.length) continue;
+        if (!summary.markers.length && !summary.plants.length) continue;
         if (!geometry.has(id)) geometry.set(id, lifeMarkerPositions(id));
         const positions = geometry.get(id);
-        const markerLimit = view.scale < 7 ? 6 : view.scale < 15 ? 15 : LIFE_MARKER_LIMIT;
-        for (let index = 0; index < Math.min(markerLimit, markers.length); index += 1) {
-          drawLifeMarker(context, markers[index], positions[index], motionTime, x, y, view.scale, palette);
+        const plantLimit = view.scale < 7 ? 6 : view.scale < 15 ? 12 : LIFE_PLANT_MARKER_LIMIT;
+        const markerLimit = view.scale < 7 ? 6 : view.scale < 15 ? 15 : LIFE_CONSUMER_MARKER_LIMIT;
+        for (let index = 0; index < Math.min(plantLimit, summary.plants.length); index += 1) {
+          drawLifeMarker(context, summary.plants[index], positions[index], motionTime, x, y, view.scale, palette);
+        }
+        for (let index = 0; index < Math.min(markerLimit, summary.markers.length); index += 1) {
+          drawLifeMarker(context, summary.markers[index], positions[LIFE_PLANT_MARKER_LIMIT + index], motionTime, x, y, view.scale, palette);
         }
         context.globalAlpha = 1;
       }
