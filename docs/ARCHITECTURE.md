@@ -3005,3 +3005,24 @@ Chromium checks, with the existing desktop touch duplicate skipped. The suite
 used a temporary port-4175 configuration to avoid the existing preview on 4173;
 the temporary configuration was removed after verification. `git diff --check`
 passed.
+
+
+## 063 — Smooth notebook chart and open right edge — 2026-09-20
+
+Supersedes the discrete step presentation in 038/059 and the vertical category
+end markers retained by 060. Single and stacked charts now use cubic curves
+through the existing samples. Horizontal controls at each interval's midpoint
+keep curves within endpoint values; identical interpolation on every cumulative
+boundary prevents stacked bands crossing. Reversed lower paths retrace the same
+curves. The explicit thick vertical end markers are removed in both themes,
+leaving the light theme's translucent fills without a dark right border.
+
+This is rendering-only interpolation, not a claim of measured counts between
+samples. Actual counts, days, scales, legend, accessibility and theme tokens
+retain their meanings; simulation state and model rules are unchanged.
+
+Validation: `npm run build` and `npm test` passed (146 headless/rendering
+checks, 121 Chromium checks, one existing skip). Visual inspection confirmed
+smooth bands and no dark right border in light/dark themes at desktop and phone
+widths. Existing browser checks cover EN/PL layout, focus and controls.
+`git diff --check` passed; the pre-existing package version edit was preserved.

@@ -3,6 +3,15 @@ const escapeAttribute = value => String(value).replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[char]));
 
+// Matching horizontal controls keep stacked boundaries ordered and within their
+// sample values. Reversing the points traces exactly the same curve backwards.
+const smoothPath = (points, move = 'M') => points.map((point, index) => {
+  if (!index) return `${move}${point.x} ${point.y}`;
+  const previous = points[index - 1];
+  const middle = number((previous.x + point.x) / 2);
+  return `C${middle} ${previous.y} ${middle} ${point.y} ${point.x} ${point.y}`;
+}).join('');
+
 /** A single metric or disjoint stacked series, on a zero-based physical-day axis. */
 export function createLifeTrendSvg(samples = [], { metric = 'species', series, label, format = String, formatDay = format } = {}) {
   const keys = series?.length ? series : [metric];
@@ -21,8 +30,8 @@ export function createLifeTrendSvg(samples = [], { metric = 'species', series, l
   const x = sample => number(48 + (sample.day - firstDay) / span * 264);
   const y = value => number(bottom - value / maximum * height);
   const positions = points.map(sample => ({ x: x(sample), y: y(total(sample)) }));
-  // Step paths preserve discrete counts, including abrupt extinctions.
-  const path = positions.map(({ x, y }, index) => index ? `H${x}V${y}` : `M${x} ${y}`).join('');
+  // Curves interpolate recorded counts for presentation only.
+  const path = smoothPath(positions);
   const last = positions.at(-1);
   let plot = last ? `<path class="life-trend-line" d="${path}" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="${last.x}" cy="${last.y}" r="2.5" fill="currentColor"/>` : '';
   if (series?.length) {
@@ -34,12 +43,9 @@ export function createLifeTrendSvg(samples = [], { metric = 'species', series, l
         return { x: x(sample), y: y(bases[index]) };
       });
       if (!upper.length) return '';
-      const top = upper.map((point, index) => index ? `H${point.x}V${point.y}` : `M${point.x} ${point.y}`).join('');
-      // Reverse the same discrete steps to close the lower edge of each band.
-      const base = [...lower].reverse().map((point, index) => index ? `V${point.y}H${point.x}` : `L${point.x} ${point.y}`).join('');
-      const end = points.at(-1)[key] > 0
-        ? `<path data-energy="${escapeAttribute(key)}" d="M${last.x} ${lower.at(-1).y}V${upper.at(-1).y}" fill="none" stroke="currentColor" stroke-width="3"/>` : '';
-      return `<path class="life-trend-band" data-energy="${escapeAttribute(key)}" d="${top}${base}Z" fill="currentColor"/><path class="life-trend-line" data-energy="${escapeAttribute(key)}" d="${top}" fill="none" stroke="currentColor" stroke-width="1.2"/>${end}`;
+      const top = smoothPath(upper);
+      const base = smoothPath([...lower].reverse(), 'L');
+      return `<path class="life-trend-band" data-energy="${escapeAttribute(key)}" d="${top}${base}Z" fill="currentColor"/><path class="life-trend-line" data-energy="${escapeAttribute(key)}" d="${top}" fill="none" stroke="currentColor" stroke-width="1.2"/>`;
     }).join('');
   }
   const accessibility = label === undefined ? 'aria-hidden="true"' : `role="img" aria-label="${escapeAttribute(label)}"`;

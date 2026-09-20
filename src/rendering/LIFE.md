@@ -1,5 +1,12 @@
 # Life rendering
 
+## Smooth notebook curves — 2026-09-20
+
+Decision 063 supersedes the discrete chart steps below. Curves pass through
+recorded samples with bounded cubic transitions; stacked bands share identical
+curved boundaries. Vertical end markers are removed in both themes. These are
+visual interpolations, not additional census observations or biological changes.
+
 ## Selected hex and energy chart — 2026-09-20
 
 Decision 059 supersedes the historical single-total living-species chart and

@@ -430,7 +430,7 @@ test('independent trend scales retain small living counts alongside large extinc
     { day: 6, species: 1, extinctSpecies: 900, occupiedHexes: 2000 }]);
   const before = JSON.stringify(samples);
   const svg = createLifeTrendSvg(samples, { label: 'Species "history"' });
-  assert.match(svg, /d="M48 38H114V8H312V23"/);
+  assert.match(svg, /d="M48 38C81 38 81 8 114 8C213 8 213 23 312 23"/);
   assert.match(svg, /aria-label="Species &quot;history&quot;"/);
   assert.match(svg, />2<\/text>/);
   assert.match(createLifeTrendSvg(samples, { metric: 'extinctSpecies' }), />900<\/text>/);
@@ -509,7 +509,7 @@ test('carrier overlay adds to the species outline and repaints when carriers mov
 });
 
 
-test('stacked energy trends use disjoint counts and preserve discrete lower boundaries', () => {
+test('stacked energy trends use disjoint counts and share smooth lower boundaries without end markers', () => {
   const series = ['photosynthesis', 'plantFeeding', 'animalFeeding', 'other'];
   const samples = freezeDeep([
     { day: 1, photosynthesis: 1, plantFeeding: 1, animalFeeding: 0, other: 0 },
@@ -518,7 +518,8 @@ test('stacked energy trends use disjoint counts and preserve discrete lower boun
   const svg = createLifeTrendSvg(samples, { series, label: 'Energy source' });
   assert.match(svg, /life-trend-stacked/);
   assert.match(svg, />4<\/text>/);
-  assert.match(svg, /data-energy="photosynthesis" d="M48 53H312V38L312 68V68H48Z"/);
-  assert.match(svg, /data-energy="plantFeeding" d="M48 38H312V38L312 38V53H48Z"/);
+  assert.match(svg, /data-energy="photosynthesis" d="M48 53C180 53 180 38 312 38L312 68C180 68 180 68 48 68Z"/);
+  assert.match(svg, /data-energy="plantFeeding" d="M48 38C180 38 180 38 312 38L312 38C180 38 180 53 48 53Z"/);
+  assert.equal((svg.match(/data-energy=/g) ?? []).length, 8, 'only fills and top outlines, with no vertical end markers');
   assert.equal(/NaN|Infinity|undefined/.test(createLifeTrendSvg([], { series })), false);
 });
