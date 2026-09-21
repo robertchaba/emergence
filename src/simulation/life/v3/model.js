@@ -5,6 +5,7 @@ import { candidateMutations, deriveGenome, describeGenome, geneticDistance,
 import { environmentalPerformance, evaluateCommunity, founderForSite, scoreSpecies, supportsHabitat, waterDepth } from './ecology.js';
 import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
+import { recordGenome, validateLineage, observeTree, inspectGeneHistory } from './lineage.js';
 
 export const MODEL_ID = 'v3';
 export const RULES_REVISION = 'v3-populations-5';
@@ -111,6 +112,8 @@ export function restoreLifeModel(world, checkpoint) {
     ids.add(record.id);
   }
   const pools = new Set();
+  validateLineage(state.species, state.day);
+  for (const attempt of state.previousAttempts) validateLineage(attempt.species, attempt.endDay);
   for (const row of state.populations) {
     const key = populationKey(row);
     if (!ids.has(row.speciesId) || !count(row.hexId) || !world.hexes[row.hexId]
@@ -149,10 +152,13 @@ function buildModel(world, state) {
   }
 
   function newSpecies(genome, parentId = null) {
+    const parent = speciesById.get(parentId);
+    if (parent && !parent.genomeHistory) recordGenome(parent, environmentDay, 'snapshot');
     const ordinal = state.nextSpecies++;
     const record = { id: `species-${ordinal}`, name: speciesName(state.seed, ordinal),
       parentId, originDay: environmentDay, extinctDay: null, genome: { ...genome },
       genomeRevision: 1, candidates: [] };
+    recordGenome(record, environmentDay, 'origin', parentId ? speciesById.get(parentId).genomeRevision : null);
     state.species.push(record); speciesById.set(record.id, record);
     if (parentId) state.stats.speciations += 1;
     return record;
@@ -487,7 +493,9 @@ function buildModel(world, state) {
         if (!roleChange && analysis.support >= EVOLUTION_RULES.broadSupport
           && analysis.advantage >= EVOLUTION_RULES.minimumAdvantage
           && novel(record, candidate.genome, community)) {
+          if (!record.genomeHistory) recordGenome(record, environmentDay, 'snapshot');
           record.genome = { ...candidate.genome }; record.genomeRevision += 1;
+          recordGenome(record, environmentDay, 'adaptation');
           record.candidates = []; state.stats.adaptations += 1;
           for (const row of rows) row.reserve = Math.min(row.reserve, phenotype(record.genome).cells);
           community = communities();
@@ -681,7 +689,10 @@ function buildModel(world, state) {
     return { runId: state.runId, worldId: state.worldId, worldIdentity: state.worldIdentity,
       generatorVersion: state.worldIdentity.generatorVersion, modelId: MODEL_ID, rulesRevision: RULES_REVISION,
       contractVersion: CONTRACT_VERSION, day: state.day, startDay: state.startDay, revision: state.revision,
-      biologicalTurns: state.biologicalTurns, attempt: state.attempt, previousAttempts: state.previousAttempts,
+      biologicalTurns: state.biologicalTurns, attempt: state.attempt,
+      // Full accepted-genome logs are queried on demand, not retransmitted at playback cadence.
+      previousAttempts: state.previousAttempts.map(attempt => ({ ...attempt,
+        species: attempt.species.map(({ genomeHistory, ...record }) => record) })),
       status: !state.introduced ? 'not-introduced' : organisms ? 'living' : 'extinct',
       counts: { organisms, species: speciesRows.length, speciesByEnergy: speciesByEnergy(speciesRows.map(row => row.id)), occupiedHexes: hexRows.length,
         variants: speciesRows.length, extinctSpecies: state.species.filter(record => record.extinctDay !== null).length },
@@ -723,5 +734,7 @@ function buildModel(world, state) {
   }
 
   const exportState = () => copy({ ...state, randomState: random.exportState() });
-  return { introduce, advanceTo, observe, inspectHex, inspectSpecies, exportState };
+  return { introduce, advanceTo, observe, inspectHex, inspectSpecies, exportState,
+    observeTree: () => observeTree(state),
+    inspectGeneHistory: (runId, speciesId, key) => inspectGeneHistory(state, runId, speciesId, key) };
 }

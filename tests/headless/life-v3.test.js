@@ -187,6 +187,7 @@ test('v3 exploratory feeding changes are hypothetical and cannot turn a fraction
   original.introduce(18);
   const state = original.exportState();
   state.species[0].genome = { ...founderGenome(), temperatureTolerance: 1, depthTolerance: 2 };
+  delete state.species[0].genomeHistory; // Synthetic genome has no recorded ancestry.
   const control = restoreLifeModel(world, state);
   const species = state.species[0];
   species.candidates = [{ id: 'candidate-1', genome: { ...species.genome, plantFeeding: 1 },
@@ -231,6 +232,7 @@ function matureFeedingDirection(world, incumbent = false) {
   const producer = { ...founderGenome(), temperatureTolerance: 1, depthTolerance: 2 };
   const consumer = { ...producer, photosynthesis: 0, plantFeeding: 1 };
   state.species[0].genome = producer;
+  delete state.species[0].genomeHistory; // Synthetic genome has no recorded ancestry.
   state.species[0].candidates = [{ id: 'direction-1', genome: consumer, originDay: 0,
     lastEvaluation: 0, age: EVOLUTION_RULES.persistenceAssessments - 1,
     support: 1, advantage: 0.05, steps: 2 }];
@@ -305,6 +307,7 @@ test('v3 a viable feeding change must differ ecologically from its own parent', 
   const parent = { ...producer, size: 2, plantFeeding: 1 };
   const candidate = { ...parent, photosynthesis: 0 };
   state.species[0].genome = parent;
+  delete state.species[0].genomeHistory; // Synthetic genome has no recorded ancestry.
   state.species[0].candidates = [{ id: 'direction-1', genome: candidate, originDay: 0,
     lastEvaluation: 0, age: EVOLUTION_RULES.persistenceAssessments - 1,
     steps: 1, support: 1, advantage: 0.05 }];
@@ -408,7 +411,7 @@ test('v3 energy census partitions living identities and preserves optional histo
   const original = saved.species[0];
   // Every combination, including no intake, plus duplicate habitat/location rows.
   saved.species = Array.from({ length: 8 }, (_, bits) => ({ ...original,
-    id: `diet-${bits}`, candidates: [], genome: { ...founderGenome(),
+    id: `diet-${bits}`, candidates: [], genomeHistory: undefined, genome: { ...founderGenome(),
       photosynthesis: bits & 1, plantFeeding: (bits >> 1) & 1, animalFeeding: (bits >> 2) & 1 } }));
   saved.populations = saved.species.flatMap(species => [18, 19].map(hexId => ({
     ...saved.populations[0], speciesId: species.id, hexId, count: 12,
@@ -446,6 +449,7 @@ function frontierFixture(kind = 'coast') {
   const initial = createLifeModel(world); initial.introduce(18);
   const state = initial.exportState();
   state.species[0].genome = { ...founderGenome(), size: 1, temperatureTolerance: 1 };
+  delete state.species[0].genomeHistory; // Synthetic genome has no recorded ancestry.
   state.species[0].candidates = [{ id: 'direction-1',
     genome: { ...state.species[0].genome, landAdaptation: 1 }, originDay: 0, lastEvaluation: 0,
     age: 3, support: 0, advantage: 0, steps: 1 }];
@@ -528,6 +532,7 @@ test('v3 mobile consumers disperse preferentially toward usable food without cre
     const plant = { ...state.species[0].genome };
     const consumer = { ...plant, photosynthesis: 0, [feeding]: 1, movement: 1 };
     checkpoint.species[0].genome = consumer;
+    delete checkpoint.species[0].genomeHistory; // Synthetic genome has no recorded ancestry.
     checkpoint.populations[0].count = 1000;
     checkpoint.species.push({ ...checkpoint.species[0], id: 'species-2', name: 'Fixture food',
       genome: feeding === 'plantFeeding' ? plant : { ...plant, photosynthesis: 0, plantFeeding: 1 } });

@@ -306,3 +306,19 @@ No per-individual stochastic law, allele frequency, conserved embodied biomass,
 reproductive isolation mechanism, or long-run numerical equivalence with V2 is
 claimed. Novelty is an operational score criterion, not biological taxonomy.
 See [validation](VALIDATION.md) for tested properties and measured performance.
+
+## Accepted-genome history — 2026-09-21
+
+Tree-of-life inspection adds observational history, without changing the above
+biological rules, seeded stream or revision. Species retain an `origin` entry
+with their accepted founding genome and the parent's genome revision at the
+branch. Every broad accepted adaptation appends its new genome and day. No
+rejected mutation, candidate extension or unestablished direction becomes a
+historical inherited gene. Extinction and explicit restart preserve these records.
+
+The model interprets trait activity through its existing gene descriptions and
+traces ancestors only as far as their recorded branch-time revisions. A child
+does not inherit the parent's subsequent changes. Loss and reacquisition are
+separate events. Old saves lacking this history supply an explicitly incomplete
+snapshot boundary; the next accepted change or branch preserves a snapshot
+before recording the new event. No dates for earlier mutations are invented.

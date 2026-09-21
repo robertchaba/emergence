@@ -2,7 +2,19 @@
 
 ## Status
 
-**Current: Canopy browsing, modest hunting help and visible stationary plants — 2026-09-20.**
+**Current: Ancestry-first gene tracing — 2026-09-21.**
+Decision 067 makes the selected species’ inherited path to the first recorded
+gene appearance the default, with whole-tree highlighting as an explicit option.
+
+**Clear gene tracing and a separate history view — 2026-09-21.**
+Decision 066 removes top filters and inactive gene cards, highlights expression
+across the tree without automatic scrolling, and paginates the detailed history.
+
+**Tree of life and inherited gene history — 2026-09-21.**
+Decision 065 adds a paused evolutionary ledger with living/extinct species,
+ancestor links and recorded gene histories across life introductions.
+
+**Canopy browsing, modest hunting help and visible stationary plants — 2026-09-20.**
 Decision 064 activates V3 revision 5 and preserves plant size bands in the atlas.
 
 **Habitat expansion, consumer movement and carnivore establishment — 2026-09-20.**
@@ -3111,3 +3123,208 @@ both directions across sites; stronger conditional selection does not guarantee
 a larger-body outcome. V3 validation records full comparisons and limits.
 `git diff --check` passed; no dependencies, V1/V2, shared physics, original artwork
 or licence files changed.
+
+## 065 — Tree of life and accepted gene history — 2026-09-21
+
+The requested **Tree of life** menu action pauses playback and opens a separate
+page within the current browser session. The worker finishes any already queued
+day batch before answering the tree query. The atlas remains mounted and inert;
+returning restores access and focus to its menu, with clock, camera, layer,
+selection and speed intact and playback still paused. Opening while introduction
+is pending cancels automatic playback. Theme and EN/PL controls move to the tree
+and continue updating presentation without changing the run.
+
+### Visualization and interaction
+
+The ledger arranges species as a chronological branching diagram: lifespan lines
+run left to right, curves connect direct ancestors and descendants, and each
+native species button aligns with its plotted row. Living lines are solid with
+open endpoints; extinct lines are dashed with crosses. Existing energy colours
+show each species' latest accepted strategy. Selecting a species emphasizes its
+ancestral path and opens its description, current population/range, origin and
+extinction, family links, and all 22 trait coordinates, including inactive values.
+
+Each gene opens a dated lineage history with linked species, expression values,
+inheritance, changes, losses and reappearances. Diamonds locate its recorded
+events on the diagram. The first recorded active expression is identified on
+this ancestral path; it is not a claim of the first independent appearance in
+the entire world. Gene descriptions explain existing model effects and tradeoffs.
+
+Search and living/extinct filters retain ancestor rows for context. A selector
+keeps earlier introductions inspectable under their own run identities, even
+when species IDs repeat. Time-axis zoom and bounded chart scrolling support
+crowded trees. Phones stack chart and details and permit horizontal chart
+scrolling; other content fits the viewport. Native controls, visible focus,
+text status, accessible labels and two return controls accompany the diagram.
+All colours and typography use existing root theme tokens; SVG receives resolved
+colours through UI. No runtime dependency or generated raster asset is needed.
+
+### Model ownership and persistence
+
+V3 owns the history semantics in `life/v3/lineage.js`. Founding and each accepted
+whole-species adaptation retain the complete accepted genome, explicit day and
+genome revision. A new branch records its parent's exact genome revision.
+Consequently a trace excludes parental adaptations after the split and retains
+within-species changes, gene losses and reacquisitions. Extinction and explicit
+restart retain history. Hypothetical candidates are never counted as inherited
+genomes, species or historical gene appearances.
+
+`observeTree()` and `inspectGeneHistory(runId, speciesId, key)` expose detached,
+serializable descriptions through the common observation extension. They do not
+consume randomness or mutate authoritative state. UI transports read requests
+with request IDs and ignores obsolete responses; the renderer only lays out
+supplied relationships, dates and markers. UI does not inspect private genomes
+or decide biological activity or inheritance. Histories are requested on demand,
+not appended to the normal live species observations.
+
+The optional per-species `genomeHistory` persists in the existing checkpoint
+format. Restore validates genome history, revision order, terminal genome,
+parent relationships and temporal consistency, including archived attempts.
+Ecology, random draws, species decisions and `v3-populations-5` remain unchanged.
+Compatible old saves without this metadata still load; missing history is
+explicitly incomplete. A snapshot boundary precedes newly accepted changes or
+branches. A missing ancestral genome is never invented from today's parent.
+This supersedes the earlier lack of recorded accepted-genome changes, while
+preserving prior biological and persistence decisions.
+
+### Validation and limitations
+
+Focused headless checks cover extinct descriptions, attempt-scoped identities,
+branch-time inheritance, later-parent exclusion, loss/reacquisition, incomplete
+legacy records, actual recorded adaptations, query purity, checkpoint replay,
+invalid histories/cycles, and a 2,000-species layout. Browser checks exercise real
+worker queries, queued-day pause, unchanged save state after inspection, landing
+restore, search/context, archives, zoom, every gene, empty/legacy views, keyboard
+focus, EN/PL and both themes at desktop/phone widths including 320 px. Synthetic
+ecology fixtures that replace genomes now explicitly omit their inapplicable
+historical record; they do not fabricate accepted mutation histories.
+
+Older saves cannot recover unrecorded changes. History records accepted
+representative genomes, not individual mutations, carrier frequencies or the
+private trial history of candidate directions. Retention is intentionally not
+truncated, so storage grows with accepted changes; very large trees require
+search/scrolling and are not virtualized. Browser checks do not validate ecology
+or establish cross-browser equivalence. Final validation results follow below.
+
+`npm run build` and `npm test` passed: 156 headless/rendering checks, 129 Chromium
+checks and one existing desktop touch duplicate skipped. The final archive
+payload check confirms complete logs stay in checkpoints and on-demand history
+queries while routine observations omit those logs; headless checks passed
+again after that refinement. Theme/locale screenshots were inspected at both
+viewport sizes, and native controls were checked at 320 px. Mobile selectors
+use full-width rows so Polish choices remain readable. The Vite development
+server loaded the restored atlas and tree without page errors. Stylesheet links
+on both HTML entry points support source deployment as well as Vite builds and
+the landing-page restore path. Translation keys match in EN/PL, dependency and
+scope review passed, and `git diff --check` is clean.
+All 16 tree/save browser checks also passed against the final production build
+after excluding archived genome logs from routine playback messages.
+
+
+## 066 — Clear gene tracing and a separate history view — 2026-09-21
+
+This supersedes decision 065's top search/status/introduction controls, inactive
+gene cards, automatically scrolled gene timeline and event-only highlighting.
+The requested simplification leaves every species visible and shows only traits
+that the model marks active. Earlier introductions remain inspectable through a
+plain disclosure below the tree, with separate run identities.
+
+Gene selection keeps keyboard focus and both page/chart scroll positions,
+including during asynchronous replies. Active periods are accent-coloured across
+all species, with bold names and textual expression values. Quantitative levels
+use stepped band widths and numerical labels, so gradual accepted changes are
+visible over time. Categorical expressions have equal widths; this display must
+not imply a hierarchy of skeletons, coverings, habitats or thermal preferences.
+Inactive intervals stay neutral, lost genes are labelled, and unknown legacy
+periods get dotted guides rather than invented expression. An explicit **View
+highlight in tree** action helps phone users reach an offscreen chart. The chart
+stays alongside desktop details while scrolling; **Clear highlight** restores
+energy-role colours. Extinction crosses remain visible in both display modes.
+
+The species panel holds a short gene explanation and first recorded presence in
+its ancestry. **Open lineage history** opens a dedicated internal view with 20
+records per page and previous/next controls. Returning, including with Escape,
+restores selection and scroll. History stays complete; paging only bounds the
+rendered event list. Locale and theme controls remain available in both views.
+
+V3 owns a read-only extension to its existing gene query: compressed accepted
+expression records for each species' full lifetime and a quantitative/category
+presentation distinction. Thus the chart includes a parent's later changes on
+that parent's branch while the selected ancestry still uses the exact inherited
+revision. The UI never reads private genomes or decides activity/inheritance.
+Rendering uses only supplied dates, values, relationships and resolved theme
+colours. Ecology, random streams, checkpoint format and history retention stay
+unchanged.
+
+Validation covers whole-tree levels and inactive gaps, legacy boundaries, scoped
+introductions, query purity, absence of removed controls/cards, no movement on
+gene activation, thicker higher-level bands, independent ancestry history,
+pagination, back/focus restoration, rapid query replacement, EN/PL and responsive
+theme layouts.
+
+The chart still renders all species and queries full retained gene observations;
+pagination does not cap checkpoint size or make very large trees virtualized.
+Crowded event labels are omitted when they overlap at the current zoom; time-axis
+zoom and accessible row descriptions retain the information. Records represent
+accepted species genomes rather than individual genetic variation. Browser checks
+do not establish biological realism or cross-browser numerical equivalence.
+
+
+`npm run build` and `npm test` passed: all headless/rendering checks and 131
+Chromium checks, with one existing desktop touch duplicate skipped. All 10 tree
+browser checks also passed after the history-return refinement that preserves
+horizontal chart scrolling across locale changes. Light/dark EN/PL screenshots
+were inspected at desktop and phone widths; the narrow-phone check covers 320 px.
+The gene-selection regression checks both unchanged scroll offsets and unchanged
+screen position of the activated control. A 48-record fixture verifies 20/20/8
+history pages, disabled paging boundaries, focus restoration and rapid gene
+request replacement. Translation keys match and `git diff --check` is clean.
+
+
+## 067 — Ancestry-first gene tracing — 2026-09-21
+
+The user's correction supersedes decision 066's default whole-tree gene
+highlight. Selecting a gene traces the selected species back to the earliest
+recorded active expression on its inherited ancestral path. A labelled ring
+marks that event, accent curves connect the relevant ancestors, and expression
+bands show changes within that path. An ancestor's highlighted band ends at the
+split inherited by the next descendant; later parental adaptations and other
+species carrying the same gene remain unhighlighted context. Ancestors before
+the first recorded gene appearance have no highlighted gene band. Losses and
+reacquisitions after that first appearance remain visible.
+
+**Show gene in all species** is an explicit checkbox beside the chart's selected
+gene summary. It enables the previous full-branch display without fetching a
+different observation or changing the selected species. Every gene/species
+selection and opening the tree defaults to ancestry mode. Locale, theme, zoom
+and returning from the dedicated history view preserve the user's mode. Gene
+activation and checkbox changes preserve keyboard focus and scroll position.
+The earlier filter removal, active-only cards and paginated history remain.
+
+V3 supplies a detached `lineage` projection from the existing exact-revision
+ancestry events. Its first event is `firstAppearance`; its ancestor endpoints
+are descendant origins, and its final endpoint is the selected species' recorded
+extinction/current day. Empty or incomplete records are not filled in. This
+keeps inheritance and historical activity in the life model; UI chooses and
+localizes a supplied projection, and rendering lays out its dates and values.
+The existing full `branches` projection supports the optional whole-tree view.
+Biology, random streams, checkpoints and retention policy are unchanged.
+
+Focused checks cover first appearance in an ancestor or the selected species,
+exclusion of siblings and later parental changes, split-day endpoints, within-path
+loss/reacquisition and level changes, incomplete saves, query purity, explicit
+mode switching, fresh-selection defaults, locale/history preservation, and no
+scrolling on gene activation or keyboard mode changes. Validation results follow.
+
+The first appearance is the earliest recorded one in this ancestry; old saves
+cannot establish unrecorded origins. The tree still renders all species as
+context, and the optional full-tree observation retains its existing size limits.
+
+`npm run build` and `npm test` passed: 158 headless/rendering checks and 133
+Chromium checks, with one existing desktop touch duplicate skipped. Updated
+browser checks exercise default ancestry highlights, the first-appearance marker,
+optional all-species mode, fresh-selection resets, inherited level labels,
+keyboard focus and stable scrolling. Light/dark EN/PL screenshots were inspected
+at desktop and phone widths; the existing narrow layout check covers 320 px.
+Translation key parity and `git diff --check` passed. These are presentation and
+record-integrity checks, not additional ecological validation.

@@ -75,6 +75,7 @@ test('species energy labels, ordered genomes and collapsible details survive liv
     { photosynthesis: 1, plantFeeding: 1, animalFeeding: 1 },
   ];
   saved.species = diets.map((diet, index) => ({ ...original, id: `species-${index + 1}`,
+    genomeHistory: undefined, // Synthetic genomes have no recorded evolutionary past.
     name: `Exemplaria ${['viridis', 'brunnea', 'rubra', 'mixta'][index]}`,
     genome: { ...original.genome, ...diet, trunk: 0, sexualReproduction: 1 }, candidates: [] }));
   saved.populations = saved.species.map(species => ({ ...saved.populations[0], speciesId: species.id }));
@@ -202,6 +203,7 @@ test('V3 distinguishes estimated adaptation ranges from inherited traits in both
   const saved = model.exportState();
   const species = saved.species[0];
   Object.assign(species.genome, { elevationTolerance: 1, depthTolerance: 1 });
+  delete species.genomeHistory; // Synthetic genome has no recorded evolutionary past.
   // Controlled ecological mismatch, inspected through the real V3 observer.
   // Candidates are prospective directions and have no carrier population.
   species.candidates = [

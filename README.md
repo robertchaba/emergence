@@ -166,6 +166,36 @@ the saved world stays paused. The file includes the world settings, complete
 life checkpoint and history, day, speed, map layer, camera and pinned hex.
 It also works before life has been introduced or after extinction.
 
+Choose **Tree of life** in the same menu to pause and open the evolutionary
+ledger. Lifespan lines connect every living and extinct species to its ancestors;
+select a row for its description, population, family links and active genes.
+Expand the time axis to inspect crowded branches. Earlier introductions are
+available under **Explore other life introductions**, below the tree.
+
+Click an active gene to trace the selected species back through its ancestors to
+the gene’s first recorded appearance, without moving the screen. A labelled ring
+marks that first appearance; bold names, coloured bands and connecting curves
+follow its inherited path. Ancestor bands stop at the relevant split, excluding
+later parental changes. Numerical labels and stepped widths show level changes.
+**Show gene in all species** explicitly expands the highlight across the whole
+tree. Every new gene or species selection returns to the ancestry view.
+Categorical expressions use equal widths. Inactive periods stay uncoloured, and
+missing history is marked explicitly. **View highlight in tree** offers an
+explicit jump when the chart is offscreen; **Clear highlight** restores energy
+colours.
+
+A short summary identifies the first recorded presence in the selected ancestry.
+**Open lineage history** opens a separate view with 20 records per page, including
+inheritance, expression changes, losses and reappearances. **Back to tree** (or
+**Escape** in history) restores the tree's selection and scroll position. History
+follows the parent's genome at branching, including extinct ancestors; the chart
+shows later parental changes only when **Show gene in all species** is enabled. New accepted
+genomes are retained in save files; compatible older saves explicitly label
+unrecorded history instead of inventing it. The ledger records established
+species genomes, not hypothetical adaptation directions.
+**Back to atlas** or **Escape** from the tree returns to the same atlas view,
+still paused. Theme and language controls remain available throughout.
+
 Choose **Restore a saved world** from the landing page, World setup or the logo
 menu, select the downloaded file, then restore it. The landing-page button uses
 the same light panel styling as World setup and opens the dialog over the

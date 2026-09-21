@@ -333,3 +333,53 @@ observations of a completed revision; it does not import model implementations
 or issue engine commands. Future visual customization belongs here and in
 rendering, with any genuinely new required observation added explicitly to the
 common contract.
+
+## Tree of life — 2026-09-21
+
+The separate paused ledger uses SVG lifespan lines, curved parent connections,
+solid living lines, dashed extinct lines with terminal crosses, and diamonds
+for the selected gene's recorded events. Colour uses the existing energy-role
+tokens and denotes the latest accepted strategy, not an inferred historical diet.
+Native HTML species buttons align with the SVG rows, so selection and complete
+species/ancestry descriptions remain keyboard and screen-reader accessible.
+
+`life-tree.js` only orders supplied ancestry and lays out supplied dates. The UI
+resolves theme tokens and supplies them to drawing, handles search, filters,
+scrolling and time-axis zoom, and requests model-produced gene histories.
+Changing the presentation does not change the simulation. Filtered trees retain
+ancestors as context; earlier introductions have independent species-ID scopes.
+
+### Gene emphasis and bounded history — 2026-09-21
+
+This supersedes the preceding search/filter controls and event-only gene marks.
+The unfiltered tree now highlights the selected gene across all supplied branches:
+active intervals use accent bands and bold species names; supplied quantitative
+values change band width in discrete steps and have numeric labels. Categories
+keep equal widths. Inactive intervals retain a thin neutral lifespan, open circles
+mark inactive records, and dotted guides identify unknown time before snapshots.
+Extinction crosses remain visible even when a gene band overlays the lifespan.
+Labels that would overlap are omitted at that zoom; expanding the time axis and
+native species button descriptions expose recorded changes without inferring
+intermediate values. The latest recorded gene expression is also text in each
+species row. UI localizes SVG labels and passes theme tokens to the renderer.
+
+Only model-marked active traits get gene controls. Selecting one preserves focus,
+page scroll and chart scroll, including when its asynchronous query returns. A
+separate explicit action can bring the chart into view on a phone. The desktop
+chart stays beside the species details while scrolling. The detail panel has a
+short trace summary; full selected-ancestry records live in a separate internal
+history view, with 20 records per page. Back/Escape restores the tree position.
+Previous introductions remain accessible under a disclosure below the tree.
+
+### Ancestry-first gene tracing — 2026-09-21
+
+This supersedes the preceding default of highlighting every branch. Gene
+selection now displays only the model-supplied `lineage` projection, beginning
+at its first recorded active expression and ending each ancestor band at the
+next inherited split. Accent curves connect this path. Other species remain
+visible in muted context without gene badges. A labelled ring marks the first
+recorded appearance, and stepped widths/values retain gradual expression changes.
+The **Show gene in all species** checkbox enables the preceding full-branch
+view explicitly. New gene/species selections and opening the tree start in
+ancestry mode; theme, locale, zoom and returning from history preserve the chosen
+mode. Both gene activation and mode switching retain focus and scroll position.

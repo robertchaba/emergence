@@ -76,3 +76,41 @@ species belong to other. Candidate directions and occupied locations do not add
 species. This observation-only extension leaves the rules revision and random
 stream unchanged. Old checkpoints remain compatible; absent past breakdowns
 remain unavailable, and new daily samples include the partition.
+
+## Tree of life and inherited gene history
+
+`observeTree()` exposes all introductions and their living/extinct species as
+detached, described observations. `inspectGeneHistory(runId, speciesId, key)`
+traces an established trait through that introduction's ancestry, including
+accepted within-species changes, loss and reacquisition. The parent revision
+at branching determines what was inherited; later parental adaptations are
+excluded. Candidates have no accepted history and are not included.
+
+Species checkpoints now retain optional `genomeHistory` entries containing the
+accepted genome, explicit day, genome revision, event kind and (at branching)
+parent genome revision. Founding and accepted adaptations append entries without
+random draws or ecological changes. Extinct species and previous attempts retain
+them. Restore validates history and acyclic, temporally consistent ancestry.
+
+This metadata extension preserves `v3-populations-5` and checkpoint format 1.
+Compatible older checkpoints without gene history remain loadable. Queries show
+their earliest available snapshot as incomplete; new accepted changes record
+history from that point. Missing ancestral revisions are never reconstructed
+from a parent's later genome. History is retained without truncation, so long
+evolutionary runs produce larger saves. The tree is fetched on demand rather
+than added to every normal playback observation.
+
+Gene inspection also returns compressed expression records for every branch in
+the requested introduction, so the tree can highlight presence and level changes
+through each species' own lifetime. `quantitative` identifies numerical levels;
+structural/habitat categories, thermal preferences and on/off switches use equal
+visual weight. The selected ancestry still excludes later parent changes, while
+whole-tree branch records preserve them. This is a detached read-only projection;
+no biology, checkpoint format or retention policy changes.
+
+The `lineage` projection supplies the default gene highlight: the selected
+inherited path beginning with its earliest recorded active expression. Ancestor
+segments stop at the inherited split; losses and reacquisitions within that path
+remain recorded. Full-lifetime `branches` remain available for the optional
+all-species view. Both projections are read-only and share the same completeness
+limits as the accepted historical record.

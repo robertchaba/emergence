@@ -4,6 +4,7 @@ import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
 import { createLifeNotebook } from './life-notebook.js';
 import { createNumberAnimator } from './number-animation.js';
 import { createRestoreDialog, downloadSave } from './save-dialog.js';
+import { createTreeOfLife } from './tree-of-life.js';
 
 const number = { format: (value) => formatNumber(value) };
 const integer = { format: (value) => formatNumber(value, 'integer') };
@@ -38,6 +39,7 @@ export function initWorldUI(restored = null) {
   const pauseButton = document.querySelector('#pause-world');
   const saveButton = document.querySelector('#save-state');
   const restoreButton = document.querySelector('#restore-state');
+  const treeButton = document.querySelector('#open-tree-of-life');
   const saveStatus = document.querySelector('#save-status');
   const stepButton = document.querySelector('#step-world');
   const details = document.querySelector('#hex-details');
@@ -84,6 +86,33 @@ export function initWorldUI(restored = null) {
   const notebook = createLifeNotebook({
     onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
     onVariantSelect(variant) { selectedVariant = variant; queueDraw(); },
+  });
+  const tree = createTreeOfLife({
+    onClose() {
+      tree.hide();
+      document.querySelector('#workspace-preferences').append(themePicker, languageSwitcher);
+      workspace.inert = false;
+      workspace.removeAttribute('aria-hidden');
+      menu.querySelector('summary').focus({ preventScroll: true });
+      resetClock();
+      queueDraw();
+    },
+    onRequest(message) {
+      try { lifeWorker.postMessage(message); }
+      catch { tree.receive({ ...message, error: true }); }
+    },
+  });
+  treeButton.addEventListener('click', () => {
+    if (treeButton.disabled) return;
+    setPlaying(false);
+    menu.open = false;
+    themePicker.open = false;
+    document.querySelector('#tree-preferences').append(themePicker, languageSwitcher);
+    // Keep the atlas mounted so its camera, selection and canvas size survive.
+    workspace.inert = true;
+    workspace.setAttribute('aria-hidden', 'true');
+    // Worker ordering lets an already requested batch finish before this query.
+    tree.show();
   });
   const restoreDialog = createRestoreDialog({
     onOpen() { setPlaying(false); menu.open = false; },
@@ -134,6 +163,7 @@ export function initWorldUI(restored = null) {
     stepButton.disabled = lifeBusy || lifeFailed || playing || saving;
     saveButton.disabled = !life || lifeFailed || saving;
     restoreButton.disabled = saving;
+    treeButton.disabled = !life || lifeFailed || saving;
     document.querySelector('#return-setup').disabled = saving;
   }
 
@@ -179,6 +209,7 @@ export function initWorldUI(restored = null) {
     const session = lifeRevision;
     lifeWorker.onmessage = ({ data }) => {
       if (session !== lifeRevision) return;
+      if (data.command === 'tree' || data.command === 'gene-history') { tree.receive(data); return; }
       if (data.command === 'export') {
         saving = false;
         try {
@@ -210,7 +241,7 @@ export function initWorldUI(restored = null) {
         targetSpeed = Number(speedInput.max);
         speedInput.value = String(targetSpeed);
         updateTargetSpeed();
-        if (playAfterIntroduction && !saving && !restoreDialog.open) setPlaying(true);
+        if (playAfterIntroduction && !saving && !restoreDialog.open && !tree.open) setPlaying(true);
       }
       else notebook.message(data.result?.reason || 'lifeError');
       playAfterIntroduction = false;

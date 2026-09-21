@@ -249,3 +249,57 @@ single-total chart when the current breakdown is unavailable. Old history must
 not be reconstructed from current diets. V3 checkpoints keep new census samples
 without changing biological rules or random state, validate the partition when
 present, and continue accepting history records without the extension.
+
+## Optional tree of life and gene history — 2026-09-21
+
+The active V3 model exposes a separate on-demand tree observation identifying
+the current run, completed day and revision. It includes every recorded life
+introduction, each with its own run ID, date bounds and complete species list.
+Species IDs are scoped to that introduction. Each species supplies its stable
+name, direct parent ID, origin/extinction days, current represented population
+and occupied-hex count, model-derived role, supported habitats, mobility and
+all trait descriptions, including inactive values. Extinct species keep their
+last accepted traits and have zero current population/range. Supported habitat
+is a capability, not a claim of historical occupancy. Earlier introductions
+remain separate; they are not ancestors of a new introduction.
+
+A gene-history query identifies introduction, species, gene and observation
+revision. Its chronologically ordered events describe founding/branching,
+inheritance, expression change, appearance, loss or an incomplete-history
+boundary. Events include the species identity, explicit day and described
+trait value/activity. The model traces the parent's accepted genome revision
+at branching, excluding later changes in that parent. `firstAppearance` is
+the first *recorded active expression on this ancestral path*, not the first
+independent appearance anywhere in the world. Loss and reacquisition remain
+visible. Inactive defaults remain available in the observations; the tree UI
+only offers active traits as gene controls. Recorded inactivity and losses stay
+visible in the history.
+
+`complete: false` means some earlier history is unavailable. Consumers must
+show that boundary and must not infer inherited genomes from present-day
+ancestors. Tree records' `historyComplete` describes their own accepted-genome
+record; a gene trace additionally assesses its ancestors. Proposed adaptation
+directions are excluded. Queries return detached observations, do not consume
+randomness or change life state, and UI handles asynchronous request identity.
+The renderer only lays out supplied relationships and dates; it does not infer
+gene origins or biological activity.
+
+The gene-history query also supplies `branches`: each species' own compressed
+sequence of accepted values/activity, explicit event days, lifetime end and
+history-completeness flag. These records cover the entire introduction, including
+parental changes after a selected descendant split. They do not change the
+ancestry-only meaning of `events` or `firstAppearance`. Unknown periods before
+legacy snapshots remain unknown. The model supplies `quantitative` to distinguish
+level magnitudes from categories and switches; consumers must not draw categories
+as increasing evolutionary ranks. Pagination is presentation-only and never
+truncates the observations or checkpoint history.
+
+The query additionally supplies `lineage`, a model-derived sequence of branch
+segments starting at `firstAppearance`. It includes the selected species and
+only the ancestors on that inherited path, retaining any subsequent losses and
+reacquisitions. Each ancestor segment ends at the next descendant's origin day;
+the selected segment ends at its recorded extinction/current day. Earlier inactive
+ancestors, unrelated branches and later parental adaptations do not appear in this
+projection. No active record produces an empty sequence. Incomplete saves still
+expose only known records, with the existing completeness warning. This projection
+is the tree's default highlight; full `branches` are an explicit display option.

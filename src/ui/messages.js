@@ -1,6 +1,8 @@
 // Complete UI phrases. Engine IDs and snapshots remain locale-independent.
+import { treeMessages } from './tree-messages.js';
 export const messages = {
   "en": {
+    ...treeMessages.en,
     "skip": "Skip to content",
     "preferences": "Page preferences",
     "theme": "Colour theme",
@@ -234,6 +236,7 @@ export const messages = {
     "retryLife": "Retry initialization"
   },
   "pl": {
+    ...treeMessages.pl,
     "skip": "Przejdź do treści",
     "preferences": "Ustawienia strony",
     "theme": "Motyw kolorystyczny",

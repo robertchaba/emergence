@@ -19,6 +19,15 @@ self.onmessage = async ({ data }) => {
       model = createLifeModel(world, data.options);
     }
     else if (!model) throw new Error('Life model is not initialized.');
+    else if (data.command === 'tree') {
+      self.postMessage({ command: data.command, requestId: data.requestId, tree: model.observeTree() });
+      return;
+    }
+    else if (data.command === 'gene-history') {
+      self.postMessage({ command: data.command, requestId: data.requestId,
+        trace: model.inspectGeneHistory(data.runId, data.speciesId, data.key) });
+      return;
+    }
     else if (data.command === 'export') {
       const saved = createSave(world, model.exportState(), data.view);
       self.postMessage({ command: data.command, day: model.observe().day, json: JSON.stringify(saved) });
@@ -29,6 +38,6 @@ self.onmessage = async ({ data }) => {
     else throw new Error('Unknown life command.');
     self.postMessage({ command: data.command, observation: model.observe(), result });
   } catch (error) {
-    self.postMessage({ command: data.command, error: String(error.message || error) });
+    self.postMessage({ command: data.command, requestId: data.requestId, error: String(error.message || error) });
   }
 };
