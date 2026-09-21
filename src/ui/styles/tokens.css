@@ -97,6 +97,9 @@
   --map-life-grazer: #946423;
   --map-life-predator: #a94237;
   --map-life-mixed: #795184;
+  --map-life-omnivore: #6957b0;
+  --map-life-photo-grazer: #187c68;
+  --map-life-photo-predator: #b44479;
   --map-life-other: #4a737d;
   --map-life-detail: rgb(255 249 221 / 70%);
   --map-life-selected: #f5edd0;
@@ -223,6 +226,9 @@
   --map-life-grazer: #e6ba6c;
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
+  --map-life-omnivore: #b7a3f5;
+  --map-life-photo-grazer: #62d4af;
+  --map-life-photo-predator: #f39bc5;
   --map-life-other: #9bcbd1;
   --map-life-detail: rgb(255 249 221 / 70%);
   --map-life-selected: #f5edd0;
@@ -351,6 +357,9 @@
   --map-life-grazer: #e6ba6c;
   --map-life-predator: #ee9681;
   --map-life-mixed: #d0a3d9;
+  --map-life-omnivore: #b7a3f5;
+  --map-life-photo-grazer: #62d4af;
+  --map-life-photo-predator: #f39bc5;
   --map-life-other: #9bcbd1;
   --map-life-detail: rgb(255 249 221 / 70%);
   --map-life-selected: #f5edd0;

@@ -263,12 +263,17 @@ reduced-motion preferences show each new value immediately. Selecting another he
 or species shows its values immediately. This animation only changes presentation.
 
 Life always appears on the map as vivid green producer coverage at every body
-size. Larger stationary plants form larger canopy rosettes, with separate size
-bands so abundant tiny plants cannot hide them. Zoom in to reveal animal silhouettes: rounded
-bodies for grazers, pointed bodies for predators, and engraved segments for mixed
-feeders. Mobile land groups step along curved paths; water groups swim with
-undulating tails and fins. Bodies face their direction of travel. Wide views keep
-simple coloured marks; details grow with body size and zoom, without dark outlines.
+size. Plants and animals retain separate size bands so abundant tiny organisms
+cannot hide larger bodies. Zoom in to reveal 28 silhouette families, with separate
+land and water forms: rosettes, ferns and branching canopies; aquatic ribbons,
+fans and pads; stout walkers, segmented crawlers, streamlined swimmers and
+bell-shaped drifters. Larger animals look bulkier and move with a slower cosmetic
+pace and gait. Mixed feeders use violet for plant + animal feeding, teal for
+photosynthesis + plant feeding, and rose for photosynthesis + animal feeding;
+all three retain the earlier mauve. Mobile land groups follow curved paths;
+water groups swim with undulating tails and fins. Bodies face their direction of
+travel. Wide views keep simple coloured marks; details grow with body size and
+zoom, without dark outlines.
 Stationary plants and consumers stay still. Plants have a separate drawing budget
 and appear beneath animals. Animation stops while paused, hidden, or using reduced motion, with smoother
 motion at closer zoom. The marks are illustrative population samples, not tracked

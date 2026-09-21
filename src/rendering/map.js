@@ -1,7 +1,7 @@
 /* Read-only Canvas 2D presentation. UI supplies resolved CSS tokens, the camera,
    and snapshots. No browser style access, events, or simulation imports here. */
 import { territoryContours } from './territory.js';
-import { LIFE_PLANT_MARKER_LIMIT, LIFE_CONSUMER_MARKER_LIMIT, lifeMarkerPositions, drawLifeMarker } from './life-marks.js';
+import { LIFE_PLANT_MARKER_LIMIT, LIFE_CONSUMER_MARKER_LIMIT, lifeMarkerPositions, lifeMarkerColour, drawLifeMarker } from './life-marks.js';
 const ROOT_THREE = Math.sqrt(3);
 const CORNERS = Array.from({ length: 6 }, (_, index) => {
   const angle = (index * 60 - 30) * Math.PI / 180;
@@ -15,6 +15,7 @@ export const MAP_TOKEN_NAMES = Object.freeze([
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
   'life-producer', 'life-plant', 'life-grazer', 'life-predator', 'life-mixed', 'life-other',
+  'life-omnivore', 'life-photo-grazer', 'life-photo-predator',
   'life-detail', 'life-selected', 'life-selected-fill', 'life-selection-halo', 'life-variant', 'life-variant-fill',
   ...Array.from({ length: 8 }, (_, index) => `region-${index}`),
 ].map((name) => `--map-${name}`));
@@ -40,11 +41,12 @@ function lifeSummary(observation) {
       }
       const habitat = display.habitat === 'water' ? 'water' : 'land';
       const plant = role === 'producer' && !mobile;
-      // Keep large stationary plants visible beside abundant tiny producers.
+      // Keep large bodies visible beside abundant smaller organisms.
       // These are display bands, never species or ecological classifications.
-      const band = plant ? size < 0.35 ? 0 : size < 0.7 ? 1 : 2 : 0;
-      const key = `${role}:${habitat}:${mobile}:${band}`;
-      const group = groups.get(key) ?? { key, role, habitat, mobile, plant, band, population: 0, weightedSize: 0 };
+      const band = size < 0.35 ? 0 : size < 0.7 ? 1 : 2;
+      const colour = lifeMarkerColour({ ...display, role, mobile });
+      const key = `${role}:${colour}:${habitat}:${mobile}:${band}`;
+      const group = groups.get(key) ?? { key, role, colour, habitat, mobile, plant, band, population: 0, weightedSize: 0 };
       group.population += display.population;
       group.weightedSize += size * display.population;
       groups.set(key, group);
@@ -61,7 +63,8 @@ function lifeSummary(observation) {
       const markers = [];
       for (let sample = 0; sample < 16 && markers.length < limit; sample += 1) {
         for (const group of groups) {
-          if (sample < group.samples && markers.length < limit) markers.push({ role: group.role, habitat: group.habitat, size: group.size, mobile: group.mobile });
+          if (sample < group.samples && markers.length < limit) markers.push({ role: group.role,
+            colour: group.colour, habitat: group.habitat, size: group.size, mobile: group.mobile });
         }
       }
       return markers;

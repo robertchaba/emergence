@@ -425,6 +425,17 @@ test('v3 energy census partitions living identities and preserves optional histo
   restored.advanceTo(1); // No biological turn; all eight established identities remain.
   const snapshot = reconcile(restored);
   assert.deepEqual(snapshot.history.at(-1).speciesByEnergy, expected);
+  for (const hex of snapshot.hexes) {
+    assert.equal(hex.display.length, 8, 'mixed strategies with the same size and habitat stay separate');
+    for (let bits = 0; bits < 8; bits += 1) {
+      const sources = ['photosynthesis', 'plantFeeding', 'animalFeeding'].filter((_, i) => bits & (1 << i));
+      const group = hex.display.find(row => JSON.stringify(row.energySources) === JSON.stringify(sources));
+      assert.equal(group?.population, 12);
+    }
+  }
+  const detached = restored.observe();
+  detached.hexes[0].display[0].energySources.push('external-change');
+  assert.deepEqual(restored.observe(), snapshot, 'display capabilities are detached from model state');
   assert.equal(Object.values(snapshot.counts.speciesByEnergy).reduce((a, b) => a + b), snapshot.counts.species);
   const checkpoint = restored.exportState();
   assert.deepEqual(restoreLifeModel(world, checkpoint).observe(), snapshot);

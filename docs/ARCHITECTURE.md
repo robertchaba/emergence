@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Ancestry-first gene tracing — 2026-09-21.**
+**Current: Habitat-specific organism variants and mixed feeding colours — 2026-09-21.**
+Decision 068 expands the atlas to 28 silhouette families, preserves large animals
+beside small ones and gives the three mixed feeding pairs distinct colours.
+
+**Ancestry-first gene tracing — 2026-09-21.**
 Decision 067 makes the selected species’ inherited path to the first recorded
 gene appearance the default, with whole-tree highlighting as an explicit option.
 
@@ -3328,3 +3332,79 @@ keyboard focus and stable scrolling. Light/dark EN/PL screenshots were inspected
 at desktop and phone widths; the existing narrow layout check covers 320 px.
 Translation key parity and `git diff --check` passed. These are presentation and
 record-integrity checks, not additional ecological validation.
+
+## 068 — Habitat variants, mixed feeding colours and larger animals — 2026-09-21
+
+The user requests many more organism variants, clearer larger/slower animals,
+distinct colours for each two-system feeding combination, and different forms
+for land and water. **Supersedes 052's limited silhouette families, uniform
+mixed colour, consumer radius cap and size-independent cosmetic speed. Extends
+064's size bands to all display groups.**
+
+### Rendering and observation boundary
+
+The new `rendering/life-shapes.js` contains 28 illustrative silhouette families:
+six stationary producer forms and eight consumer forms for each habitat. It
+preserves the earlier rosette and rounded/tapered animal style, adding fronds,
+blades, branching and lobed plants, aquatic ribbons/fans/pads, stout walkers,
+segmented crawlers, elongated bodies, fins, paddles and trailing filaments.
+`life-marks.js` selects variants from stable hex/slot seeds and controls their
+size, orientation, resolved colour and motion. Shapes do not change with theme,
+camera or cosmetic time. They do not represent predefined species or infer
+anatomy from genes. Renderers still import no engine or UI implementations.
+
+Three display size bands now preserve rare large consumers beside abundant
+small ones, with population-weighted size inside each band and large bands
+sampled first. Consumer radii have a size-dependent cap up to 13 CSS pixels
+instead of six. Larger representatives traverse the existing smooth curves and
+cycle their limbs/tails more slowly; the size-one pace is about 3.6 times slower
+than size zero along the same path. This is a cosmetic size cue, never a change
+to dispersal, feeding, simulation time or the movement gene. Stationary organisms
+stay fixed. Existing pause, hidden-page and reduced-motion policies still apply.
+
+V3 adds optional detached `display[].energySources` observations describing the
+enabled established acquisition capabilities. Display aggregation keeps all
+eight combinations separate, even for equal role/size/habitat/mobility. This
+small model-owned projection is necessary because the previous mixed display
+group irreversibly merged the three requested pairs. No renderer inspects
+genomes or reconstructs ecological classification. It selects violet for plant
++ animal feeding, teal for photosynthesis + plant feeding and rose for
+photosynthesis + animal feeding; all-three and unavailable legacy detail retain
+mauve. Three new root CSS tokens cover both themes and the no-JavaScript
+system-dark fallback, and UI resolves them through the existing token adapter.
+Feeding-only changes participate in frame cache invalidation.
+
+V1/V2, active V3 rules revision, checkpoint format, PRNG state, role classification,
+energy census, climate and geography are unchanged. Existing compatible saves
+receive the new derived display detail on observation. English/Polish notebook
+traits retain their text descriptions; no controls or untranslated user flow are
+added. Producer tint, selection, original artwork and licensing are preserved.
+
+### Validation and limitations
+
+Focused checks cover all 28 distinct bounded path families, the 24-plant and
+30-consumer budgets, rare large consumers, size-dependent slow motion, stationary
+poses, three mixed-pair colours at wide/close zoom, all-three and legacy fallback,
+and feeding-only frame invalidation. The V3 all-diets fixture verifies separate
+read-only groups, exact population sums, unchanged exports after inspection and
+checkpoint continuation. Browser fixtures exercise both themes at desktop/phone
+widths, compare damage repaint against a fresh full frame and show every variant
+and mixed-diet colour for visual review.
+
+Low zoom still shows inexpensive dots, with detail revealed by zoom and size.
+Marks are population samples, not organism counts, actual anatomy, calibrated
+speed, or individually tracked journeys. Within a dense hex the bounded budget
+can omit some groups and marks can overlap; the notebook remains the census.
+More varied silhouettes have bounded extra drawing work; no measured runtime
+performance improvement or cross-browser numerical equivalence is claimed.
+
+Final verification: `npm run build` and `npm test` passed with 161 headless/
+rendering checks and 135 Chromium checks; the existing desktop touch duplicate
+remains skipped. The seasonal-rendering fixture was updated to serve the new
+shape module, and its six focused checks passed before the complete rerun.
+Visual review covered the complete silhouette/colour gallery, occupied-hex
+fixtures and the actual notebook in both themes at desktop/phone widths,
+including English/Polish wrapping, focus and controls. Existing browser checks
+cover reduced motion, disabled controls, save continuation and source/production
+subdirectory loading. Scope/dependency review and `git diff --check` passed.
+Browser evidence is limited to Chromium; no deployment was performed.

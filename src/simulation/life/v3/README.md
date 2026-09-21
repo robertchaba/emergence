@@ -69,6 +69,12 @@ survival, diversification and eventual outcomes are not guaranteed.
 
 ## Energy-source census
 
+Map display groups also expose `energySources`: the enabled photosynthesis,
+plant-feeding and animal-feeding capabilities of the established genome. All
+eight combinations remain separate even when role, size, habitat and mobility
+match. This detached observation allows distinct mixed-diet colours; it does
+not change ecological rules, broad roles, checkpoints or random state.
+
 Current counts and new daily history expose `speciesByEnergy`: photosynthesis,
 plant feeding, animal feeding, and other. The model counts each established
 living identity once using its existing phenotype role; mixed and zero-system

@@ -641,6 +641,8 @@ function buildModel(world, state) {
       if (!rows.length) continue;
       const derived = phenotype(record.genome);
       const locationCounts = new Map();
+      const energySources = ['photosynthesis', 'plantFeeding', 'animalFeeding']
+        .filter(key => record.genome[key] > 0);
       for (const row of rows) locationCounts.set(row.hexId, (locationCounts.get(row.hexId) ?? 0) + row.count);
       const locations = [...locationCounts].map(([hexId, population]) => ({ hexId, population })).sort((a, b) => a.hexId - b.hexId);
       const population = rows.reduce((sum, row) => sum + row.count, 0);
@@ -673,9 +675,9 @@ function buildModel(world, state) {
         hex.population += row.count;
         hex.species.set(row.speciesId, (hex.species.get(row.speciesId) ?? 0) + row.count);
         const mobile = record.genome.movement > 0;
-        const key = `${derived.role}|${derived.size}|${row.habitat}|${mobile}`;
+        const key = `${derived.role}|${energySources.join(',')}|${derived.size}|${row.habitat}|${mobile}`;
         if (!hex.display.has(key)) hex.display.set(key, { role: derived.role, size: derived.size,
-          mobile, habitat: row.habitat, population: 0 });
+          energySources: [...energySources], mobile, habitat: row.habitat, population: 0 });
         hex.display.get(key).population += row.count;
       }
     }

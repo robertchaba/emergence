@@ -6,6 +6,7 @@ import { createGrid } from '../src/simulation/grid.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../src/rendering/map.js';
 import { createLifeTrendSvg } from '../src/rendering/life-trend.js';
 import { lifeMarkerPositions, lifeMarkerPose, drawLifeMarker } from '../src/rendering/life-marks.js';
+import { drawPlantShape, drawAnimalShape } from '../src/rendering/life-shapes.js';
 
 const style = readFileSync(new URL('../src/ui/styles/tokens.css', import.meta.url), 'utf8');
 const tokenValue = (name) => {
@@ -456,6 +457,105 @@ test('life silhouettes distinguish habitat and role, reveal detail on zoom, and 
   'size-dependent caps preserve the distinction at maximum zoom');
   assert.ok(radius(1) > 3.5, 'the former plant radius cap no longer hides large sizes');
   assert.deepEqual(capture(plant, 60, 0), capture(plant, 60, 120));
+});
+
+test('land and water have 28 distinct bounded silhouette families', () => {
+  const silhouettes = new Set();
+  for (const water of [false, true]) {
+    for (const plant of [false, true]) {
+      for (let variant = 0; variant < (plant ? 6 : 8); variant += 1) {
+        const calls = [];
+        const context = new Proxy({}, { get: (target, key) => target[key] ?? ((...args) => calls.push([key, ...args])) });
+        const draw = () => plant ? drawPlantShape(context, variant, water, 'detail')
+          : drawAnimalShape(context, variant, water, { role: 'grazer', size: 1, mobile: true }, 0.8, 'detail');
+        draw();
+        assert.ok(calls.length < 85, 'bounded path work for every silhouette');
+        assert.equal(calls.filter(([key]) => key === 'fill').length, 1, 'one population fill per mark');
+        silhouettes.add(JSON.stringify(calls));
+        const first = JSON.stringify(calls);
+        calls.length = 0;
+        draw();
+        assert.equal(JSON.stringify(calls), first);
+        for (const [method, ...args] of calls) {
+          if (['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo'].includes(method)) {
+            for (let i = 0; i < args.length; i += 2) {
+              assert.ok(Math.hypot(args[i], args[i + 1]) <= (plant ? 1.25 : 2));
+            }
+          } else if (method === 'ellipse') {
+            const [x, y, rx, ry, angle] = args;
+            for (let i = 0; i < 40; i += 1) {
+              const a = i * Math.PI / 20, dx = rx * Math.cos(a), dy = ry * Math.sin(a);
+              assert.ok(Math.hypot(x + dx * Math.cos(angle) - dy * Math.sin(angle),
+                y + dx * Math.sin(angle) + dy * Math.cos(angle)) <= (plant ? 1.25 : 2));
+            }
+          }
+        }
+      }
+    }
+  }
+  assert.equal(silhouettes.size, 28);
+});
+
+test('large consumers stay visible beside tiny ones and move with a slower cosmetic gait', () => {
+  const { map, calls } = renderer();
+  const life = freezeDeep({ runId: 'sizes', revision: 1, hexes: [{ hexId: 10, population: 1000001,
+    species: [], display: [
+      { role: 'grazer', size: 0, habitat: 'land', mobile: true, population: 1000000 },
+      { role: 'grazer', size: 1, habitat: 'land', mobile: true, population: 1 },
+    ],
+  }] });
+  const world = fixture(), camera = { zoom: 5, x: 0, y: 0 };
+  const center = map.cellCenter(world, 10, camera);
+  camera.x = 450 - center.x; camera.y = 300 - center.y;
+  map.draw(world, { life, camera });
+  const radii = calls.filter(([method]) => method === 'scale').map(([, radius]) => radius);
+  assert.ok(Math.max(...radii) > Math.min(...radii) * 3, 'rare large consumers retain their own size band');
+  const slot = lifeMarkerPositions(10)[0];
+  const small = { role: 'grazer', size: 0, mobile: true };
+  const large = { ...small, size: 1 };
+  const distance = marker => {
+    const start = lifeMarkerPose(marker, slot, 0), end = lifeMarkerPose(marker, slot, 0.001);
+    return Math.hypot(end.x - start.x, end.y - start.y);
+  };
+  assert.ok(distance(large) < distance(small) / 3);
+  const beat = marker => lifeMarkerPose(marker, slot, 1).phase - lifeMarkerPose(marker, slot, 0).phase;
+  assert.ok(beat(large) < beat(small) / 3);
+  for (const size of [0, 0.5, 1]) {
+    const still = { ...large, size, mobile: false };
+    assert.deepEqual(lifeMarkerPose(still, slot, 0), lifeMarkerPose(still, slot, 200));
+  }
+});
+
+test('mixed feeding colours survive aggregation, low zoom, revision changes and legacy observations', () => {
+  const { map, fills } = renderer();
+  const world = fixture();
+  const combinations = [
+    [['plantFeeding', 'animalFeeding'], 'omnivore'],
+    [['photosynthesis', 'plantFeeding'], 'photo-grazer'],
+    [['photosynthesis', 'animalFeeding'], 'photo-predator'],
+    [['photosynthesis', 'plantFeeding', 'animalFeeding'], 'mixed'],
+  ];
+  const life = freezeDeep({ runId: 'feeding', revision: 1, hexes: [{ hexId: 10, population: 400,
+    species: [], display: combinations.map(([energySources]) => ({ role: 'mixed',
+      energySources, size: 0.7, mobile: false, habitat: 'water', population: 100 })),
+  }] });
+  for (const zoom of [0.1, 1, 3]) {
+    fills.length = 0;
+    const camera = { zoom, x: 0, y: 0 }, center = map.cellCenter(world, 10, camera);
+    camera.x = 450 - center.x; camera.y = 300 - center.y;
+    map.draw(world, { life, camera });
+    for (const [, colour] of combinations) assert.ok(fills.includes(tokens[`--map-life-${colour}`]));
+  }
+  for (const [index, [energySources, colour]] of combinations.entries()) {
+    fills.length = 0;
+    map.draw(world, { life: { ...life, revision: index + 2, hexes: [{ ...life.hexes[0],
+      display: [{ ...life.hexes[0].display[0], energySources }],
+    }] } });
+    assert.ok(fills.includes(tokens[`--map-life-${colour}`]), 'feeding-only changes repaint');
+  }
+  fills.length = 0;
+  map.draw(world, { life: lifeFixture({ role: 'mixed', size: 0.7 }) });
+  assert.ok(fills.includes(tokens['--map-life-mixed']), 'older models retain their supplied role');
 });
 
 test('independent trend scales retain small living counts alongside large extinct counts and occupied areas', () => {

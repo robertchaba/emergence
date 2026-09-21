@@ -1,5 +1,46 @@
 # Life rendering
 
+## Habitat variants, mixed diets and larger animals — 2026-09-21
+
+Decision 068 supersedes 052's small silhouette vocabulary, single mixed-feeding
+colour, six-pixel consumer radius cap and size-independent motion. It extends
+064's three size bands to consumers while preserving both drawing budgets.
+
+`life-shapes.js` supplies six plant and eight animal forms per habitat (28
+families). Land foliage includes the original rosette, fern, grass blades,
+branching leaves, lobed canopy and needle sprays. Water foliage uses ribbon
+stars, kelp ribbons, beaded colonies, fans, pads and feather fronds. Land animals
+include rounded, segmented, stout four-legged, elongated, squat, tapered,
+clawed and soft-bodied forms. Water animals include streamlined and deep-bodied
+swimmers, long ribbon bodies, broad fins, bells with trailing filaments,
+segmented bodies and paddled/oval forms. These are illustrative population
+symbols, not predefined species or claims about actual evolved anatomy.
+
+Variant selection uses the existing deterministic hex/slot seed, independently
+of time, zoom, theme and biological randomness. Size bands preserve scarce large
+consumers alongside abundant small ones. Consumer radius is
+`scale × (0.019 + 0.074size^1.15)`, capped at `2.5 + 10.5size` CSS pixels.
+Both path time and gait slow by `0.85 + 2.2size²`, giving large bodies a deliberate
+amble. These are visual coefficients, not biological speed or distance units.
+Stationary marks remain fixed; pause, visibility and reduced-motion gating remain.
+
+The optional common `display[].energySources` observation preserves enabled
+feeding combinations through model and rendering aggregation. Plant + animal
+feeding uses violet, photosynthesis + plant feeding teal, and photosynthesis +
+animal feeding rose. All-three feeding and older mixed observations without
+detail retain mauve. Colours come from three new root tokens in both explicit
+themes and the synchronized system-dark fallback. Broad roles, producer coverage,
+the notebook census and biological classification remain unchanged. The notebook
+continues to describe acquisition traits in text in both languages.
+
+Low zoom retains dots. Plants draw underneath consumers, with the same 24/30
+per-hex limits and reduced budgets in wider views. Shape paths remain bounded;
+each variant uses one body fill and fewer than 85 Canvas path calls including
+details. Changed feeding combinations invalidate the cached frame even when
+population and broad role stay the same. Controlled browser fixtures exercise
+all 28 forms and mixed colours in both themes at desktop/phone widths, as well as
+damage repaint equivalence. These fixtures validate drawing, not ecology.
+
 ## Visible stationary canopies — 2026-09-20
 
 Decision 064 supersedes 042/052's fading stationary plants, their 3.5-pixel

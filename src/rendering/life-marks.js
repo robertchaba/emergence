@@ -1,5 +1,7 @@
 // Illustrative population marks, not organisms or inferred anatomy. All input
 // comes from common display observations; motion is a separate cosmetic clock.
+import { drawPlantShape, drawAnimalShape } from './life-shapes.js';
+
 export const LIFE_PLANT_MARKER_LIMIT = 24;
 export const LIFE_CONSUMER_MARKER_LIMIT = 30;
 export const LIFE_MARKER_LIMIT = LIFE_PLANT_MARKER_LIMIT + LIFE_CONSUMER_MARKER_LIMIT;
@@ -29,7 +31,11 @@ export function lifeMarkerPose(marker, slot, time) {
   if (!marker.mobile) {
     return { ...markerPoint(slot.seed, 0), heading, phase: heading, opacity: 1 };
   }
-  const clock = (time + slot.offset) / 3.5;
+  // Larger representatives amble with a slower limb/tail beat. This is a
+  // visual size cue, not a velocity measurement or biological movement rule.
+  const size = clamp(Number(marker.size) || 0, 0, 1);
+  const pace = 0.85 + 2.2 * size * size;
+  const clock = (time / pace + slot.offset) / 3.5;
   const step = Math.floor(clock);
   const progress = clock - step;
   const point = markerPoint(slot.seed, step);
@@ -45,22 +51,38 @@ export function lifeMarkerPose(marker, slot, time) {
   return {
     x: rest * rest * from.x + 2 * rest * progress * point.x + progress * progress * to.x,
     y: rest * rest * from.y + 2 * rest * progress * point.y + progress * progress * to.y,
-    heading: Math.atan2(dy, dx), phase: time * 5 + slot.offset, opacity: 1,
+    heading: Math.atan2(dy, dx), phase: time * 5 / pace + slot.offset, opacity: 1,
   };
+}
+
+// The model supplies enabled acquisition systems, not energy-intake shares.
+// Older observations without this optional extension retain their role colour.
+export function lifeMarkerColour(marker) {
+  if (marker.role === 'mixed' && Array.isArray(marker.energySources)) {
+    const sources = new Set(marker.energySources);
+    const photo = sources.has('photosynthesis');
+    const plant = sources.has('plantFeeding');
+    const animal = sources.has('animalFeeding');
+    if (!photo && plant && animal) return 'life-omnivore';
+    if (photo && plant && !animal) return 'life-photo-grazer';
+    if (photo && !plant && animal) return 'life-photo-predator';
+  }
+  return marker.role === 'producer' && !marker.mobile ? 'life-plant' : `life-${marker.role}`;
 }
 
 export function drawLifeMarker(context, marker, slot, time, x, y, scale, palette) {
   const plant = marker.role === 'producer' && !marker.mobile;
   const point = lifeMarkerPose(marker, slot, time);
-  const radius = plant ? clamp(scale * (0.024 + marker.size * 0.14), 0.4, 2.5 + 7.5 * marker.size)
-    : clamp(scale * (0.03 + marker.size * 0.05), 0.4, 6);
+  const size = clamp(Number(marker.size) || 0, 0, 1);
+  const radius = plant ? clamp(scale * (0.024 + size * 0.14), 0.4, 2.5 + 7.5 * size)
+    : clamp(scale * (0.019 + 0.074 * size ** 1.15), 0.4, 2.5 + 10.5 * size);
   const cx = x + point.x * scale;
   const cy = y + point.y * scale;
-  const colour = palette[plant ? 'life-plant' : `life-${marker.role}`];
+  const colour = palette[marker.colour ?? lifeMarkerColour(marker)];
   context.globalAlpha = point.opacity;
   context.fillStyle = colour;
   // Keep a quiet, inexpensive atlas at low zoom. Detail appears as space allows.
-  if (scale < (plant ? 10 : 18) || radius < 0.85 || plant && marker.size < 0.35) {
+  if (scale < (plant ? 10 : 18) || radius < 0.85 || plant && size < 0.35) {
     context.beginPath();
     context.arc(cx, cy, radius, 0, TAU);
     context.fill();
@@ -74,81 +96,12 @@ export function drawLifeMarker(context, marker, slot, time, x, y, scale, palette
   context.strokeStyle = colour;
   context.lineCap = 'round';
   context.lineJoin = 'round';
-  if (plant) {
-    // A fixed canopy rosette; its 1.25-radius leaves stay inside the hex even
-    // at the largest size. The silhouette does not imply a plant species.
-    context.beginPath();
-    for (let leaf = 0; leaf < 3; leaf += 1) {
-      const angle = leaf * TAU / 3;
-      const lx = Math.cos(angle) * 0.45;
-      const ly = Math.sin(angle) * 0.45;
-      context.moveTo(lx + Math.cos(angle) * 0.8, ly + Math.sin(angle) * 0.8);
-      context.ellipse(lx, ly, 0.8, 0.48, angle, 0, TAU);
-    }
-    context.fill();
-    if (radius >= 2) {
-      context.strokeStyle = palette['life-detail'];
-      context.beginPath();
-      for (let leaf = 0; leaf < 3; leaf += 1) {
-        const angle = leaf * TAU / 3;
-        context.moveTo(0, 0);
-        context.lineTo(Math.cos(angle) * 0.95, Math.sin(angle) * 0.95);
-      }
-      context.stroke();
-    }
-  } else {
-    const swim = marker.habitat === 'water';
-    const gait = Math.sin(point.phase);
-    const pointed = marker.role === 'predator';
-    const broad = marker.role === 'grazer';
-    // Appendages follow observed habitat and mobility, never gene guesses.
-    if (marker.mobile) {
-      context.beginPath();
-      if (swim) {
-        context.moveTo(-0.8, 0);
-        context.bezierCurveTo(-1.3, gait * 0.5, -1.6, -gait * 0.7, -2, gait * 0.5);
-        for (const side of [-1, 1]) {
-          context.moveTo(0.05, side * 0.35);
-          context.quadraticCurveTo(-0.2 + gait * 0.12, side * 1.05, -0.75, side * 0.7);
-        }
-      } else {
-        for (const side of [-1, 1]) {
-          for (let leg = 0; leg < 3; leg += 1) {
-            const root = 0.55 - leg * 0.55;
-            const stride = Math.sin(point.phase + leg * Math.PI * 0.8 + side) * 0.24;
-            context.moveTo(root, side * 0.35);
-            context.lineTo(root - 0.2 + stride, side * 0.85);
-            context.lineTo(root - 0.4 + stride, side * 1.25);
-          }
-        }
-      }
-      context.stroke();
-    }
-    context.beginPath();
-    if (pointed || swim) {
-      context.moveTo(1.35, 0);
-      context.bezierCurveTo(0.45, -0.95, -0.6, -0.6, -1.05, 0);
-      context.bezierCurveTo(-0.6, 0.6, 0.45, 0.95, 1.35, 0);
-    } else {
-      context.ellipse(-0.15, 0, broad ? 1.1 : 0.95, broad ? 0.75 : 0.6, 0, 0, TAU);
-      context.moveTo(1.2, 0);
-      context.ellipse(0.7, 0, 0.5, 0.43, 0, 0, TAU);
-    }
-    context.fill();
-    // A dorsal engraving reads at close zoom without an enclosing dark border.
-    if (radius >= 1.5) {
-      context.strokeStyle = palette['life-detail'];
-      context.beginPath();
-      context.moveTo(-0.6, 0);
-      context.lineTo(0.45, 0);
-      if (marker.role === 'mixed' || marker.role === 'other') {
-        for (const segment of [-0.4, 0, 0.4]) {
-          context.moveTo(segment, -0.3);
-          context.lineTo(segment, 0.3);
-        }
-      }
-      context.stroke();
-    }
-  }
+  // Stable slot hashes give each habitat a varied vocabulary without random
+  // draws, new species, or shapes flickering as the cosmetic clock advances.
+  const variant = ((slot.seed >>> 0) + (marker.role === 'predator' ? 3 : 0)) % (plant ? 6 : 8);
+  const water = marker.habitat === 'water';
+  if (plant) drawPlantShape(context, variant, water, radius >= 2 ? palette['life-detail'] : null);
+  else drawAnimalShape(context, variant, water, { ...marker, size }, point.phase,
+    radius >= 1.5 ? palette['life-detail'] : null);
   context.restore();
 }

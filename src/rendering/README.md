@@ -14,12 +14,16 @@ Optional `life`, `showLife` and `selectedSpeciesId` draw completed life observat
 without modifying physical geography. Role colours and both selection styles
 come from resolved theme tokens. Marker work is capped at 24 stationary plant
 marks plus 30 other marks per occupied hex, with fewer at low zoom; marks are
-samples, not literal organism counts. Three plant size bands preserve large
-canopies beside abundant tiny producers. Stationary marks do not animate, and
-stationary-only hexes need no cosmetic-clock repaint.
-`life-marks.js` owns cosmetic paths and the zoom-dependent drawing grammar:
-plant rosettes, rounded grazers, pointed predators and segmented mixed feeders.
-Observed habitat selects swimming tails/fins or stepping limbs for mobile groups.
+samples, not literal organism counts. Three size bands preserve large
+plants and animals beside abundant smaller organisms. Stationary marks do not
+animate, and stationary-only hexes need no cosmetic-clock repaint.
+`life-marks.js` owns cosmetic paths, size, colour and stable variant selection.
+`life-shapes.js` supplies 28 silhouette families: six plant and eight consumer
+forms for each of land and water. Observed habitat selects separate foliage,
+bodies and appendages. Larger animals have larger size-dependent caps and slower
+cosmetic movement and gait. Optional `energySources` observations distinguish
+three two-source feeding combinations; unavailable detail and all-three feeding
+retain the mixed colour. These are token selections, not new ecological roles.
 It reads no genes and consumes no biological randomness; anatomy is illustrative.
 
 `cover(world)` fills the viewport; `fit()` reveals every complete edge hex.

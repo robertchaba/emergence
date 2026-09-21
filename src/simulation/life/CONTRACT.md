@@ -84,6 +84,16 @@ The species population is the denominator for carrier percentages. Display group
 optionally declare `mobile`; only the model decides whether mobility is enabled.
 Cosmetic motion supplied to rendering never changes biological position.
 
+Display groups may additionally expose `energySources`, a detached list of
+enabled acquisition capabilities using `photosynthesis`, `plantFeeding` and
+`animalFeeding`. V3 supplies this list from its established phenotype and keeps
+different combinations in separate display groups. It describes capabilities,
+not realized intake or energy shares. An empty list means no acquisition system;
+an absent list means unavailable detail, so consumers retain the supplied role.
+Rendering may assign different colours to combinations but must not inspect
+genomes, infer missing capabilities or reclassify species. Broad roles and the
+historical energy-source census keep their existing meanings.
+
 V1's optional `species[].variants[].locations` and each trait expression's
 `locations` contain exact carrier populations by physical hex, scoped to that
 species and observation revision. Their populations sum to the variant/expression
