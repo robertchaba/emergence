@@ -38,6 +38,15 @@ owns founder selection, all gene effects, ecological scores, demographic
 approximations, movement and species identity. No ecological biome or species is
 assigned by geography.
 
+`observeAsync(execute)` optionally delegates detached, read-only observation jobs
+to an executor. `observation-jobs.js` owns their ecological calculations and cost
+estimate. The browser treats the payload as opaque and schedules up to three
+helpers alongside the coordinator. Sparse observations use `observe()` directly.
+Commands must be serialized until the query completes; a superseded query is
+rejected. Scores never enter checkpoints or consume randomness, and the returned
+observation has the same contents as `observe()`. This changes execution only;
+rules revision, checkpoint format and synchronous headless APIs are preserved.
+
 The browser's save/restore adapter carries this complete checkpoint without
 interpreting population or genome records. Restore validates required metadata,
 clocks, counters, histories, PRNG words, species, candidates and populations

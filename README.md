@@ -292,6 +292,33 @@ Region colours and marked passes are geographic diagnostics; they do not prescri
 future organisms' movement or species. Neutral areas in the region view indicate
 hard reference barriers such as permanent ice, high ridges, and wide deep ocean.
 
+### Performance and workers
+
+Playback uses up to **four life workers**: one coordinator owns the simulation,
+and up to three helpers calculate independent adaptation-range scores for the
+notebook. Dense workloads share that work; sparse worlds stay on the coordinator
+because message preparation can cost more than it saves. The pool respects the
+browser's reported concurrency, starts helpers lazily and falls back to one
+worker if helpers fail. World generation still uses a separate temporary worker.
+
+Worker count does not change biological rules, random draws, completed days or
+save files. Movement and evolution remain ordered on the coordinator. This is
+not a promise of fourfold speed or GPU acceleration.
+
+To compare one worker with the adaptive four-worker path in Chromium:
+
+```sh
+npm run build
+node scripts/benchmark-life-workers.js 4320
+```
+
+The script checks complete state and observation equality. It reports production
+worker timings including transport for an evolved small world and a deliberately
+dense mixed-community fixture. It excludes map/DOM rendering; the fixture is a
+computational stress case, not evidence of an evolved or balanced ecosystem.
+See [decision 069](docs/ARCHITECTURE.md#069--adaptive-four-worker-observations--2026-09-24)
+for measurements, boundaries and further optimization options.
+
 ### Headless API
 
 ```js

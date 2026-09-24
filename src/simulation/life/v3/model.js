@@ -6,6 +6,7 @@ import { environmentalPerformance, evaluateCommunity, founderForSite, scoreSpeci
 import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
 import { recordGenome, validateLineage, observeTree, inspectGeneHistory } from './lineage.js';
+import { detachObservationJobs } from './observation-jobs.js';
 
 export const MODEL_ID = 'v3';
 export const RULES_REVISION = 'v3-populations-5';
@@ -193,13 +194,17 @@ function buildModel(world, state) {
     return result;
   }
 
+  function scoreKey(genome, row, excludedSpeciesId, independentLineage) {
+    if (!geneticKeys.has(genome)) geneticKeys.set(genome, genomeKey(genome));
+    return `${habitatKey(row)}|${excludedSpeciesId}|${independentLineage}|${geneticKeys.get(genome)}`;
+  }
+
   function scoreAt(genome, row, community, excludedSpeciesId, independentLineage = false) {
     // The community object is a frozen census for one assessment/observation.
     // Rebuilding it after accepted evolution invalidates every score together.
     if (!scoreCaches.has(community)) scoreCaches.set(community, new Map());
-    if (!geneticKeys.has(genome)) geneticKeys.set(genome, genomeKey(genome));
     const cache = scoreCaches.get(community);
-    const key = `${habitatKey(row)}|${excludedSpeciesId}|${independentLineage}|${geneticKeys.get(genome)}`;
+    const key = scoreKey(genome, row, excludedSpeciesId, independentLineage);
     if (!cache.has(key)) cache.set(key, scoreSpecies(genome, environment(row.hexId), row.habitat,
       community.get(habitatKey(row)) ?? [], { population: 1, excludeSpeciesId: excludedSpeciesId,
         independentLineage, derived: phenotype(genome) }));
@@ -632,8 +637,7 @@ function buildModel(world, state) {
     }
   }
 
-  function buildObservation() {
-    const community = communities();
+  function buildObservation(community = communities()) {
     const speciesRows = [];
     const hexes = new Map();
     for (const record of state.species) {
@@ -720,6 +724,60 @@ function buildModel(world, state) {
     return copy(cachedObservation);
   }
 
+  /** Optional execution of independent, read-only range scores. The browser
+   * transports opaque jobs; all partition contents and ecology stay in V3.
+   * No commands may overlap this query. Results never enter saved state. */
+  async function observeAsync(execute) {
+    if (cachedObservation || state.populations.length < 64
+      || !state.species.some(record => record.candidates.length)) return observe();
+    const residents = new Map();
+    for (const row of state.populations) {
+      const key = habitatKey(row);
+      residents.set(key, (residents.get(key) ?? 0) + 1);
+    }
+    const work = state.populations.reduce((sum, row) => {
+      const candidates = speciesById.get(row.speciesId).candidates.length;
+      return sum + (candidates ? candidates + 1 : 0) * (residents.get(habitatKey(row)) + 1) ** 2;
+    }, 0);
+    // Sparse communities were faster locally in browser measurements. Estimate
+    // before constructing/detaching jobs; this changes execution only.
+    if (work < 100000) return observe();
+    const revision = state.revision;
+    const runId = state.runId;
+    const community = communities();
+    const jobs = new Map();
+    const keys = new Set();
+    const add = (genome, row, excludedSpeciesId, independentLineage = false) => {
+      const key = scoreKey(genome, row, excludedSpeciesId, independentLineage);
+      if (keys.has(key)) return;
+      keys.add(key);
+      const location = habitatKey(row);
+      if (!jobs.has(location)) jobs.set(location, { hex: environment(row.hexId), habitat: row.habitat,
+        community: community.get(location) ?? [], queries: [] });
+      jobs.get(location).queries.push({ key, genome, derived: phenotype(genome),
+        excludeSpeciesId: excludedSpeciesId, independentLineage });
+    };
+    for (const record of state.species) {
+      if (!record.candidates.length) continue;
+      const rows = state.populations.filter(row => row.speciesId === record.id);
+      if (!rows.length) continue;
+      for (const candidate of record.candidates) {
+        for (const row of [...rows, ...frontierRows(record.genome, candidate.genome, rows)]) {
+          add(record.genome, row, record.id);
+          add(candidate.genome, row, record.id, rolesDiffer(record.genome, candidate.genome));
+        }
+      }
+    }
+    // The executor receives detached values, including genomes and geography.
+    const results = await execute(detachObservationJobs([...jobs.values()]));
+    if (state.revision !== revision || state.runId !== runId) throw new Error('Observation superseded by a life command.');
+    const scores = new Map(results);
+    if (scores.size !== keys.size || [...keys].some(key => !scores.has(key))) throw new Error('Incomplete observation scores.');
+    scoreCaches.set(community, scores);
+    cachedObservation = buildObservation(community);
+    return copy(cachedObservation);
+  }
+
   function inspectHex(hexId) {
     if (!Number.isInteger(hexId) || !geography.hexes[hexId]) throw new RangeError('Unknown hex ID.');
     const observation = observe();
@@ -736,7 +794,7 @@ function buildModel(world, state) {
   }
 
   const exportState = () => copy({ ...state, randomState: random.exportState() });
-  return { introduce, advanceTo, observe, inspectHex, inspectSpecies, exportState,
+  return { introduce, advanceTo, observe, observeAsync, inspectHex, inspectSpecies, exportState,
     observeTree: () => observeTree(state),
     inspectGeneHistory: (runId, speciesId, key) => inspectGeneHistory(state, runId, speciesId, key) };
 }

@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Habitat-specific organism variants and mixed feeding colours — 2026-09-21.**
+**Current: Adaptive four-worker observations — 2026-09-24.** Decision 069 adds
+three optional helpers for expensive V3 observation scores while retaining one
+authoritative simulation coordinator and the synchronous path for sparse work.
+
+**Habitat-specific organism variants and mixed feeding colours — 2026-09-21.**
 Decision 068 expands the atlas to 28 silhouette families, preserves large animals
 beside small ones and gives the three mixed feeding pairs distinct colours.
 
@@ -3408,3 +3412,141 @@ including English/Polish wrapping, focus and controls. Existing browser checks
 cover reduced motion, disabled controls, save continuation and source/production
 subdirectory loading. Scope/dependency review and `git diff --check` passed.
 Browser evidence is limited to Chromium; no deployment was performed.
+
+## 069 — Adaptive four-worker observations — 2026-09-24
+
+The requested worker increase extends 036/046's single life-worker execution.
+Generation retains its temporary worker. Playback now permits **four life workers
+in total**: the existing authoritative coordinator and up to three lazily created
+observation helpers. It caps this total at the browser's reported concurrency;
+missing concurrency information keeps the single-worker path. The main UI thread
+is separate. This does not promise fourfold throughput or add GPU rendering.
+
+### Work selection and ownership
+
+A mature small-world diagnostic showed that complete notebook observations can
+cost more than advancing the requested five-day batches. V3 recomputes candidate
+adaptation ranges against all relevant occupied communities, even while the map
+is the main visible view. These rare-candidate ecological scores are independent
+once their completed census, environment and genomes are fixed. Demography,
+dispersal, evolutionary acceptance and random draws remain ordered in one model.
+Parallelizing entire days or independent copies of that model would not preserve
+the existing interacting population process.
+
+`observeAsync(execute)` prepares deduplicated score queries grouped by hex/habitat.
+All biological task construction, habitat expansion, score calculation and result
+assembly remain inside `life/v3/`. The UI pool sees opaque jobs plus a model-owned
+work estimate. It assigns whole communities to balanced batches, starts the
+helpers, and computes one batch on the coordinator while the other three run.
+Each score retains the serial arithmetic and resident iteration order. Returned
+keys identify scores regardless of task completion order. The coordinator builds
+and publishes one complete observation after all required results are available.
+
+The task graph is detached from authoritative state while preserving shared
+references to repeated genome/phenotype values. Worker messages thus carry each
+shared object once per batch rather than a separate JSON copy per query. Helpers
+return only the scalar scores needed for range inspection. They have no random
+stream, checkpoint, mutable world or authority to issue commands. No shared memory,
+cross-origin isolation headers, runtime dependencies or new rendering APIs are
+required. Worker asset URLs remain compatible with source and bundled subdirectory
+publishing.
+
+Sparse work stays synchronous: fewer than 64 population records, no directions,
+or an estimated resident scoring cost below 100,000 bypass task construction.
+The estimate sums `(directions + 1) × (local residents + 1)²` for population records
+with directions. The browser scheduler also avoids dispatching tiny job batches.
+These are execution heuristics, not biological thresholds or fidelity changes.
+Workers remain reusable after a large observation and terminate with their owning
+life worker. A helper construction, transport, runtime or ten-second timeout
+failure closes the pool and recalculates read-only scores locally. Later messages
+use the serial path; no simulation day or random event is repeated.
+
+### Ordering and compatibility
+
+The life-worker adapter now queues commands across asynchronous replies. A save,
+tree query, gene query or further advance cannot overtake a pending observation.
+V3 rejects an asynchronous observation if its run/revision changes before results
+return; the browser queue normally prevents this. Failed/incomplete queries do
+not publish a partially assembled snapshot. Existing synchronous `observe()` and
+headless commands remain available. Restore validation still constructs its first
+observation synchronously; later heavy observations can use the pool.
+
+Rules `v3-populations-5`, checkpoint format, random state, calendar, speed targets,
+climate and geography are unchanged. UI/rendering still receive the common
+detached observation, never private life state. V1/V2, species history, visual
+styles, artwork, translated controls, dependencies and licensing are preserved.
+
+### Further performance opportunities and GPU assessment
+
+The next useful measurements are browser profiles of a user's slow saved world,
+separating advancement, observation construction/transport, notebook DOM updates
+and Canvas painting. Candidate ranges requested only for the inspected species,
+or less frequent notebook refreshes independent of simulation cadence, could
+avoid substantial work. These require an explicit consistent-revision inspection
+protocol; they are not implemented here. Skipping zero-demand feeding passes,
+more efficient population indexes and compact transferable observation buffers
+are other candidates for measured, rule-preserving optimization.
+
+For drawing, cached silhouette sprites, batched marks and an OffscreenCanvas
+adapter are possible follow-ups within the Canvas 2D contract. OffscreenCanvas
+moves work off the UI thread; it does not inherently make the calculation faster.
+A WebGL/WebGPU renderer would be a separate change to the current renderer
+contract. The current shapes are presentation samples, so GPU rendering is a
+lower-risk initial experiment than moving authoritative ecology to GPU compute.
+
+[WebGPU](https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API) supports
+compute shaders but still requires capability detection and a fallback. V3's
+sparse objects, conditional food allocations, ordered evolution and JavaScript
+Number arithmetic are not a GPU kernel that can simply be enabled. Runtime
+[WGSL floating-point types](https://www.w3.org/TR/WGSL/#floating-point-types) use
+f32/f16 rather than JavaScript's binary64 arithmetic; numerical equivalence would
+need a separate design and validation. No GPU speedup or cross-device numerical
+identity is claimed.
+
+### Validation and measured limits
+
+The new headless tests compare complete observations and checkpoints across
+reordered job batches, continued simulation, restored state, rejected/superseded
+queries and task mutation. Pool checks cover one/two/four-worker limits, helper
+reuse, stale replies, small jobs, teardown and four failure modes. Production
+browser checks require three real helper instances, compare one/four-worker
+checkpoints exactly, exercise queued tree/export responses and continuation, and
+load nested helpers under both source and production subdirectory mounts.
+Chromium and Node differed at the last few bits of two reserve values in the
+synthetic continuation; cross-runtime checks therefore compare exact counts,
+statistics and PRNG state, while same-browser worker-count checks compare the
+entire checkpoint and observation exactly. This is not cross-browser equivalence.
+
+`node scripts/benchmark-life-workers.js 4320` compares actual production workers,
+including messaging, with identical initial/final states. The evolved `emergence`
+small-water run advances forty five-day batches after 4,320 days. The second case
+holds a deliberately dense, twelve-species mixed-community fixture fixed and
+measures fifteen one-day observations after three warmups, restoring outside the
+timed interval. That case isolates observation work without demographic workload
+shrinkage; it is not an evolved ecosystem. Map/DOM rendering and synthetic-case
+startup are excluded. Results are local samples, not a device-independent budget.
+
+Two runs per mode on local Chromium, with no concurrent test suite:
+
+| Workload | One worker | Adaptive up to four workers | Helpers |
+| --- | ---: | ---: | ---: |
+| Evolved small water, total for 40 updates | 900–920 ms | 901–954 ms | 0 |
+| Dense mixed fixture, median observation | 203–219 ms | 90 ms | 3 |
+| Dense mixed fixture, total for 15 observations | 3,051–3,377 ms | 1,368–1,382 ms | 3 |
+
+The dense-case median improved about 2.3–2.4 times. The evolved sparse case stayed
+serial and showed normal timing variation, not a measured speedup. The heuristic
+is deliberately conservative; startup, browser scheduling, CPU/core topology,
+memory and different communities can move the crossover. Parallel observations
+do not speed up sequential advancement or main-thread map/DOM work.
+
+Final verification: `npm run build` and `npm test` passed with 166 headless/
+rendering checks and 143 Chromium checks; the existing desktop touch duplicate
+remains skipped. After the final helper-error propagation fix, the production
+build, both pool tests and all four browser worker checks passed again, including
+real helper script crashes without a page error. Source-development restore and
+stepping also loaded without page errors. Light/dark screenshots were inspected
+at desktop and phone widths with EN/PL, and neither viewport overflowed. Existing
+browser checks cover focus, disabled controls, live locale/theme changes and save
+continuation. Scope/dependency review and `git diff --check` passed. No GPU path,
+biological rule change, dependency change or deployment was performed.

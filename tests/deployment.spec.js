@@ -1,7 +1,10 @@
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { test, expect } from '@playwright/test';
+import { workerFixture } from './fixtures/life-workers.js';
+import { exerciseLifeWorker, lifeWorkerHarness } from './fixtures/browser-life-worker.js';
+import { createSave } from '../src/ui/save-state.js';
 
 // A strict static mount catches root-relative requests that Vite's fallback
 // could otherwise hide. Cover both the build and direct source publishing.
@@ -34,6 +37,21 @@ test.afterAll(async () => {
 });
 
 for (const [kind, prefix] of [['production', '/emergence/'], ['source', '/source/emergence/']]) {
+  test(`${kind} nested life helpers load from a subdirectory`, async ({ page }) => {
+    const { world, checkpoint } = workerFixture();
+    const saved = createSave(world, checkpoint, {
+      camera: { x: 0, y: 0, zoom: 1 }, layer: 'terrain', pinnedId: null, speed: 10,
+    });
+    await page.route('**/life-test-worker.js?*', route => route.fulfill({ contentType: 'text/javascript', body: lifeWorkerHarness }));
+    await page.goto(`${origin}${prefix}`);
+    const asset = (await readdir('dist/assets')).find(name => /^life-worker-.*\.js$/.test(name));
+    const url = `${origin}${prefix}${kind === 'source' ? 'src/ui/life-worker.js' : `assets/${asset}`}`;
+    const result = await page.evaluate(exerciseLifeWorker, { url, saved, workers: 4 });
+    expect(result.helpers).toBe(3);
+    expect(result.observation.day).toBe(checkpoint.day + 1);
+    expect(result.checkpoint.randomState).toEqual(checkpoint.randomState);
+  });
+
   test(`${kind} pages, assets, licence and both workers work in a subdirectory`, async ({ page, request }) => {
     const errors = [];
     const paths = [];
