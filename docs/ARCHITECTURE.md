@@ -2,7 +2,16 @@
 
 ## Status
 
-**Current: Adaptive four-worker observations — 2026-09-24.** Decision 069 adds
+**Current: Restore playback after Tree of life — 2026-09-24.** Decision 072
+remembers playback state and target speed for each tree visit.
+
+**Size alongside energy labels — 2026-09-24.** Decision 071 places both
+in one wrapping row beneath each species name.
+
+**Body size in species entries — 2026-09-24.** Decision 070 exposes the
+existing verbal size description while species genome details are collapsed.
+
+**Adaptive four-worker observations — 2026-09-24.** Decision 069 adds
 three optional helpers for expensive V3 observation scores while retaining one
 authoritative simulation coordinator and the synchronous path for sparse work.
 
@@ -3134,6 +3143,8 @@ or licence files changed.
 
 ## 065 — Tree of life and accepted gene history — 2026-09-21
 
+**The always-paused return behavior below is superseded by decision 072.**
+
 The requested **Tree of life** menu action pauses playback and opens a separate
 page within the current browser session. The worker finishes any already queued
 day batch before answering the tree query. The atlas remains mounted and inert;
@@ -3550,3 +3561,136 @@ at desktop and phone widths with EN/PL, and neither viewport overflowed. Existin
 browser checks cover focus, disabled controls, live locale/theme changes and save
 continuation. Scope/dependency review and `git diff --check` passed. No GPU path,
 biological rule change, dependency change or deployment was performed.
+
+## 070 — Body size in species entries — 2026-09-24
+
+Extends 042's verbal size descriptions and 048/051's compact species list. Each
+species entry on the pinned hex now shows **Body size: Small**, for example,
+between its name and energy labels. The description remains visible while its
+genome is collapsed, making organism sizes comparable without opening each row.
+English and Polish use complete translated phrases and the existing ten size
+labels; theme, locale and observation updates preserve disclosure and selection.
+
+This is a UI-only projection of the existing read-only trait expressions. The
+summary reuses the genome detail's size formatter and 2% expression visibility
+threshold. Multiple visible size descriptions are listed in ascending order,
+without averaging them or inventing a representative; unavailable size data
+omits the line. V3's established genome supplies one size per species. The words
+describe model-relative body size, not physical lengths or speculative units.
+Simulation, observations, checkpoints and rendering boundaries stay unchanged.
+
+The line uses existing theme colour and type tokens, wraps within its native
+species button and inherits the selected button's contrast colour. README usage
+now mentions the always-visible description. The existing multi-species browser
+fixture covers contrasting sizes, agreement with expanded details, live size
+changes while collapsed, both languages/themes, keyboard focus and phone wrapping.
+
+Validation: `npm run build` and `npm test` passed: 166 headless/rendering checks
+and 143 Chromium checks, with the existing desktop touch duplicate skipped.
+Light/dark screenshots were inspected at desktop and phone widths, including
+the longer Polish size descriptions and visible keyboard focus. The browser
+checks found no notebook overflow, including at 320 px. Scope/dependency review
+and `git diff --check` passed. This presentation change does not validate ecology.
+
+## 071 — Size alongside energy labels — 2026-09-24
+
+Supersedes 070's separate size line and “Body size” prefix. Following the user's
+layout refinement, energy labels and a matching size label now share one wrapping
+row beneath the species name. Size shows only the existing adjective, such as
+**Small** or **Large**, with the same padding, background and rounded corners as
+the energy labels. Each label can wrap independently when the available width
+cannot accommodate them together. The existing translations, trait observations,
+disclosure behavior and theme tokens retain their meanings.
+
+README usage describes the shared row. The existing species browser check now
+also verifies that a single energy label and size occupy the same line in both
+themes and languages at desktop and phone widths.
+
+Validation: `npm run build` and `npm test` passed with 166 headless/rendering
+checks and 143 Chromium checks; the existing desktop touch duplicate remains
+skipped. Inspected light/dark screenshots at desktop and phone widths, including
+selected labels, keyboard focus and longer Polish text. The shared-line and
+existing 320 px overflow checks passed. `git diff --check` and scope/dependency
+review passed. The only layout limitation is natural wrapping when labels exceed
+the available width; this change does not affect simulation behavior.
+
+## 072 — Restore playback after Tree of life — 2026-09-24
+
+Supersedes 065's always-paused return to the atlas. Opening the tree now records
+the current playback state and target speed before pausing. Back to atlas and
+Escape from the tree restore that speed and resume a previously running world;
+a previously paused world stays paused. Returning from lineage history to the
+tree keeps playback paused. Each visit captures fresh values, and a worker
+failure or completed extinction prevents automatic resumption.
+
+This is browser playback state owned by `src/ui/world-ui.js`. Closing uses the
+existing playback setter to reset timing credit, so time spent inspecting the
+tree does not cause catch-up. Already queued day batches still finish before
+tree observation. Model rules, worker ordering, checkpoints and rendering
+boundaries are unchanged. Opening during a pending introduction still cancels
+its automatic playback; the speed recorded at tree entry is restored on exit.
+
+The focused browser regression covers running visits at two speeds, both exit
+methods, nested history, a subsequent paused visit and actual day progression.
+Existing tree checks cover unchanged paused saves, pending days, focus, both
+themes/languages and desktop/phone layouts. Target speed remains a throughput
+request, not a guarantee of achieved simulation speed.
+
+Validation: `npm run build` and `npm test` passed with 166 headless/rendering
+checks and 145 Chromium checks; the existing desktop touch duplicate remains
+skipped. Inspected the tree in light and dark screenshots at desktop and phone
+widths. Existing checks confirm focus, disabled controls and wrapping. Scope and
+dependency review and `git diff --check` passed. Pre-existing notebook changes
+in the working tree were preserved.
+
+## 073 — Continuous cylindrical atlas panning — 2026-09-24
+
+Supersedes 010/021's finite displayed longitude cut, complete-outline Fit view,
+and automatic recentering at minimum zoom. The user clarified that endless
+scrolling means horizontal east/west panning, preserving the separate poles.
+The shared physical cylinder, hex IDs, climate and life rules are unchanged.
+
+The renderer projects each hex to the longitude nearest the viewport center.
+Picking wraps columns back to physical IDs; rows never wrap. Rivers, springs,
+region boundaries/passes, life marks and pinned hexes use the same cylindrical
+view. Species and variant contours join adjacent occupied hexes across the
+physical seam; their unavoidable planar cut moves outside the visible area.
+Damage repainting uses projected cell positions and scans nearby full rows so
+changes across the physical column seam repaint both neighbors correctly.
+Snapshots and public life observations remain read-only.
+
+Fit now centers at a viewport-dependent minimum zoom. The visible width is less
+than one circumference by a complete hex width plus eight CSS pixels of drawing
+padding, so even partial copies of a hex cannot appear on opposite sides.
+Cover also accounts for the polar perimeter to fill the initial frame. Wheel,
+buttons and pinch respect the same minimum; zooming out preserves its anchor.
+Only Fit and Center explicitly recenter. UI constrains cameras on drawing,
+including resize and save restore, and normalizes horizontal pan modulo the
+circumference to avoid growing coordinates after repeated trips around the world.
+The renderer owns the geometry; UI owns gestures and browser sizing. No runtime
+dependency, simulation change, saved-state schema change or new colour is needed.
+
+The closer minimum necessarily crops a small portion of the cylinder; Fit no
+longer shows every complete hex simultaneously. Existing saves below the new
+minimum are raised to it on display. Vertical panning retains its existing
+behavior, and north/south edges remain finite. README and rendering documentation
+record the revised controls and geometry contract.
+
+Validation: `npm run build` and `npm test` passed all headless/rendering checks
+and 147 Chromium checks; the existing desktop touch duplicate remains skipped.
+Focused checks cover multiple horizontal revolutions, wrapped picking, finite
+poles, duplicate-free minimum zoom at wide and narrow viewport sizes, and joining
+territory contours across the seam. Browser drags exercise repeated revolutions
+in both directions at minimum zoom; existing checks cover wheel/pinch, keyboard
+inspection, save/restore, resizing, both locales, focus and disabled controls.
+Light/dark screenshots were inspected at desktop and phone widths, including
+map edges, pin placement, wrapping, controls and original logo assets.
+
+The seasonal pixel comparison now includes a shifted seam and life on both sides
+of it. Additional fractional alignments produced a measured mean difference of
+0.01096 channel levels at one light-theme frame, localized to antialiased edges.
+The mean tolerance is now 0.02 out of 255 (superseding 021's 0.01), while the limit
+of 0.05% of pixels differing by more than two levels remains unchanged. Both
+themes pass at DPR 1 and 1.5. Scope/dependency review and `git diff --check` passed;
+pre-existing notebook and tree playback edits were preserved. These browser
+checks validate presentation, not new ecological behavior.

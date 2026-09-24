@@ -61,6 +61,7 @@ export function initWorldUI(restored = null) {
   let revision = 0;
   let playing = false;
   let targetSpeed = 1;
+  let treePlayback = null;
   let clockTimestamp = null;
   let dayCredit = 0;
   let measuredElapsed = 0;
@@ -89,12 +90,17 @@ export function initWorldUI(restored = null) {
   });
   const tree = createTreeOfLife({
     onClose() {
+      if (!tree.open) return;
       tree.hide();
       document.querySelector('#workspace-preferences').append(themePicker, languageSwitcher);
       workspace.inert = false;
       workspace.removeAttribute('aria-hidden');
       menu.querySelector('summary').focus({ preventScroll: true });
-      resetClock();
+      targetSpeed = treePlayback.speed;
+      speedInput.value = String(targetSpeed);
+      updateTargetSpeed();
+      setPlaying(treePlayback.playing && !lifeFailed && life?.status !== 'extinct');
+      treePlayback = null;
       queueDraw();
     },
     onRequest(message) {
@@ -103,7 +109,8 @@ export function initWorldUI(restored = null) {
     },
   });
   treeButton.addEventListener('click', () => {
-    if (treeButton.disabled) return;
+    if (treeButton.disabled || tree.open) return;
+    treePlayback = { playing, speed: targetSpeed };
     setPlaying(false);
     menu.open = false;
     themePicker.open = false;
@@ -315,6 +322,7 @@ export function initWorldUI(restored = null) {
         previewCanvas.dataset.zoom = String(previewCamera.zoom);
       }
     } else if (resizeRenderer(map, canvas)) {
+      camera = map.constrain(world, camera);
       map.draw(world, { camera, layer, pinnedId, geography, life, selectedSpeciesId,
         selectedVariantHexIds: selectedVariant?.hexIds ?? [], motionTime });
       canvas.dataset.zoom = String(camera.zoom);
@@ -325,7 +333,7 @@ export function initWorldUI(restored = null) {
       canvas.dataset.selectedSpeciesId = selectedSpeciesId ?? '';
       canvas.dataset.selectedVariantId = selectedVariant?.id ?? '';
       document.querySelector('#zoom-level').value = `${number.format(camera.zoom)}×`;
-      document.querySelector('#zoom-out').disabled = camera.zoom <= 1;
+      document.querySelector('#zoom-out').disabled = camera.zoom <= map.fit(world).zoom;
       document.querySelector('#zoom-in').disabled = camera.zoom >= 32;
     }
   }
@@ -656,14 +664,14 @@ export function initWorldUI(restored = null) {
   function zoomBy(factor, point) {
     const bounds = canvas.getBoundingClientRect();
     const anchor = point || { x: bounds.width / 2, y: bounds.height / 2 };
-    const zoom = Math.max(1, Math.min(32, camera.zoom * factor));
+    const minimum = map.fit(world).zoom;
+    const zoom = Math.max(minimum, Math.min(32, camera.zoom * factor));
     const ratio = zoom / camera.zoom;
     camera = {
       zoom,
       x: anchor.x - bounds.width / 2 - (anchor.x - bounds.width / 2 - camera.x) * ratio,
       y: anchor.y - bounds.height / 2 - (anchor.y - bounds.height / 2 - camera.y) * ratio,
     };
-    if (zoom === 1) camera = map.fit();
     queueDraw();
   }
   document.querySelector('#zoom-in').addEventListener('click', () => zoomBy(1.5));
@@ -739,10 +747,8 @@ export function initWorldUI(restored = null) {
     if (previousPair) {
       const next = pairMetrics(pointers);
       zoomBy(next.distance / Math.max(1, previousPair.distance), previousPair);
-      if (camera.zoom > 1) {
-        camera.x += next.x - previousPair.x;
-        camera.y += next.y - previousPair.y;
-      }
+      camera.x += next.x - previousPair.x;
+      camera.y += next.y - previousPair.y;
     } else if (pointers.size === 1 && moved) {
       camera.x += point.x - previous.x;
       camera.y += point.y - previous.y;

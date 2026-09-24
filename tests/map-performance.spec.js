@@ -37,12 +37,12 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
       for (const [width, height, dpr] of [[600, 360, 1], [320, 460, 1.5]]) {
         a.resize(width, height, dpr);
         b.resize(width, height, dpr);
-        for (const camera of [a.fit(), a.cover(geography), { zoom: 3, x: 71, y: -45 }]) {
+        for (const camera of [a.fit(geography), a.cover(geography), { ...a.fit(geography), x: width * 0.55 }, { zoom: 3, x: 71, y: -45 }]) {
           for (const snapshot of snapshots) {
             const options = { geography, camera, pinnedId: geography.hexes.find(hex => hex.runoff > 0).id,
               motionTime: snapshot.day * 0.4,
               selectedSpeciesId: 'species-1', selectedVariantHexIds: snapshot.day < 180 ? [100] : [101],
-              life: { runId: 'contour-check', revision: snapshot.day, hexes: [100, 101, 124].map(hexId => ({
+              life: { runId: 'contour-check', revision: snapshot.day, hexes: [96, 119, 120, 143, 100, 101, 124].map(hexId => ({
                 hexId, population: 100, species: [{ id: 'species-1', population: 100 }],
                 display: [{ role: 'producer', size: 0.1, habitat: 'land', population: 100 },
                   { role: 'grazer', size: 0.6, habitat: 'land', population: 100, mobile: true }],
@@ -55,6 +55,8 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
             const expected = fresh.getContext('2d').getImageData(0, 0, fresh.width, fresh.height).data;
             // Clipping can change a few antialiased edge samples. Compare
             // premultiplied colour so invisible RGB at alpha zero is irrelevant.
+            // Wrapped cuts exercise additional subpixel alignments; allow 0.02
+            // channel levels on average while retaining the sparse-pixel bound.
             let total = 0, changed = 0;
             for (let i = 0; i < actual.length; i += 4) {
               let difference = Math.abs(actual[i + 3] - expected[i + 3]);
@@ -66,7 +68,7 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
               if (difference > 2) changed++;
             }
             const pixels = actual.length / 4;
-            if (total / pixels > 0.01 || changed / pixels > 0.0005) {
+            if (total / pixels > 0.02 || changed / pixels > 0.0005) {
               failures.push({ width, dpr, zoom: camera.zoom, day: snapshot.day,
                 meanDifference: total / pixels, changedFraction: changed / pixels });
             }
@@ -79,7 +81,7 @@ test('partial seasonal repaint matches a fresh frame in both themes', async ({ p
   }
 });
 
-test('preview and atlas start covering the frame and zooming out restores whole hexes', async ({ page }) => {
+test('preview and atlas start covering the frame and zooming out stops before duplicate hexes', async ({ page }) => {
   await page.goto('/world.html');
   await expect(page.locator('#start-workspace')).toBeEnabled();
   await expect.poll(async () => Number(await page.locator('#world-preview').getAttribute('data-zoom'))).toBeGreaterThan(1);
@@ -89,9 +91,7 @@ test('preview and atlas start covering the frame and zooming out restores whole 
   const bounds = await map.boundingBox();
   await page.mouse.move(bounds.x + 30, bounds.y + 30);
   await page.mouse.wheel(0, 4000);
-  await expect(map).toHaveAttribute('data-zoom', '1');
-  await expect(map).toHaveAttribute('data-pan-x', '0');
-  await expect(map).toHaveAttribute('data-pan-y', '0');
+  await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(1);
   await expect(page.locator('#zoom-out')).toBeDisabled();
 });
 

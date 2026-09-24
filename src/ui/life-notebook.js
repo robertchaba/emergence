@@ -236,7 +236,9 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
         button.type = 'button';
         button.dataset.speciesId = species.id;
         const copy = element('span', 'species-choice-copy');
-        copy.append(element('span', 'species-name'), element('span', 'species-energy'));
+        const summary = element('span', 'species-summary');
+        summary.append(element('span', 'species-energy'), element('span', 'species-size'));
+        copy.append(element('span', 'species-name'), summary);
         button.append(copy);
         const row = element('li');
         row.append(button);
@@ -250,6 +252,13 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
         });
       }
       button.querySelector('.species-name').textContent = species.name ?? t('speciesName', { id: species.id });
+      const sizes = (species.traits?.find(trait => trait.key === 'size')?.expressions ?? [])
+        .filter(expression => expression.population / species.population >= minimumExpressionShare)
+        .sort((a, b) => a.value - b.value)
+        .map(geneValue);
+      const size = button.querySelector('.species-size');
+      size.hidden = sizes.length === 0;
+      size.textContent = [...new Set(sizes)].join(', ');
       const sources = energyKeys.filter(key => species.traits?.some(trait => trait.key === key
         && trait.expressions.some(expression => expression.value > 0
           && expression.population / species.population >= minimumExpressionShare)));

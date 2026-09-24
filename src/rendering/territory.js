@@ -1,14 +1,18 @@
 // Exact hex-union contours in map units. Integer vertex keys remove shared edges
-// without float tolerances. The atlas cut stays closed at each cylindrical edge.
+// without float tolerances. An optional view midpoint moves the cylindrical cut
+// outside the visible area, joining territories across the physical map seam.
 const VERTICES = [[1, -1], [1, 1], [0, 2], [-1, 1], [-1, -1], [0, -2]];
 const key = point => point.join(',');
 
-export function territoryContours(world, hexIds) {
+export function territoryContours(world, hexIds, centerX = null) {
   const edges = new Map();
   for (const id of new Set(hexIds)) {
     const hex = world.hexes[id];
     if (!hex) continue;
-    const x = 2 * hex.col + hex.row % 2 + 1;
+    let x = 2 * hex.col + hex.row % 2 + 1;
+    if (centerX !== null) {
+      x += Math.round((centerX * 2 / Math.sqrt(3) - x) / (world.width * 2)) * world.width * 2;
+    }
     const y = 2 + 3 * hex.row;
     const corners = VERTICES.map(([dx, dy]) => [x + dx, y + dy]);
     for (let index = 0; index < 6; index += 1) {

@@ -94,9 +94,46 @@ test('wheel zoom, drag, pin, keyboard inspection and fit work together', async (
   await expect(map).toHaveAttribute('data-pan-x', '0');
   await page.getByRole('button', { name: 'Fit', exact: true }).click();
   await expect(map).toBeFocused();
-  await expect(map).toHaveAttribute('data-zoom', '1');
+  await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(1);
+  await expect(page.locator('#zoom-out')).toBeDisabled();
   await expect(map).toHaveAttribute('data-pan-x', '0');
   await expect(map).toHaveAttribute('data-pan-y', '0');
+});
+
+test('dragging repeatedly around the cylinder keeps visible hexes pickable at minimum zoom', async ({ page }, testInfo) => {
+  const map = await openWorld(page);
+  await page.locator('#fit-world').click();
+  await expect(page.locator('#zoom-out')).toBeDisabled();
+  const bounds = await map.boundingBox();
+  const spacing = (bounds.width + 8) / (defaultWidth - 1);
+  const circumference = spacing * defaultWidth;
+  const x = bounds.x + bounds.width * 0.51;
+  const row = WORLD_SIZES.medium.height / 2;
+  const y = bounds.y + bounds.height / 2 + 0.75 * spacing / Math.sqrt(3);
+  const wrap = col => (col % defaultWidth + defaultWidth) % defaultWidth;
+  for (const direction of [1, -1]) {
+    for (let turn = 0; turn < 10; turn++) {
+      const from = bounds.x + bounds.width * (direction === 1 ? 0.2 : 0.8);
+      const to = bounds.x + bounds.width * (direction === 1 ? 0.8 : 0.2);
+      await page.mouse.move(from, y);
+      await page.mouse.down();
+      await page.mouse.move(to, y, { steps: 6 });
+      await page.mouse.up();
+      await page.mouse.click(x, y);
+      await expect(map).toHaveAttribute('data-pinned-id', /\d+/);
+      const state = await map.evaluate(canvas => ({ ...canvas.dataset }));
+      expect(Math.abs(Number(state.panX))).toBeLessThanOrEqual(circumference / 2 + 0.01);
+      const column = Math.round((defaultWidth + 0.5) / 2
+        + (bounds.width * 0.01 - Number(state.panX)) / spacing - (row % 2) / 2 - 0.5);
+      await expect(map).toHaveAttribute('data-pinned-id', String(row * defaultWidth + wrap(column)));
+      await expect(page.locator('#zoom-out')).toBeDisabled();
+    }
+  }
+  for (const theme of ['light', 'dark']) {
+    await chooseTheme(page, theme);
+    await map.focus();
+    await page.screenshot({ path: testInfo.outputPath(`wrapped-${theme}.png`) });
+  }
 });
 
 test('keyboard wraps the seam, stops at poles and opens the brand menu', async ({ page }) => {
@@ -168,9 +205,8 @@ test('touch pinch zooms without creating a pin', async ({ page, context }, testI
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(distance) });
   }
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect(map).toHaveAttribute('data-zoom', '1');
-  await expect(map).toHaveAttribute('data-pan-x', '0');
-  await expect(map).toHaveAttribute('data-pan-y', '0');
+  await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(1);
+  await expect(page.locator('#zoom-out')).toBeDisabled();
   await session.detach();
 });
 

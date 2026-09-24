@@ -167,6 +167,41 @@ test('opening during a pending day pauses and observes its completed state witho
   await expect(page.locator('#world-day')).toHaveAttribute('data-day', day);
 });
 
+test('leaving the tree restores playback and speed from each visit', async ({ page }) => {
+  await upload(page);
+  for (const [speed, escape] of [['3', false], ['8', true]]) {
+    await page.locator('#simulation-speed').fill(speed);
+    await page.locator('#play-world').click();
+    await openTree(page);
+    await expect(page.locator('#pause-world')).toHaveAttribute('aria-pressed', 'true');
+    const day = Number(await page.locator('#world-day').getAttribute('data-day'));
+    await page.waitForTimeout(350);
+    await expect(page.locator('#world-day')).toHaveAttribute('data-day', String(day));
+    if (escape) {
+      await page.locator('.tree-gene').first().click();
+      await page.locator('.tree-history-open').click();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.tree-overview')).toBeVisible();
+      await expect(page.locator('#pause-world')).toHaveAttribute('aria-pressed', 'true');
+      await page.keyboard.press('Escape');
+    } else await page.locator('#tree-close').click();
+    await expect(page.locator('#tree-of-life')).toBeHidden();
+    await expect(page.locator('#play-world')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#simulation-speed')).toHaveValue(speed);
+    await expect(page.locator('#target-speed')).toHaveText(`${speed}× · ${Number(speed) * 2} days/s`);
+    await expect.poll(async () => Number(await page.locator('#world-day').getAttribute('data-day'))).toBeGreaterThan(day);
+    await page.locator('#pause-world').click();
+  }
+  // A later paused visit must not reuse an earlier visit's running state.
+  await openTree(page);
+  const day = await page.locator('#world-day').getAttribute('data-day');
+  await page.locator('#tree-close').click();
+  await expect(page.locator('#pause-world')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#simulation-speed')).toHaveValue('8');
+  await page.waitForTimeout(350);
+  await expect(page.locator('#world-day')).toHaveAttribute('data-day', day);
+});
+
 test('empty worlds and older saves show honest history availability and fit narrow phones', async ({ page }, testInfo) => {
   await upload(page, createSave(world, createLifeModel(world).exportState(), view));
   await page.locator('#application-menu > summary').click();

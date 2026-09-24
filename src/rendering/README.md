@@ -9,7 +9,8 @@ model's internal organism/cohort representation.
 `map.js` presents read-only world snapshots using Canvas 2D. The UI supplies
 resolved theme tokens, viewport size, a presentation camera, selected layer, and
 pin. Geometry methods fit the map, locate hex centers, and pick a hex from pointer
-coordinates. Wrapped connections are clipped at both cylindrical edges.
+coordinates. Longitude wraps continuously, including picking, rivers, life marks
+and selection contours; the two polar edges remain finite.
 Optional `life`, `showLife` and `selectedSpeciesId` draw completed life observations
 without modifying physical geography. Role colours and both selection styles
 come from resolved theme tokens. Marker work is capped at 24 stationary plant
@@ -26,7 +27,12 @@ three two-source feeding combinations; unavailable detail and all-three feeding
 retain the mixed colour. These are token selections, not new ecological roles.
 It reads no genes and consumes no biological randomness; anatomy is illustrative.
 
-`cover(world)` fills the viewport; `fit()` reveals every complete edge hex.
+`cover(world)` fills the viewport; `fit(world)` returns the minimum zoom that
+keeps duplicate hexes, including partial copies, outside opposite viewport edges.
+`constrain(world, camera)` enforces this minimum and normalizes horizontal pan
+modulo the cylinder circumference. UI applies it after resizing and restoring
+saved cameras as well as during interaction. Each hex is drawn at its nearest
+longitude to the view center; territory contours join across the physical seam.
 During climate playback, UI also supplies the original read-only `geography`
 snapshot to `draw`. Its identity keys static colours and river geometry. It must
 be replaced whenever physical geography changes. The renderer retains the last

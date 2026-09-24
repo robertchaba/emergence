@@ -139,10 +139,11 @@ Close it with **Close** or **Escape** to return to the page.
 3. The map previews the seasons automatically at 20 days per second. Select
    **Start** to open the atlas on **day 1**, paused. Both views
    start zoomed to fill their frame.
-4. Drag to pan, scroll or pinch to zoom from the fitted world to 32×, and click to
+4. Drag to pan, scroll or pinch to zoom up to 32×, and click to
    pin a hex. Focus the map and use arrows to inspect neighboring cells, `+` / `−`
-   to zoom, and `Escape` to clear the pin. East/west inspection wraps. Edge hexes
-   appear whole in the fitted view; zooming fully out also centers that outline.
+   to zoom, and `Escape` to clear the pin. East/west panning and inspection wrap
+   endlessly around the cylinder; the poles remain separate. Minimum zoom adapts
+   to the viewport so no hex appears twice, even partially at opposite edges.
 5. Open the **Emergence / Field atlas** logo menu to choose **Terrain**,
    **Elevation**, **Temperature**, **Moisture**, or **Regions**. The wider notebook
    on the right occupies the full window height and shows terrain, ground/seabed
@@ -156,7 +157,7 @@ Close it with **Close** or **Escape** to return to the page.
    advanced over elapsed time and may be lower on a busy device. Hidden tabs
    stop advancing and do not catch up when reopened.
 7. **Center** restores the map position at the current zoom. **Fit** centers the
-   complete hex outline at the largest scale that fits the available map area.
+   map at that minimum zoom. Zooming out otherwise preserves the zoom anchor.
    Use the logo menu's **Return to World setup** to build another world, then
    **Back to Emergence** to return to the landing page.
 
@@ -194,7 +195,9 @@ genomes are retained in save files; compatible older saves explicitly label
 unrecorded history instead of inventing it. The ledger records established
 species genomes, not hypothetical adaptation directions.
 **Back to atlas** or **Escape** from the tree returns to the same atlas view,
-still paused. Theme and language controls remain available throughout.
+resuming at the previous speed if playback was running when you entered. If it
+was already paused, it stays paused. Theme and language controls remain available
+throughout.
 
 Choose **Restore a saved world** from the landing page, World setup or the logo
 menu, select the downloaded file, then restore it. The landing-page button uses
@@ -236,7 +239,9 @@ with current counts in its legend. Each living species counts once. Older saves
 begin the breakdown from restoration; missing historical shares are not inferred.
 Extinct species and the percentage of all hexes occupied appear as counts only.
 Pinning a hex reveals compact physical readings and all species living there, or
-an explicit empty-hex message. Species receive stable generated names. Click a
+an explicit empty-hex message. Species receive stable generated names. Each entry
+shows a size label (for example, **Small** or **Large**) alongside its energy labels,
+wrapping as needed, even when collapsed. Click a
 name to open its total population, population on the selected hex (both in compact
 notation, e.g. 21K), and present genes, and outline its whole occupied range;
 click it again to clear the highlight and collapse its details. A sole local

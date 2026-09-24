@@ -183,33 +183,54 @@ export function createMapRenderer(canvas, { tokens }) {
     const size = dimensions(world);
     const margin = Math.min(12, width * 0.025, height * 0.025);
     const scale = Math.min((width - margin * 2) / size.width, (height - margin * 2) / size.height) * camera.zoom;
+    const circumference = world.width * ROOT_THREE * scale;
+    const pan = Math.abs(camera.x) <= circumference / 2 ? camera.x
+      : modulo(camera.x + circumference / 2, circumference) - circumference / 2;
     return {
       scale,
-      x: (width - size.width * scale) / 2 + camera.x,
+      x: (width - size.width * scale) / 2 + pan,
       y: (height - size.height * scale) / 2 + camera.y,
       mapWidth: size.width * scale,
       mapHeight: size.height * scale,
     };
   }
 
-  function fit() {
-    return { zoom: 1, x: 0, y: 0 };
+  function fit(world) {
+    if (!world) return { zoom: 1, x: 0, y: 0 };
+    const base = transform(world, { zoom: 1, x: 0, y: 0 });
+    // Leave a complete cell width (plus raster padding) outside the viewport.
+    // Even partial copies of the same hex cannot appear at opposite edges.
+    const uniqueWidth = (world.width - 1) * ROOT_THREE;
+    return { zoom: Math.max(1, (width + 8) / (uniqueWidth * base.scale)), x: 0, y: 0 };
   }
 
-  // Cover the frame using the rectangle inside the staggered hex perimeter.
-  // Fit remains the separate, complete-world view with all edge hexes intact.
+  function constrain(world, camera) {
+    const zoom = Math.max(fit(world).zoom, camera.zoom);
+    const circumference = world.width * ROOT_THREE * transform(world, { ...camera, zoom }).scale;
+    const x = Math.abs(camera.x) <= circumference / 2 ? camera.x
+      : modulo(camera.x + circumference / 2, circumference) - circumference / 2;
+    return { zoom, x, y: camera.y };
+  }
+
+  function projected(point, world, view) {
+    const circumference = world.width * ROOT_THREE;
+    const middle = (width / 2 - view.x) / view.scale;
+    return { x: point.x + Math.round((middle - point.x) / circumference) * circumference, y: point.y };
+  }
+
+  // Cover also fills the space between the finite polar edges.
   function cover(world) {
     const fitted = transform(world, fit());
     const innerWidth = Math.max(1, world.width - 0.5) * ROOT_THREE;
     const innerHeight = Math.max(1, world.height * 1.5 - 0.5);
-    return { zoom: Math.max(1, Math.max(width / innerWidth, height / innerHeight) / fitted.scale), x: 0, y: 0 };
+    return { zoom: Math.max(fit(world).zoom, Math.max(width / innerWidth, height / innerHeight) / fitted.scale), x: 0, y: 0 };
   }
 
-  function cellCenter(world, id, camera = fit()) {
+  function cellCenter(world, id, camera = fit(world)) {
     const hex = world.hexes[id];
     if (!hex) return null;
-    const position = center(hex);
     const view = transform(world, camera);
+    const position = projected(center(hex), world, view);
     return { x: view.x + position.x * view.scale, y: view.y + position.y * view.scale };
   }
 
@@ -218,16 +239,15 @@ export function createMapRenderer(canvas, { tokens }) {
     const x = (screenX - view.x) / view.scale;
     const y = (screenY - view.y) / view.scale;
     const size = dimensions(world);
-    if (x < 0 || x > size.width || y < 0 || y > size.height) return null;
+    if (y < 0 || y > size.height) return null;
     const nearestRow = Math.round((y - 1) / 1.5);
     for (let row = nearestRow - 1; row <= nearestRow + 1; row += 1) {
       if (row < 0 || row >= world.height) continue;
       const nearestCol = Math.round(x / ROOT_THREE - (row % 2) / 2 - 0.5);
       for (let col = nearestCol - 1; col <= nearestCol + 1; col += 1) {
-        if (col < 0 || col >= world.width) continue;
         const localCenter = ROOT_THREE * (col + (row % 2) / 2 + 0.5);
         if (insideHex(x - localCenter, y - (1 + row * 1.5))) {
-          return row * world.width + col;
+          return row * world.width + modulo(col, world.width);
         }
       }
     }
@@ -414,7 +434,7 @@ export function createMapRenderer(canvas, { tokens }) {
     }
   }
 
-  function draw(world, { camera = fit(), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world,
+  function draw(world, { camera = fit(world), layer = 'terrain', pinnedId = null, hoveredId = null, geography = world,
     life = null, selectedSpeciesId = null, selectedVariantHexIds = [], motionTime = 0 } = {}) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (!world?.hexes?.length) {
@@ -428,13 +448,14 @@ export function createMapRenderer(canvas, { tokens }) {
     const lifeHexes = cachedLife.summaries;
     const speciesHexIds = selectedSpeciesId === null ? [] : [...lifeHexes]
       .filter(([, summary]) => summary.species.has(selectedSpeciesId)).map(([id]) => id);
-    const territorySignature = JSON.stringify([speciesHexIds, selectedVariantHexIds]);
+    const view = transform(world, camera);
+    const middle = (width / 2 - view.x) / view.scale;
+    const territorySignature = JSON.stringify([speciesHexIds, selectedVariantHexIds, Math.floor(2 * middle / ROOT_THREE)]);
     if (!cachedTerritory || cachedTerritory.geography !== geography || cachedTerritory.signature !== territorySignature) {
       cachedTerritory = { geography, signature: territorySignature,
-        species: territoryContours(world, speciesHexIds),
-        variant: territoryContours(world, selectedVariantHexIds) };
+        species: territoryContours(world, speciesHexIds, middle),
+        variant: territoryContours(world, selectedVariantHexIds, middle) };
     }
-    const view = transform(world, camera);
     const frozen = layer === 'terrain' ? world.hexes.map((hex) => hex.temperature < 0) : null;
     const stable = previousFrame && previousFrame.geography === geography
       && previousFrame.layer === layer && previousFrame.zoom === camera.zoom
@@ -473,7 +494,7 @@ export function createMapRenderer(canvas, { tokens }) {
       }
       for (const id of damaged) {
         const hex = world.hexes[id];
-        const point = center(hex);
+        const point = projected(center(hex), world, view);
         const x = view.x + point.x * view.scale;
         const y = view.y + point.y * view.scale;
         const padding = view.scale + 4;
@@ -486,10 +507,9 @@ export function createMapRenderer(canvas, { tokens }) {
         // Include every cell whose enlarged fill or grid can touch the damage.
         const reach = Math.ceil((padding / view.scale + 1.5) / 1.5) + 1;
         for (let row = Math.max(0, hex.row - reach); row <= Math.min(world.height - 1, hex.row + reach); row += 1) {
-          const range = damagedRows.get(row) ?? [world.width, -1];
-          range[0] = Math.min(range[0], Math.max(0, hex.col - reach));
-          range[1] = Math.max(range[1], Math.min(world.width - 1, hex.col + reach));
-          damagedRows.set(row, range);
+          // A damaged seam cell can touch neighbors at the opposite physical
+          // column. The clip bounds work; scan the full nearby rows for repaint.
+          damagedRows.set(row, [0, world.width - 1]);
         }
       }
       context.clip();
@@ -502,24 +522,16 @@ export function createMapRenderer(canvas, { tokens }) {
     const fills = colors(world, layer, geography);
     const circumference = world.width * ROOT_THREE;
     context.save();
-    // Clip overlays to the actual hex silhouette. A central rectangle and the
-    // perimeter cells form its union, keeping this path O(width + height).
-    // No rectangular frame, and no duplicate half-cells at the cylindrical seam.
+    // Longitude is continuous; only the two jagged polar edges clip overlays.
     context.beginPath();
-    if (world.width > 2 && world.height > 2) {
-      context.rect(view.x + ROOT_THREE * view.scale, view.y + view.scale,
-        (world.width - 1) * ROOT_THREE * view.scale, (world.height * 1.5 - 1.5) * view.scale);
+    if (world.height > 1) {
+      context.rect(-view.scale, view.y + view.scale, width + 2 * view.scale,
+        (world.height * 1.5 - 1.5) * view.scale);
     }
-    const appendHex = (col, row) => {
-      const position = center({ col, row });
-      polygon(context, view.x + position.x * view.scale, view.y + position.y * view.scale, view.scale, false);
-    };
-    for (let row = 0; row < world.height; row += 1) {
-      if (row === 0 || row === world.height - 1 || world.width <= 2) {
-        for (let col = 0; col < world.width; col += 1) appendHex(col, row);
-      } else {
-        appendHex(0, row);
-        appendHex(world.width - 1, row);
+    for (const row of new Set([0, world.height - 1])) {
+      for (let col = 0; col < world.width; col += 1) {
+        const position = projected(center({ col, row }), world, view);
+        polygon(context, view.x + position.x * view.scale, view.y + position.y * view.scale, view.scale, false);
       }
     }
     context.clip();
@@ -529,7 +541,7 @@ export function createMapRenderer(canvas, { tokens }) {
         const range = damagedRows.get(hex.row);
         if (!range || hex.col < range[0] || hex.col > range[1]) continue;
       }
-      const position = center(hex);
+      const position = projected(center(hex), world, view);
       const y = view.y + position.y * view.scale;
       if (y + view.scale < 0 || y - view.scale > height) continue;
       const x = view.x + position.x * view.scale;
@@ -563,7 +575,7 @@ export function createMapRenderer(canvas, { tokens }) {
       }
       for (const hex of world.hexes) {
         if (!(hex.springDischarge > 0)) continue;
-        const node = rivers.nodes[hex.id];
+        const node = projected(rivers.nodes[hex.id], world, view);
         const position = { x: view.x + node.x * view.scale, y: view.y + node.y * view.scale };
         const radius = clamp(view.scale * 0.12, 0.8, 2.5);
         if (position.x < -4 || position.x > width + 4 || position.y < -4 || position.y > height + 4) continue;
@@ -619,7 +631,7 @@ export function createMapRenderer(canvas, { tokens }) {
           const range = damagedRows.get(hex.row);
           if (!range || hex.col < range[0] || hex.col > range[1]) continue;
         }
-        const position = center(hex);
+        const position = projected(center(hex), world, view);
         const x = view.x + position.x * view.scale;
         const y = view.y + position.y * view.scale;
         if (x + view.scale < 0 || x - view.scale > width || y + view.scale < 0 || y - view.scale > height) continue;
@@ -684,5 +696,5 @@ export function createMapRenderer(canvas, { tokens }) {
   }
 
   setTokens(tokens);
-  return { resize, setTokens, fit, cover, draw, hitTest, cellCenter };
+  return { resize, setTokens, fit, cover, constrain, draw, hitTest, cellCenter };
 }

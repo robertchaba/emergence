@@ -69,46 +69,57 @@ test('hex picking matches every cell at fitted, zoomed, and panned positions', (
       assert.equal(map.hitTest(world, camera, point.x - 1e-7, point.y), hex.id);
     }
   }
-  assert.equal(map.hitTest(world, map.fit(world), -1, -1), null);
+  assert.equal(map.hitTest(world, map.fit(world), 450, -1000), null);
 });
 
-test('seam cells stay whole and the empty staggered edge cannot pick a duplicate', () => {
+test('horizontal picking wraps continuously while the poles remain finite', () => {
   const { map } = renderer();
   const world = fixture();
   const camera = map.fit(world);
-  const last = map.cellCenter(world, 11, camera);
   const first = map.cellCenter(world, 6, camera);
-  const spacing = (last.x - first.x) / (world.width - 1);
-  const leftEdge = last.x - spacing * world.width;
-  assert.equal(map.hitTest(world, camera, last.x + spacing * 0.45, last.y), 11);
-  assert.equal(map.hitTest(world, camera, leftEdge + 1, last.y), null);
+  const next = map.cellCenter(world, 7, camera);
+  const spacing = next.x - first.x;
+  for (const turns of [-20, -1, 0, 1, 20]) {
+    const x = first.x + turns * world.width * spacing;
+    assert.equal(map.hitTest(world, camera, x - spacing, first.y), 11);
+    assert.equal(map.hitTest(world, camera, x, first.y), 6);
+    assert.equal(map.hitTest(world, camera, x + spacing, first.y), 7);
+    assert.equal(map.hitTest(world, camera, x, -1000), null);
+    assert.equal(map.hitTest(world, camera, x, 1600), null);
+  }
 });
 
-test('fit contains every hex corner and fills one available dimension', () => {
-  const { map, calls } = renderer();
+test('minimum zoom leaves no duplicate partial hexes at any pan or viewport size', () => {
+  const { map } = renderer();
   const world = fixture();
-  for (const [width, height] of [[900, 600], [390, 300], [320, 600]]) {
+  for (const [width, height] of [[900, 600], [390, 300], [320, 600], [1800, 320]]) {
     map.resize(width, height);
-    const camera = map.fit(world);
-    const first = map.cellCenter(world, 0, camera);
-    const next = map.cellCenter(world, 1, camera);
-    const radius = (next.x - first.x) / Math.sqrt(3);
-    const xs = [];
-    const ys = [];
-    for (const hex of world.hexes) {
-      const point = map.cellCenter(world, hex.id, camera);
-      for (let corner = 0; corner < 6; corner += 1) {
-        const angle = (corner * 60 - 30) * Math.PI / 180;
-        xs.push(point.x + Math.cos(angle) * radius);
-        ys.push(point.y + Math.sin(angle) * radius);
+    const minimum = map.fit(world);
+    assert.ok(minimum.zoom > 1);
+    const first = map.cellCenter(world, 0, minimum);
+    const next = map.cellCenter(world, 1, minimum);
+    const spacing = next.x - first.x;
+    const circumference = spacing * world.width;
+    assert.ok(circumference - spacing >= width + 8 - 1e-8);
+    for (let step = -40; step <= 40; step++) {
+      const camera = map.constrain(world, { zoom: 1, x: circumference * step / 13, y: 0 });
+      assert.equal(camera.zoom, minimum.zoom);
+      assert.ok(Math.abs(camera.x) <= circumference / 2 + 1e-8);
+      for (const hex of world.hexes) {
+        const point = map.cellCenter(world, hex.id, camera);
+        const copies = [-1, 0, 1].filter(turn => {
+          const x = point.x + turn * circumference;
+          return x + spacing / 2 + 0.35 > 0 && x - spacing / 2 - 0.35 < width;
+        });
+        assert.ok(copies.length <= 1, `hex ${hex.id} appears at most once`);
+        assert.equal(map.hitTest(world, camera, point.x, point.y), hex.id);
+      }
+      // No gap at the physical longitude seam, including staggered rows.
+      for (const id of [6, 12]) {
+        const y = map.cellCenter(world, id, camera).y;
+        for (let x = 0; x <= width; x += 7) assert.notEqual(map.hitTest(world, camera, x, y), null);
       }
     }
-    assert.ok(Math.min(...xs) > 0 && Math.max(...xs) < width);
-    assert.ok(Math.min(...ys) > 0 && Math.max(...ys) < height);
-    assert.ok(Math.max((Math.max(...xs) - Math.min(...xs)) / width,
-      (Math.max(...ys) - Math.min(...ys)) / height) > 0.94);
-    map.draw(world, { camera });
-    assert.equal(calls.some(([method]) => method === 'strokeRect'), false);
   }
 });
 
@@ -125,7 +136,7 @@ test('all layers draw frozen snapshots and seam flow uses short edge segments', 
   calls.length = 0;
   map.draw(world, { camera: map.fit(world), layer: 'terrain' });
   const connections = calls.filter((call, index) => call[0] === 'moveTo' && calls[index + 1]?.[0] === 'bezierCurveTo' && calls[index + 2]?.[0] === 'stroke');
-  assert.equal(connections.length, 4); // bank and water at both visible seam ends
+  assert.equal(connections.length, 2); // one visible bank and water segment; no duplicate
   const spacing = map.cellCenter(world, 7, map.fit(world)).x - map.cellCenter(world, 6, map.fit(world)).x;
   for (const move of connections) {
     const line = calls[calls.indexOf(move) + 1];
@@ -232,7 +243,7 @@ test('pin tint is drawn once when hovered and preserves terrain beneath it', () 
   assert.equal(fills.includes(tokens['--map-pin-fill']), false);
 });
 
-test('cover fills the frame while fit keeps the full hex outline available', () => {
+test('cover fills the frame and respects the unique-hex minimum', () => {
   const { map } = renderer();
   const world = fixture();
   for (const [width, height] of [[900, 600], [390, 300], [320, 600]]) {
@@ -244,7 +255,7 @@ test('cover fills the frame while fit keeps the full hex outline available', () 
         assert.notEqual(map.hitTest(world, camera, x, y), null);
       }
     }
-    assert.deepEqual(map.fit(), { zoom: 1, x: 0, y: 0 });
+    assert.ok(camera.zoom >= map.fit(world).zoom);
   }
 });
 
@@ -594,6 +605,9 @@ test('territory contours remove internal edges, preserve holes and islands, and 
   assert.equal(contours([0, 48]).length, 2, 'separate patches stay separate');
   assert.equal(contours([21, 27]).length, 2, 'longitude seam is closed on each side of the atlas');
   assert.deepEqual(contours([24, 24, -1]), contours([24]));
+  const joined = territoryContours(world, [21, 27], 0);
+  assert.equal(joined.length, 1, 'wrapped seam neighbors share one territory');
+  assert.equal(joined[0].length, 10, 'no internal boundary at the physical seam');
 });
 
 test('species highlighting covers every occupied hex and cosmetic movement leaves observations intact', () => {

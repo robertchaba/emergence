@@ -60,7 +60,7 @@ test('a sole species opens by default and remembers a keyboard collapse through 
   await expect(page.locator('.species-local-population')).toHaveAttribute('data-count', '7');
 });
 
-test('species energy labels, ordered genomes and collapsible details survive live updates', async ({ page }, testInfo) => {
+test('species size and energy labels, ordered genomes and collapsible details survive live updates', async ({ page }, testInfo) => {
   const world = setDay(generateWorld(settings), 1);
   const site = suitable(world);
   const model = createActiveLifeModel(world);
@@ -77,12 +77,13 @@ test('species energy labels, ordered genomes and collapsible details survive liv
   saved.species = diets.map((diet, index) => ({ ...original, id: `species-${index + 1}`,
     genomeHistory: undefined, // Synthetic genomes have no recorded evolutionary past.
     name: `Exemplaria ${['viridis', 'brunnea', 'rubra', 'mixta'][index]}`,
-    genome: { ...original.genome, ...diet, trunk: 0, sexualReproduction: 1 }, candidates: [] }));
+    genome: { ...original.genome, ...diet, size: [1, 3, 6, 10][index], trunk: 0, sexualReproduction: 1 }, candidates: [] }));
   saved.populations = saved.species.map(species => ({ ...saved.populations[0], speciesId: species.id }));
   saved.day = 2; saved.revision += 1;
   const initial = restoreActiveLifeModel(world, saved).observe();
   saved.day += 1; saved.revision += 1;
   saved.species[0].genome.animalFeeding = 1;
+  saved.species[0].genome.size = 7;
   const changed = restoreActiveLifeModel(world, saved).observe();
   await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
     body: `const snapshots = ${JSON.stringify([soleSpecies, initial, changed])}; let revision = 0;
@@ -107,15 +108,23 @@ test('species energy labels, ordered genomes and collapsible details survive liv
   await expect(mixed.locator('.species-energy-label')).toHaveCount(3);
   for (const locale of ['en', 'pl']) {
     await page.locator(`[data-locale="${locale}"]`).click();
+    await expect(choices.locator('.species-size')).toHaveText(locale === 'en'
+      ? ['Tiny', 'Small', 'Moderately large', 'Enormous']
+      : ['Maleńki', 'Mały', 'Umiarkowanie duży', 'Olbrzymi']);
     await expect(mixed.locator('.species-energy-label')).toHaveText(locale === 'en'
       ? ['Photosynthesis', 'Plant feeding', 'Animal feeding'] : ['Fotosynteza', 'Roślinożerność', 'Mięsożerność']);
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
+      const sizeBounds = await first.locator('.species-size').boundingBox();
+      const energyBounds = await first.locator('.species-energy-label').boundingBox();
+      expect(Math.abs(sizeBounds.y - energyBounds.y)).toBeLessThan(1);
+      expect(sizeBounds.x).toBeGreaterThanOrEqual(energyBounds.x + energyBounds.width);
       await page.locator('.life-overview').scrollIntoViewIfNeeded();
       await page.screenshot({ path: testInfo.outputPath(`energy-chart-${locale}-${theme}.png`) });
       await mixed.focus();
       await page.keyboard.press('Enter');
       await expect(mixed).toHaveAttribute('aria-expanded', 'true');
+      await expect(mixed.locator('.species-size')).toContainText(await page.locator('.gene-expression[data-gene="size"]').innerText());
       expect(await page.locator('.gene-row').evaluateAll(rows => rows.slice(0, 5).map(row => row.dataset.gene)))
         .toEqual(['photosynthesis', 'plantFeeding', 'animalFeeding', 'size', 'sexualReproduction']);
       await expect(mixed).toBeFocused();
@@ -129,6 +138,7 @@ test('species energy labels, ordered genomes and collapsible details survive liv
       await expect(mixed).toHaveAttribute('aria-expanded', 'false');
       await expect(page.locator('#species-detail')).toHaveCount(0);
       await expect(page.locator('#world-map')).toHaveAttribute('data-selected-species-id', '');
+      await expect(mixed.locator('.species-size')).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth
         && document.querySelector('.notebook').scrollWidth <= document.querySelector('.notebook').clientWidth + 1)).toBe(true);
       await page.locator('.notebook').evaluate(node => { node.scrollTop = node.scrollHeight; });
@@ -142,6 +152,7 @@ test('species energy labels, ordered genomes and collapsible details survive liv
   await expect(page.locator('#species-detail')).toHaveCount(0);
   await page.locator('[data-locale="en"]').click();
   await expect(page.locator('#species-detail')).toHaveCount(0);
+  await expect(first.locator('.species-size')).toHaveText('Large');
   await first.click();
   expect(await page.locator('.gene-row').evaluateAll(rows => rows.slice(0, 4).map(row => row.dataset.gene)))
     .toEqual(['photosynthesis', 'animalFeeding', 'size', 'sexualReproduction']);
