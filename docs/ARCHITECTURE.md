@@ -2,7 +2,10 @@
 
 ## Status
 
-**Current: Restore playback after Tree of life — 2026-09-24.** Decision 072
+**Current: Rounded plant marks — 2026-09-25.** Decision 074 replaces thin
+plant silhouettes and straight vein strokes with broad rounded forms.
+
+**Restore playback after Tree of life — 2026-09-24.** Decision 072
 remembers playback state and target speed for each tree visit.
 
 **Size alongside energy labels — 2026-09-24.** Decision 071 places both
@@ -3694,3 +3697,27 @@ of 0.05% of pixels differing by more than two levels remains unchanged. Both
 themes pass at DPR 1 and 1.5. Scope/dependency review and `git diff --check` passed;
 pre-existing notebook and tree playback edits were preserved. These browser
 checks validate presentation, not new ecological behavior.
+
+## 074 — Rounded plant marks — 2026-09-25
+
+The user requested replacing straight-line plant representations, leaving the
+new shape choice open. **Supersedes 068's thin plant blades, fronds, ribbons and
+straight vein details.** The twelve land/water plant variants now use broad
+rosettes, rounded stars, scalloped canopies and circular clusters. Close-view
+detail is a small ring instead of a stem or radial strokes. Filled curved lobes
+keep plants readable as compact shapes at small sizes.
+
+Only renderer-owned illustrative geometry changes. Stable variant selection,
+size scaling, low-zoom dots, plant coverage, drawing budgets, animal shapes and
+resolved theme tokens retain their existing behavior. No observation, model,
+random stream, saved-state or control changes are required. Shapes remain
+population samples rather than claims about evolved anatomy. Usage is unchanged.
+
+Validation: `npm run build` and `npm test` passed (166 headless/rendering checks,
+147 Chromium checks and one existing skipped desktop touch duplicate). Existing
+checks cover all 28 distinct bounded silhouettes, size scaling, fixed plant poses,
+frame reuse and damage repaint equivalence. Inspected the plant vocabulary and
+map fixtures in light/dark at desktop/phone widths; shapes remain compact and
+labels fit. Existing browser checks cover focus, disabled controls, assets and
+layout overflow. Scope/dependency review and `git diff --check` passed. These
+checks validate presentation, not ecological behavior.

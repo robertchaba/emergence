@@ -1,5 +1,14 @@
 # Life rendering
 
+## Rounded plant marks — 2026-09-25
+
+Decision 074 supersedes 068's thin blades, fronds, ribbons and straight plant
+veins. All twelve plant variants now use broad rosettes, rounded stars, lobed
+canopies or circular clusters, with a small ring for close-view detail. Land
+and water retain separate forms. Low-zoom dots, stable positions, size scaling,
+theme tokens, population budgets and consumer shapes retain their behavior.
+These are illustrative symbols, not inferred anatomy or biological changes.
+
 ## Habitat variants, mixed diets and larger animals — 2026-09-21
 
 Decision 068 supersedes 052's small silhouette vocabulary, single mixed-feeding

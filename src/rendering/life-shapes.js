@@ -7,110 +7,45 @@ function oval(c, x, y, rx, ry, angle = 0) {
   c.ellipse(x, y, rx, ry, angle, 0, TAU);
 }
 
-function leaf(c, x, y, length, width, angle) {
-  oval(c, x, y, length, width, angle);
-}
+// Broad radial lobes stay readable when marks are only a few pixels across.
+// Each row is [lobe count, distance from centre, length, width, rotation].
+const LAND_FOLIAGE = [
+  [3, 0.45, 0.8, 0.48, 0], // Three-leaf rosette.
+  [5, 0.58, 0.56, 0.43, 0], // Rounded petals.
+  [6, 0.47, 0.76, 0.32, 0], // Broad six-point star.
+  [4, 0.48, 0.7, 0.52, 0], // Clover canopy.
+  [5, 0.49, 0.63, 0.5, 0], // Soft lobed crown.
+  [8, 0.68, 0.48, 0.36, 0], // Scalloped cushion.
+];
+const WATER_FOLIAGE = [
+  [6, 0.52, 0.66, 0.4, 0], // Rounded water star.
+  [4, 0.42, 0.75, 0.38, 0.45], // Swirling rosette.
+  [7, 0.7, 0.35, 0.35, 0], // Circular bead colony.
+  [7, 0.38, 0.78, 0.36, 0], // Many-lobed rosette.
+  null, // Overlapping floating pads, drawn below.
+  [8, 0.5, 0.65, 0.38, 0.4], // Rounded whorl.
+];
 
 export function drawPlantShape(c, variant, water, detail) {
   c.beginPath();
-  if (!water) {
-    if (variant === 0) {
-      // The original three-leaf rosette.
-      for (let i = 0; i < 3; i += 1) {
-        const a = i * TAU / 3;
-        leaf(c, Math.cos(a) * 0.45, Math.sin(a) * 0.45, 0.8, 0.48, a);
-      }
-    } else if (variant === 1) {
-      // Paired fern leaflets.
-      for (let i = 0; i < 4; i += 1) {
-        for (const side of [-1, 1]) leaf(c, -0.65 + i * 0.4, side * 0.25,
-          0.42 - i * 0.05, 0.15, side * 0.8);
-      }
-      leaf(c, 0.85, 0, 0.3, 0.17, 0);
-    } else if (variant === 2) {
-      // Five narrow blades from a shared root.
-      for (let i = 0; i < 5; i += 1) {
-        const a = (i - 2) * 0.48;
-        leaf(c, Math.cos(a) * 0.22, Math.sin(a) * 0.22, 0.94, 0.12, a);
-      }
-    } else if (variant === 3) {
-      // Broad branching leaves.
-      for (const side of [-1, 1]) {
-        leaf(c, -0.4, side * 0.48, 0.55, 0.28, side * 0.65);
-        leaf(c, 0.35, side * 0.33, 0.5, 0.23, side * 0.65);
-      }
-      leaf(c, 0.83, 0, 0.37, 0.22, 0);
-    } else if (variant === 4) {
-      // Rounded, lobed canopy.
-      for (let i = 0; i < 5; i += 1) {
-        const a = i * TAU / 5;
-        oval(c, Math.cos(a) * 0.49, Math.sin(a) * 0.49, 0.63, 0.5, a);
-      }
-    } else {
-      // Layered needle sprays.
-      for (let i = 0; i < 4; i += 1) {
-        const x = -0.85 + i * 0.48, width = 0.7 - i * 0.15;
-        c.moveTo(x, -width); c.lineTo(x + 0.65, 0); c.lineTo(x, width);
-        c.lineTo(x + 0.17, 0); c.closePath();
-      }
-    }
-  } else if (variant === 0) {
-    // Ribbon star, distinct from the broad land rosette.
-    for (let i = 0; i < 6; i += 1) {
-      const a = i * TAU / 6;
-      leaf(c, Math.cos(a) * 0.5, Math.sin(a) * 0.5, 0.7, 0.16, a);
-    }
-  } else if (variant === 1) {
-    // Three flowing kelp ribbons.
-    for (const side of [-1, 0, 1]) {
-      c.moveTo(-1, 0);
-      c.bezierCurveTo(-0.1, side * 0.95 - 0.2, 0.25, side * 0.55 - 0.4, 1.1, side * 0.4);
-      c.bezierCurveTo(0.35, side * 0.55, -0.2, side * 0.95 + 0.15, -1, 0);
-    }
-  } else if (variant === 2) {
-    // Beaded branching colonies.
-    for (let i = 0; i < 4; i += 1) {
-      for (const side of [-1, 1]) oval(c, -0.7 + i * 0.46, side * (0.5 - i * 0.09), 0.24, 0.22);
-    }
-    oval(c, 0.93, 0, 0.26, 0.2);
-  } else if (variant === 3) {
-    // A pleated underwater fan.
-    c.moveTo(-0.95, 0);
-    for (let i = 0; i <= 8; i += 1) {
-      const a = -1.2 + i * 0.3, r = i % 2 ? 0.95 : 1.2;
-      c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-    }
-    c.closePath();
-  } else if (variant === 4) {
-    // Overlapping floating pads.
+  if (water && variant === 4) {
     oval(c, -0.5, -0.3, 0.67, 0.55, -0.4);
     oval(c, 0.45, -0.25, 0.65, 0.56, 0.3);
-    oval(c, 0, 0.5, 0.61, 0.66, 0);
+    oval(c, 0, 0.5, 0.61, 0.66);
   } else {
-    // Fine feather fronds.
-    for (let i = 0; i < 5; i += 1) {
-      for (const side of [-1, 1]) leaf(c, -0.7 + i * 0.35, side * 0.29,
-        0.5 - i * 0.04, 0.085, side * 1.05);
+    const [count, distance, length, width, twist] = (water ? WATER_FOLIAGE : LAND_FOLIAGE)[variant];
+    for (let i = 0; i < count; i += 1) {
+      const angle = i * TAU / count;
+      oval(c, Math.cos(angle) * distance, Math.sin(angle) * distance,
+        length, width, angle + twist);
     }
   }
   c.fill();
   if (!detail) return;
+  // A small round centre replaces the former straight stems and vein strokes.
   c.strokeStyle = detail;
   c.beginPath();
-  if (variant === 0 || variant === 4) {
-    const count = water && variant === 0 ? 6 : variant === 4 ? 5 : 3;
-    for (let i = 0; i < count; i += 1) {
-      const a = i * TAU / count;
-      c.moveTo(0, 0); c.lineTo(Math.cos(a) * 0.91, Math.sin(a) * 0.91);
-    }
-  } else if (water && variant === 3) {
-    for (let i = 0; i < 5; i += 1) {
-      const a = -1.1 + i * 0.55;
-      c.moveTo(-0.8, 0); c.lineTo(Math.cos(a), Math.sin(a));
-    }
-  } else {
-    c.moveTo(-0.95, 0); c.lineTo(0.95, 0);
-  }
+  c.arc(0, 0, water ? 0.24 : 0.19, 0, TAU);
   c.stroke();
 }
 
