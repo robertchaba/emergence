@@ -1,5 +1,5 @@
 import { generateWorld } from '../../src/simulation/world.js';
-import { createLifeModel } from '../../src/simulation/life/v4/model.js';
+import { createLifeModel } from '../../src/simulation/life/v3/model.js';
 
 // A busy mixed-community execution fixture, not an evolved/balanced ecosystem.
 export function workerFixture({ speciesCount = 12 } = {}) {

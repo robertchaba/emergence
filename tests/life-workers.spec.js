@@ -2,7 +2,7 @@ import { readdir } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { workerFixture } from './fixtures/life-workers.js';
 import { exerciseLifeWorker, lifeWorkerHarness } from './fixtures/browser-life-worker.js';
-import { restoreLifeModel } from '../src/simulation/life/v3/model.js';
+import { restoreLifeModel } from '../src/simulation/life/v4/model.js';
 import { createSave } from '../src/ui/save-state.js';
 
 const { world, checkpoint } = workerFixture();

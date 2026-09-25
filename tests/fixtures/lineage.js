@@ -1,7 +1,7 @@
 import { generateWorld, setDay } from '../../src/simulation/world.js';
-import { createLifeModel } from '../../src/simulation/life/v3/model.js';
-import { founderGenome } from '../../src/simulation/life/v3/genes/genome.js';
-import { recordGenome } from '../../src/simulation/life/v3/lineage.js';
+import { createLifeModel } from '../../src/simulation/life/v4/model.js';
+import { founderGenome } from '../../src/simulation/life/v4/genes/genome.js';
+import { recordGenome } from '../../src/simulation/life/v4/lineage.js';
 
 // Explicit historical fixture, not a claim that these lineages evolved naturally.
 export function lineageFixture() {

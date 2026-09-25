@@ -42,10 +42,10 @@ hex, and observe how resources, inheritance, mutation, and seasons shape its
 descendants. Geography supplies physical conditions; ecology emerges from life.
 There are no predefined species or scripted outcomes.
 
-**Current stage: V3 population life simulation; V1 and V2 preserved.** Generate
+**Current stage: V4 population life simulation; V1, V2 and V3 preserved.** Generate
 deterministic cylindrical hex worlds, introduce a locally suited plant lineage
 with seeded random traits, and observe competition, adaptation and branching.
-V3 calculates populations per species and hex, with one established genome and
+V4 calculates populations per species and hex, with one established genome and
 at most three possible adaptation directions per whole species. New lineages
 need a sustained ecological advantage; temperature, habitat, moisture, elevation,
 water depth and other species all affect success. The Field Notebook shows
@@ -97,7 +97,8 @@ src/
     life/                Common life-model boundary and observation contract
       v1/                Preserved first life model and historical research
       v2/                Preserved cohort life model and its research
-      v3/                Active population model, 22 genes, rules and validation
+      v3/                Preserved population model with 22 genes
+      v4/                Active population model with 40 genes
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -208,7 +209,7 @@ paused; choose **Play** to continue. Invalid or incompatible files leave the
 current world intact. Cancel also keeps it intact and paused. File handling
 stays on your device and does not require browser storage or an account.
 Theme and language follow your current preferences. Notebook disclosures and
-trait highlights reset. Saves require compatible generator, weather and V3
+trait highlights reset. Saves require compatible generator, weather and V4
 rules versions; automatic migration from older simulation versions is not provided.
 
 A year has 360 days, beginning at the northern spring equinox. Hydrology and
@@ -375,7 +376,7 @@ const serialized = JSON.stringify(summer);
 Life is a separate model with its own explicit commands:
 
 ```js
-import { createLifeModel, restoreLifeModel } from './src/simulation/life/v3/model.js';
+import { createLifeModel, restoreLifeModel } from './src/simulation/life/v4/model.js';
 
 const life = createLifeModel(world);
 const result = life.introduce(selectedHexId);
@@ -391,27 +392,39 @@ if (result.ok) {
 locations. Checkpoints retain the complete biological PRNG, population reserves,
 candidate directions and their persistence; a world seed alone cannot resume a
 run. The browser save file wraps this checkpoint with world settings and view
-state. V3 checkpoints are independent of V1/V2;
-there is no automatic conversion or model-selection control.
-See [V3 rules](src/simulation/life/v3/docs/RULES.md) for the aggregate demographic
-calculation, evolutionary pressure, species criteria and experimental coefficients,
-and [validation](src/simulation/life/v3/docs/VALIDATION.md) for measured limits.
-V3 revision 5 modestly increases hunting effort and rewards larger grazers through
-better access to tall plants. Small food retains an incentive for smaller bodies;
-larger prey can favour larger predators through the existing prey-size limit.
-It retains revision 4's adaptation to reachable empty land and rewards consumer
-movement through foraging and a free first movement level, and supports smaller
-viable carnivore populations with food-directed dispersal. Mixed-feeding costs
-from revision 3 remain. Saves from earlier V3 rules are incompatible; start a new
-world to use the revised biology.
-Species diversity remains an outcome of the world;
-there is no fixed count cap. To inspect a 60 × 40 world (now Large) through
-80 simulated years,
-run `node scripts/check-life-v3-balance.js 28800 large emergence water`.
-Earlier validation records use the previous world-size names and generator version.
-Run `node scripts/benchmark-life-v3.js 1440` (or `4320`) for the same-world
-V2/V3 comparison and a fixed-record population-scaling check. It measures different
-ecological trajectories, not identical outcomes or a universal speed guarantee.
+state. V4 checkpoints are independent of V1/V2/V3; there is no automatic
+conversion or model-selection control. Start a new world for V4; V3 saves remain
+usable with the preserved V3 implementation, not in the active V4 browser.
+
+V4 retains V3's population model, canopy browsing, mixed-feeding tradeoffs,
+food-directed consumer movement and ecological branching. It adds **18 genes**
+(40 total), stronger sexual reproduction with local reproductive support,
+and sharper allocation when species compete for finite resources. The new traits include leaf area,
+shade tolerance, deep roots, waxy cuticles, buoyancy, propagule dispersal,
+camouflage, warning signals, ambush, cooperative hunting, herding, burrowing,
+filter feeding, dormancy, insulation, offspring investment, mate attraction and
+clonal growth. All have paid, context-dependent effects; map forms, patterns and
+grouping reflect model-supplied descriptions of those adaptations.
+
+See [V4 rules](src/simulation/life/v4/docs/RULES.md), the
+[gene catalogue](src/simulation/life/v4/genes/docs/GENES.md), and
+[validation](src/simulation/life/v4/docs/VALIDATION.md) for formulas and measured
+limits. The diversity aim is roughly 60–70 living species around day 15,000 in
+worlds that previously sustained about 100. This is a tuning target, never a
+species cap or guaranteed trajectory. Completed day-15,000 checks ranged from
+63 to 105 living species; the two paired V3 comparisons fell from 92 to 63 and
+95 to 90. Earlier local displacement is verified, while an earlier global
+extinct-over-living crossover has not been demonstrated. The balance panel
+reports living/extinct species, sexual reproduction and new trait uptake:
+
+```sh
+node scripts/check-life-v4-balance.js 15000 medium emergence water v4
+node scripts/check-life-v4-balance.js 15000 medium emergence water v3
+```
+
+The preserved `scripts/benchmark-life-v3.js` still compares V2/V3. Active browser
+worker and observation benchmarks use V4. These measure different ecological
+trajectories, not identical outcomes or a universal speed guarantee.
 
 Snapshots record the generator version, settings, selected candidate, hash
 inputs, physical hex fields, drainage basins, regions, and their connections.
@@ -440,8 +453,8 @@ original brief's `/documents` path. Life/evolution and approximation research is
 now under **`src/simulation/life/v1/docs/`**, with gene descriptions in
 **`src/simulation/life/v1/genes/docs/`** and gene code in the enclosing
 **`genes/`** directory. V2 research remains in its own sibling directory.
-Active V3 has rules in **`src/simulation/life/v3/docs/`** and its gene catalogue
-in **`src/simulation/life/v3/genes/docs/GENES.md`**, while keeping the same physical
+Active V4 has rules in **`src/simulation/life/v4/docs/`** and its gene catalogue
+in **`src/simulation/life/v4/genes/docs/GENES.md`**, while keeping the same physical
 world and common UI data contract.
 Research filename suffixes retain their original revisions; they are separate
 from the enclosing life-model version.
@@ -451,7 +464,11 @@ from the enclosing life-model version.
 - [Shared world, climate, and playback rules](docs/evolution_simulation_summary_v6.md)
 - [Life-model ownership and versioning](src/simulation/life/README.md)
 - [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
-- [Active V3 model](src/simulation/life/v3/README.md)
+- [Active V4 model](src/simulation/life/v4/README.md)
+- [V4 rules](src/simulation/life/v4/docs/RULES.md)
+- [V4 genes](src/simulation/life/v4/genes/docs/GENES.md)
+- [V4 validation](src/simulation/life/v4/docs/VALIDATION.md)
+- [Preserved V3 model](src/simulation/life/v3/README.md)
 - [V3 rules](src/simulation/life/v3/docs/RULES.md)
 - [V3 genes](src/simulation/life/v3/genes/docs/GENES.md)
 - [V3 validation](src/simulation/life/v3/docs/VALIDATION.md)

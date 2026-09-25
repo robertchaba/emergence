@@ -1,4 +1,4 @@
-import { evaluateObservationJobs } from '../simulation/life/v3/observation-jobs.js';
+import { evaluateObservationJobs } from '../simulation/life/v4/observation-jobs.js';
 import { debug } from './debugdev.js';
 
 const evaluate = jobs => evaluateObservationJobs(jobs, debug?.listeners);

@@ -1,5 +1,41 @@
 # Life rendering
 
+## V4 inherited morphology — 2026-09-25
+
+V4 optionally supplies `display[].morphology` with `form`, `pattern` and `social`
+descriptors. The model derives these from its established traits. Rendering
+only interprets this common presentation vocabulary; no gene inspection or
+life-model imports enter Canvas, and marks remain illustrative population
+representatives rather than anatomical predictions or individual organisms.
+
+Stationary producers can now display rounded rosettes, overlapping broad leaves,
+capsule-shaped needle whorls, floating pads, beaded colonies and rounded plumes.
+Consumers gain sail-like fins, compact burrowing bodies, poised ambush forms
+and lobed filtering fans. `general` consumers and observations without morphology
+retain the existing habitat vocabulary. `mottled` and `banded` patterns use the
+existing engraving token; `plain` retains quiet central details. Low zoom keeps
+the existing inexpensive dots. No palette or theme-token additions are needed.
+
+`clustered` samples occupy a tighter group. Mobile groups share a smooth cosmetic
+path; stationary colonies remain fixed. This does not assert individual social
+relationships or simulate pack movement. All poses stay within the existing
+0.66-radius placement disk, plant shapes within radius 1.25 and consumers within
+radius 2. The existing 24-plant/30-consumer budgets, size bands, minimum-zoom
+budgets, cosmetic clock gating and producer coverage remain intact.
+
+Descriptors participate in aggregation and frame signatures, preserving distinct
+forms in a size band and repainting morphology-only changes. Observations remain
+read-only. All eighteen new gene names and their model-specific tradeoffs appear
+in English and Polish in the notebook and Tree of life. The sexual reproduction
+help describes local mate-density dependence and the aggregate approximation.
+
+Focused checks cover distinct bounded forms/patterns, immutable observations,
+morphology-only invalidation, coherent bounded clusters and stationary colonies.
+Controlled browser fixtures cover the complete new vocabulary and localized gene
+inspection in both themes at desktop and phone widths. These fixtures validate
+presentation; they do not claim that the displayed genomes evolved naturally or
+that ecological balance is calibrated.
+
 ## Rounded plant marks — 2026-09-25
 
 Decision 074 supersedes 068's thin blades, fronds, ribbons and straight plant

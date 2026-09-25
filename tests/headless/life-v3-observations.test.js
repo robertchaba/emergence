@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreLifeModel } from '../../src/simulation/life/v3/model.js';
 import { evaluateObservationJobs } from '../../src/simulation/life/v3/observation-jobs.js';
-import { workerFixture } from '../fixtures/life-workers.js';
+import { workerFixture } from '../fixtures/life-workers-v3.js';
 
 const withoutDetailMetadata = ({ detailLevel, tendencyCount, ...record }) => record;
 

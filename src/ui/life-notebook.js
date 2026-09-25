@@ -21,6 +21,12 @@ const geneKeys = {
   flight: 'geneFlight', eyesight: 'geneEyesight', echolocation: 'geneEcholocation',
   thermalSensing: 'geneThermalSensing', sexualReproduction: 'geneSexualReproduction',
   elevationTolerance: 'geneElevationTolerance', depthTolerance: 'geneDepthTolerance',
+  leafArea: 'geneLeafArea', shadeTolerance: 'geneShadeTolerance', deepRoots: 'geneDeepRoots',
+  waxyCuticle: 'geneWaxyCuticle', buoyancy: 'geneBuoyancy', propaguleDispersal: 'genePropaguleDispersal',
+  camouflage: 'geneCamouflage', warningSignals: 'geneWarningSignals', ambush: 'geneAmbush',
+  cooperativeHunting: 'geneCooperativeHunting', herding: 'geneHerding', burrowing: 'geneBurrowing',
+  filterFeeding: 'geneFilterFeeding', dormancy: 'geneDormancy', insulation: 'geneInsulation',
+  offspringInvestment: 'geneOffspringInvestment', mateAttraction: 'geneMateAttraction', clonalGrowth: 'geneClonalGrowth',
 };
 const rejectionKeys = {
   'already-introduced': 'lifeAlreadyIntroduced', 'unknown-hex': 'lifeUnknownHex',

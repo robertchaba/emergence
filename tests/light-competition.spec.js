@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { lightCompetitionFixture } from './fixtures/light-competition.js';
-import { restoreLifeModel } from '../src/simulation/life/v3/model.js';
+import { restoreLifeModel } from '../src/simulation/life/v4/model.js';
 import { createSave } from '../src/ui/save-state.js';
 import { chooseTheme } from './ui-helpers.js';
 

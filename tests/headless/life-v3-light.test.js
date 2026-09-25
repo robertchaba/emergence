@@ -4,7 +4,7 @@ import { assignClimate, climateAt } from '../../src/simulation/climate.js';
 import { createGrid } from '../../src/simulation/grid.js';
 import { createLifeModel, restoreLifeModel } from '../../src/simulation/life/v3/model.js';
 import { allocateLight, evaluateCommunity } from '../../src/simulation/life/v3/ecology.js';
-import { lightCompetitionFixture } from '../fixtures/light-competition.js';
+import { lightCompetitionFixture } from '../fixtures/light-competition-v3.js';
 
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`);
 

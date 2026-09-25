@@ -1,7 +1,7 @@
 // Save-file composition uses public engine APIs; biology owns its checkpoint.
 import { generateWorld, GENERATOR_VERSION, WORLD_SIZES, setDay } from '../simulation/world.js';
 import { WEATHER_VERSION } from '../simulation/weather.js';
-import { restoreLifeModel } from '../simulation/life/v3/model.js';
+import { restoreLifeModel } from '../simulation/life/v4/model.js';
 
 export const SAVE_FORMAT = 'emergence-save-1';
 const layers = ['terrain', 'elevation', 'temperature', 'humidity', 'regions'];

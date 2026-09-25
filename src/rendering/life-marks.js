@@ -20,13 +20,27 @@ function markerPoint(seed, step) {
 }
 
 export function lifeMarkerPositions(hexId) {
+  const clusterSeed = Math.imul(hexId + 1, 2654435761);
   return Array.from({ length: LIFE_MARKER_LIMIT }, (_, index) => {
-    const seed = Math.imul(hexId + 1, 2654435761) ^ Math.imul(index + 1, 1597334677);
-    return { seed, offset: (seed >>> 0) / 4294967296 * 12 };
+    const seed = clusterSeed ^ Math.imul(index + 1, 1597334677);
+    return { seed, offset: (seed >>> 0) / 4294967296 * 12, clusterSeed };
   });
 }
 
 export function lifeMarkerPose(marker, slot, time) {
+  if (marker.morphology?.social === 'clustered') {
+    const seed = slot.clusterSeed ?? slot.seed;
+    const centre = solitaryPose(marker, { seed, offset: (seed >>> 0) / 4294967296 * 12 }, time);
+    const member = markerPoint(slot.seed, 0);
+    // Clustered populations share a bounded cosmetic path, not tracked mates,
+    // packs or individuals. Static colonies retain the same fixed placement.
+    return { ...centre, x: centre.x * 0.65 + member.x * 0.28,
+      y: centre.y * 0.65 + member.y * 0.28 };
+  }
+  return solitaryPose(marker, slot, time);
+}
+
+function solitaryPose(marker, slot, time) {
   const heading = slot.offset / 12 * TAU;
   if (!marker.mobile) {
     return { ...markerPoint(slot.seed, 0), heading, phase: heading, opacity: 1 };
@@ -100,7 +114,7 @@ export function drawLifeMarker(context, marker, slot, time, x, y, scale, palette
   // draws, new species, or shapes flickering as the cosmetic clock advances.
   const variant = ((slot.seed >>> 0) + (marker.role === 'predator' ? 3 : 0)) % (plant ? 6 : 8);
   const water = marker.habitat === 'water';
-  if (plant) drawPlantShape(context, variant, water, radius >= 2 ? palette['life-detail'] : null);
+  if (plant) drawPlantShape(context, variant, water, radius >= 2 ? palette['life-detail'] : null, marker.morphology);
   else drawAnimalShape(context, variant, water, { ...marker, size }, point.phase,
     radius >= 1.5 ? palette['life-detail'] : null);
   context.restore();

@@ -569,6 +569,92 @@ test('mixed feeding colours survive aggregation, low zoom, revision changes and 
   assert.ok(fills.includes(tokens['--map-life-mixed']), 'older models retain their supplied role');
 });
 
+test('common morphology adds distinct bounded forms and surface patterns without changing legacy marks', () => {
+  for (const plant of [true, false]) {
+    const forms = plant ? ['rosette', 'broadleaf', 'needleleaf', 'floating', 'beaded', 'plume']
+      : ['general', 'sail', 'burrower', 'ambush', 'filter'];
+    for (const water of [false, true]) {
+      const silhouettes = new Set();
+      for (const form of forms) for (const pattern of ['plain', 'mottled', 'banded']) {
+        const calls = [];
+        const context = new Proxy({}, { get: (target, key) => target[key] ?? ((...args) => calls.push([key, ...args])) });
+        const morphology = { form, pattern, social: 'solitary' };
+        if (plant) drawPlantShape(context, 0, water, 'detail', morphology);
+        else drawAnimalShape(context, 0, water, { role: 'grazer', size: 1, mobile: true, morphology }, 0.8, 'detail');
+        silhouettes.add(JSON.stringify(calls));
+        assert.ok(calls.length < 85, 'new forms retain bounded drawing work');
+        assert.equal(calls.filter(([method]) => method === 'fill').length, 1);
+        for (const [method, ...args] of calls) {
+          const limit = plant ? 1.25 : 2;
+          if (['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo'].includes(method)) {
+            for (let i = 0; i < args.length; i += 2) assert.ok(Math.hypot(args[i], args[i + 1]) <= limit, `${form} path bounds`);
+          } else if (method === 'ellipse') {
+            const [x, y, rx, ry, angle] = args;
+            for (let i = 0; i < 64; i += 1) {
+              const a = i * Math.PI / 32, dx = rx * Math.cos(a), dy = ry * Math.sin(a);
+              assert.ok(Math.hypot(x + dx * Math.cos(angle) - dy * Math.sin(angle),
+                y + dx * Math.sin(angle) + dy * Math.cos(angle)) <= limit, `${form} silhouette bounds`);
+            }
+          }
+        }
+      }
+      assert.equal(silhouettes.size, forms.length * 3, 'each form and marking has a distinct silhouette or engraving');
+    }
+  }
+});
+
+test('morphology survives display aggregation and each descriptor invalidates cached marks', () => {
+  const { map, calls, fills } = renderer();
+  const world = fixture();
+  const forms = ['rosette', 'broadleaf', 'needleleaf', 'floating', 'beaded', 'plume'];
+  const life = freezeDeep({ runId: 'morphology', revision: 1, hexes: [{ hexId: 10, population: 6,
+    species: [], display: forms.map(form => ({ role: 'producer', habitat: 'land', size: 1,
+      population: 1, morphology: { form, pattern: 'plain', social: 'solitary' } })),
+  }] });
+  const before = JSON.stringify(life);
+  map.draw(world, { life });
+  assert.equal(fills.filter(colour => colour === tokens['--map-life-plant']).length, 6,
+    'equally sized, equally coloured forms each retain a representative');
+  const geometry = calls.filter(([method]) => method === 'ellipse');
+  assert.ok(geometry.some(([, , , rx, ry]) => rx > 1 && ry > 0.7), 'floating pad survives aggregation');
+  assert.ok(geometry.some(([, , , , ry]) => ry === 0.18), 'rounded needle form survives aggregation');
+  let revision = 2;
+  for (const [field, value] of [['form', 'beaded'], ['pattern', 'mottled'], ['social', 'clustered']]) {
+    const changed = { ...life, revision: revision++, hexes: [{ ...life.hexes[0],
+      display: life.hexes[0].display.map(group => ({ ...group, morphology: { ...group.morphology, [field]: value } })),
+    }] };
+    fills.length = 0;
+    map.draw(world, { life: changed });
+    assert.ok(fills.length, `${field}-only changes repaint`);
+    fills.length = 0;
+    map.draw(world, { life: changed, motionTime: 100 });
+    assert.equal(fills.length, 0, 'fixed populations retain their frame');
+  }
+  assert.equal(JSON.stringify(life), before, 'rendering does not mutate frozen observations');
+});
+
+test('clustered marks keep coherent bounded motion and fixed colonies remain still', () => {
+  const slots = lifeMarkerPositions(10);
+  const clustered = { role: 'grazer', mobile: true, size: 0.7, morphology: { social: 'clustered' } };
+  const solitary = { ...clustered, morphology: { social: 'solitary' } };
+  const meanSeparation = marker => {
+    const points = slots.map(slot => lifeMarkerPose(marker, slot, 1));
+    const centre = points.reduce((sum, point) => ({ x: sum.x + point.x / points.length,
+      y: sum.y + point.y / points.length }), { x: 0, y: 0 });
+    return points.reduce((sum, point) => sum + Math.hypot(point.x - centre.x, point.y - centre.y), 0) / points.length;
+  };
+  assert.ok(meanSeparation(clustered) < meanSeparation(solitary) * 0.6);
+  for (let time = 0; time < 40; time += 0.25) {
+    const poses = slots.map(slot => lifeMarkerPose(clustered, slot, time));
+    assert.ok(poses.every(pose => Math.hypot(pose.x, pose.y) < 0.66));
+    assert.ok(poses.every(pose => pose.heading === poses[0].heading), 'one cosmetic heading for the group');
+  }
+  for (const slot of slots) {
+    const colony = { ...clustered, role: 'producer', mobile: false };
+    assert.deepEqual(lifeMarkerPose(colony, slot, 0), lifeMarkerPose(colony, slot, 200));
+  }
+});
+
 test('independent trend scales retain small living counts alongside large extinct counts and occupied areas', () => {
   const samples = freezeDeep([{ day: 2, species: 0, extinctSpecies: 0, occupiedHexes: 0 },
     { day: 3, species: 2, extinctSpecies: 400, occupiedHexes: 1000 },

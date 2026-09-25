@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { generateWorld, setDay } from '../src/simulation/world.js';
-import { createLifeModel } from '../src/simulation/life/v3/model.js';
+import { createLifeModel } from '../src/simulation/life/v4/model.js';
 import { createSave, restoreSave } from '../src/ui/save-state.js';
 import { chooseTheme } from './ui-helpers.js';
 

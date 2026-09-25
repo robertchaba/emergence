@@ -3,9 +3,9 @@
 This is the semantic contract `life/vN/` implementations must expose to UI
 and rendering. It defines meanings and required queries, not JavaScript function
 signatures, private state layouts, a worker protocol or a save-file schema.
-V1, V2 and V3 implement these semantics; the active API is documented in
-[v3/README.md](v3/README.md), with preserved implementations in
-[V2](v2/README.md) and [V1](v1/README.md). The [ownership rules](README.md) apply to every version.
+V1, V2, V3 and V4 implement these semantics; the active API is documented in
+[v4/README.md](v4/README.md), with preserved implementations in
+[V3](v3/README.md), [V2](v2/README.md) and [V1](v1/README.md). The [ownership rules](README.md) apply to every version.
 
 ## Commands and simulated time
 
@@ -245,7 +245,7 @@ format and rules revision; V1/V2 continuation is intentionally rejected.
 
 ## Optional species census by energy acquisition — 2026-09-20
 
-The active V3 model supplies `counts.speciesByEnergy` and completed-day
+V3 and V4 supply `counts.speciesByEnergy` and completed-day
 `history[].speciesByEnergy`, with integer `photosynthesis`, `plantFeeding`,
 `animalFeeding`, and `other` counts. These are disjoint counts of living species,
 not organisms, occupied hexes, candidate directions, or measured energy intake.
@@ -262,7 +262,7 @@ present, and continue accepting history records without the extension.
 
 ## Optional tree of life and gene history — 2026-09-21
 
-The active V3 model exposes a separate on-demand tree observation identifying
+V3 and V4 expose a separate on-demand tree observation identifying
 the current run, completed day and revision. It includes every recorded life
 introduction, each with its own run ID, date bounds and complete species list.
 Species IDs are scoped to that introduction. Each species supplies its stable
@@ -356,5 +356,31 @@ An absent share is not zero: the hex may have unused light, or the model may not
 provide this optional observation. UI shows percentages only when supplied and
 formats them for the locale; it never infers saturation from rounded percentages,
 population sizes, genes or broad roles. Full, compact and hex inspection queries
-use the same revision and meaning. The active V3 model supplies this extension;
+use the same revision and meaning. V3 and V4 supply this extension;
 preserved V1/V2 observations remain unchanged.
+
+
+## V4 expression and illustrative morphology — 2026-09-25
+
+V4 retains V3's established-species, candidate, census, light-share, compact
+inspection and gene-history meanings. Its 40-trait catalogue belongs to V4;
+consumers translate described trait keys rather than inspecting private genomes.
+Sexual/social support and stress-dependent activity affect model calculations,
+not the definition of organism or species counts. No additional command or
+common ecological rule is introduced.
+
+Display groups may supply `morphology: { form, pattern, social }`, a detached
+model-derived description. `form` is one of `rosette`, `broadleaf`, `needleleaf`,
+`floating`, `beaded`, `plume`, `general`, `sail`, `burrower`, `ambush`, or `filter`;
+`pattern` is `plain`, `mottled`, or `banded`; `social` is `solitary` or `clustered`.
+These are broad illustrative traits, not species names or measured anatomy.
+Each group still represents a partition of the same integer census. Morphology
+neither adds organisms nor indicates an individually tracked position or group.
+
+Rendering can choose geometry and cosmetic spacing from this description, using
+resolved theme tokens and existing marker budgets. It cannot infer morphology
+from trait arrays or mutate state. Missing/unknown descriptions retain the
+renderer fallback. Descriptions take part in display grouping and cache identity
+so an accepted expression change becomes visible at the completed revision.
+V4 saves require their own model/rules/checkpoint identity; V3 data is never
+silently interpreted as a 40-gene genome.

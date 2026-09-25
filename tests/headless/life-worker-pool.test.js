@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { workerFixture } from '../fixtures/life-workers.js';
-import { restoreLifeModel } from '../../src/simulation/life/v3/model.js';
-import { evaluateObservationJobs } from '../../src/simulation/life/v3/observation-jobs.js';
+import { restoreLifeModel } from '../../src/simulation/life/v4/model.js';
+import { evaluateObservationJobs } from '../../src/simulation/life/v4/observation-jobs.js';
 import { createLifeWorkerPool } from '../../src/ui/life-worker-pool.js';
 
 const { world, checkpoint } = workerFixture();

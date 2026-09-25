@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Local light shares and a steady notebook scrollbar — 2026-09-25.**
+**Current: V4 evolutionary tradeoffs and trait-informed map marks — 2026-09-25.**
+Decision 078 activates V4, preserving V3 and adding 18 genes, stronger sexual
+reproduction and sharper competition for existing resources.
+
+**Local light shares and a steady notebook scrollbar — 2026-09-25.**
 Decision 077 shows photosynthetic light shares only on fully utilized hexes and
 keeps the notebook's vertical scrollbar space present.
 
@@ -4021,3 +4025,136 @@ Limits: these percentages describe V3's existing abstract photosynthetic resourc
 budget, not measured irradiance or a scientifically calibrated canopy. Independently
 rounded percentages may not visibly sum to exactly 100%. No biological balancing
 claim follows from the interface and deterministic allocation checks.
+
+
+## 078 — V4 evolutionary tradeoffs and visible expression — 2026-09-25
+
+The user requested a new V4 while emphasizing that V3 already unfolds well.
+The main scope is 15–20 new genes and corresponding map variants; stronger
+sexual reproduction and earlier competitive replacement are secondary tuning.
+The later clarification explicitly favors displacement by better-adapted species
+over making the whole environment harsher. The approximate diversity target is
+60–70 living species near day 15,000 in worlds previously reaching about 100.
+It is an observational aim, not a cap, extinction schedule or guaranteed outcome.
+
+**Supersedes V3 as the active browser model in 046/064.** V4 independently copies
+V3's population representation, public commands, diagnostic hooks, compact/query
+observations, complete lineage history and deterministic worker path. All V1/V2/V3
+implementation and research files remain preserved. No model imports another
+model. Physical geography, climate, calendar, biological turn cadence, playback
+speed meanings, population counting and common query boundaries are unchanged.
+V4 identifies `v4-populations-1` and `emergence-life-v4-checkpoint-1`. The browser
+starts/restores V4 only; older model saves are explicitly incompatible rather than
+silently gaining new loci and continuing under different rules.
+
+### Genes, reproduction and actual competitors
+
+Eighteen reversible 0–3 loci bring the total to 40: leaf area, shade tolerance,
+deep roots, waxy cuticle, buoyancy, propagule dispersal, camouflage, warning
+signals, ambush, cooperative hunting, herding, burrowing, filter feeding, dormancy,
+insulation, offspring investment, mate attraction and clonal growth. Every locus
+has maintenance/construction costs and contextual benefits or losses. For example,
+large leaves need moisture and expose tissue, shade traits cost open-site growth,
+filtering uses only existing small aquatic producers, and cooperation needs local
+conspecific support. No nutrient pool, new physical field, predefined species,
+biome, guaranteed succession, individual social group or explicit recombination
+system is introduced. The full formulas and limitations live in
+[`v4/docs/RULES.md`](../src/simulation/life/v4/docs/RULES.md) and the
+[40-gene catalogue](../src/simulation/life/v4/genes/docs/GENES.md).
+
+Sexual reproduction receives a broad paid recruitment advantage at ordinary local
+densities, with a sparse-founder disadvantage and costly mate attraction. Clonal
+growth offers a narrower stationary photosynthetic strategy with local-space,
+dispersal and crowding tradeoffs. Funded surplus still limits births. Sexual
+birth statistics now count actual births from a sexual established phenotype;
+this observation fix consumes no extra randomness.
+
+Candidate intake retains V3's rare resource probes and uses resident conspecific
+support for within-species social effects. For hunted consumers only, a second
+actual-density phenotype counterfactual estimates predation hazard; that hazard,
+not its food, feeds the diagnostic demographic score for both parent/candidate.
+This exposes selectable defenses that a one-organism prey probe masked with
+zero/full capped withdrawal, while preserving V3's larger-body competitive gains.
+New-lineage resource probes remain rare and use prospective founding-density
+social support as an explicitly diagnostic estimate. Actual community dynamics
+and transfer checks still use real counts and finite allocations. These scoring
+approximations add neither carriers nor food and do not change V3.
+
+V3's light budgets and background/starvation mortality remain intact. The small
+competition change raises per-organism light/grazing/capture merit to exponent
+1.2 during capped allocation. Population remains linear; supply and per-organism
+caps remain finite. Ample resources retain the prior allocation, while crowding
+transfers a greater share to better-adapted rivals. No global density tax or
+species-count-dependent mortality is used. Source effort, protected tissue,
+conversion losses and the cap on prey withdrawal remain in force.
+
+The new producer machinery revealed a costly intermediate on the path to viable
+consumer strategies. Two of the existing eight exploratory trial slots can now
+traverse two seeded legal mutations at distinct loci. Only the endpoint is scored;
+the intermediate is never a population or recorded accepted genome. Direction
+budget, persistence, ecological novelty, incumbent comparisons, actual-density
+founding tests and population-conserving transfers still govern acceptance. This
+is bounded lookahead for interacting genes, not a scripted diet transition or
+extra unlimited mutation search. All changes use the saved biological PRNG.
+
+### Model-owned expression and presentation
+
+V4 display groups add optional `morphology: {form, pattern, social}` descriptors,
+which participate in grouping and detached observations. Trait interpretation
+stays inside V4. Rendering consumes those descriptors without importing genomes
+or implementing ecology, and keeps its existing size bands, marker limits, zoom
+fallbacks and cosmetic clock. Six rounded producer forms, four specialist
+consumer forms, mottled/banded details and clustered spacing make new expression
+visible. Missing descriptors preserve earlier visual variants. Shapes represent
+populations, not tracked individuals or a promise of exact anatomy.
+
+All 18 gene names and tradeoff descriptions are available in English and Polish
+in the notebook, possible directions and gene-history tree. Existing computed
+theme tokens supply every colour; no parallel palette, type scale, runtime
+dependency or generated bitmap asset is added. Tree/navigation, focus and
+language changes retain their existing state semantics.
+
+The active browser workers, helper/fallback scorer, save adapter, lineage fixtures
+and browser benchmarks explicitly use V4. Version-specific V3 tests retain V3
+fixtures and preserved rules. The pre-existing package version change to 1.0.4
+is retained and its lockfile metadata aligned; dependency versions are unchanged.
+
+### Validation and limits
+
+`npm run build` and `npm test` passed: 212 headless/rendering checks and 157
+Chromium checks, with one existing skipped duplicate. New checks cover all 40
+mutation coordinates, each new gene's conditional benefit/cost, finite source
+allocation and partition invariance, sexual reproduction, diagnostic predation,
+larger-body selection, bounded two-step paths, real-density founding, dispersal,
+checkpoint continuation, worker equivalence, morphology grouping and census
+reconciliation. Active browser checks cover EN/PL, saves, lazy inspection, gene
+history, source/production deployment and development/debug worker startup.
+
+Morphology galleries and actual restored notebook/tree views were inspected in
+both themes at desktop/phone widths. Labels wrap, focus remains visible and the
+new marks fit their bounds. `git diff --check`, scope/dependency review and
+`npm ls --omit=dev` passed. No preserved engine implementation changed.
+
+The [V4 validation record](../src/simulation/life/v4/docs/VALIDATION.md) distinguishes
+controlled mechanism checks, seeded evolutionary panels and browser presentation
+checks. A passing browser test does not establish ecological calibration, a
+universal species-count target or cross-browser numerical equivalence.
+
+
+The retained competition exponent is **1.20**. Two same-world/same-biological-seed
+comparisons at day 15,000 produced 63 living/59 extinct and 90 living/51 extinct
+species, versus V3's 92/87 and 95/57. Sexual species numbered 54/63 and 81/90;
+all 18 added loci appeared among extant species in the river-start run. Grazers,
+predators and larger body sizes emerged without supplied consumer lineages. A
+third run using V4's normal browser seed produced 105 living/62 extinct species,
+77 sexual species, 53 pure grazers and five pure predators. These runs support
+new trait expression and common sexuality, but do not establish a universal
+60–70-species range or earlier extinct-over-living crossover by that day.
+The direct resource-competition fixture does demonstrate earlier local decline
+of the less-adapted competitor with unchanged ample-resource behavior.
+
+A stronger 1.30 allocation exponent was explored only in an isolated temporary
+copy. It was not adopted. The user tested the current 1.20 implementation and
+explicitly reported being very happy with its unfolding and appearance, so the
+validated workspace behavior is retained. Remaining trajectory variability is
+recorded as a limitation, not addressed with forced species counts or extinctions.

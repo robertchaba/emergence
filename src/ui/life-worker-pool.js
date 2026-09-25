@@ -1,4 +1,4 @@
-import { evaluateObservationJobs, observationJobCost } from '../simulation/life/v3/observation-jobs.js';
+import { evaluateObservationJobs, observationJobCost } from '../simulation/life/v4/observation-jobs.js';
 
 /** One coordinator plus at most three helpers, created only for substantial
  * read-only work. Worker lifetime is bounded by the owning life worker. */

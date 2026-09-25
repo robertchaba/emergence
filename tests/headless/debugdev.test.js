@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createDebugProfiler, validateDebugConfig, PHASES } from '../../src/ui/debugdev-profiler.js';
-import { createLifeModel, restoreLifeModel } from '../../src/simulation/life/v3/model.js';
-import { evaluateObservationJobs } from '../../src/simulation/life/v3/observation-jobs.js';
+import { createLifeModel, restoreLifeModel } from '../../src/simulation/life/v4/model.js';
+import { evaluateObservationJobs } from '../../src/simulation/life/v4/observation-jobs.js';
 import { workerFixture } from '../fixtures/life-workers.js';
 
 const defaults = JSON.parse(readFileSync(new URL('../../degugdev-config.json', import.meta.url)));
@@ -49,7 +49,7 @@ test('debug timing aggregates inclusive calls and separates measurement from out
   assert.throws(() => validateDebugConfig({ ...defaults, reportIntervalMs: 0 }), /reportIntervalMs/);
 });
 
-test('debug phases preserve exact V3 state, observations, async jobs and continuation', async () => {
+test('debug phases preserve exact V4 state, observations, async jobs and continuation', async () => {
   const { world, checkpoint } = workerFixture();
   let clock = 0;
   const profiler = createDebugProfiler(allConfig(), { now: () => ++clock, logger: {

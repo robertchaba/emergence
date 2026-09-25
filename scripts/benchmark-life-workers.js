@@ -3,7 +3,7 @@ import { readdir } from 'node:fs/promises';
 import { preview } from 'vite';
 import { chromium } from '@playwright/test';
 import { generateWorld } from '../src/simulation/world.js';
-import { createLifeModel } from '../src/simulation/life/v3/model.js';
+import { createLifeModel } from '../src/simulation/life/v4/model.js';
 import { createSave } from '../src/ui/save-state.js';
 import { workerFixture } from '../tests/fixtures/life-workers.js';
 import { exerciseLifeWorker, lifeWorkerHarness } from '../tests/fixtures/browser-life-worker.js';

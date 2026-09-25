@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { lineageFixture } from './fixtures/lineage.js';
 import { createSave, restoreSave } from '../src/ui/save-state.js';
-import { createLifeModel } from '../src/simulation/life/v3/model.js';
+import { createLifeModel } from '../src/simulation/life/v4/model.js';
 import { chooseTheme } from './ui-helpers.js';
 
 const { world, state } = lineageFixture();

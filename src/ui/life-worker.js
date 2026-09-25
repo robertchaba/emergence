@@ -1,5 +1,5 @@
 // Browser execution boundary. The life model itself never reads browser services.
-import { createLifeModel } from '../simulation/life/v3/model.js';
+import { createLifeModel } from '../simulation/life/v4/model.js';
 import { createSave, restoreSave } from './save-state.js';
 import { createLifeWorkerPool } from './life-worker-pool.js';
 import { debug } from './debugdev.js';

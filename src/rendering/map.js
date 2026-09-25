@@ -45,8 +45,11 @@ function lifeSummary(observation) {
       // These are display bands, never species or ecological classifications.
       const band = size < 0.35 ? 0 : size < 0.7 ? 1 : 2;
       const colour = lifeMarkerColour({ ...display, role, mobile });
-      const key = `${role}:${colour}:${habitat}:${mobile}:${band}`;
-      const group = groups.get(key) ?? { key, role, colour, habitat, mobile, plant, band, population: 0, weightedSize: 0 };
+      // Copy only common presentation descriptors. Genomes stay inside models.
+      const morphology = display.morphology ? { form: display.morphology.form,
+        pattern: display.morphology.pattern, social: display.morphology.social } : undefined;
+      const key = `${role}:${colour}:${habitat}:${mobile}:${band}:${JSON.stringify(morphology) ?? ''}`;
+      const group = groups.get(key) ?? { key, role, colour, habitat, mobile, morphology, plant, band, population: 0, weightedSize: 0 };
       group.population += display.population;
       group.weightedSize += size * display.population;
       groups.set(key, group);
@@ -64,7 +67,8 @@ function lifeSummary(observation) {
       for (let sample = 0; sample < 16 && markers.length < limit; sample += 1) {
         for (const group of groups) {
           if (sample < group.samples && markers.length < limit) markers.push({ role: group.role,
-            colour: group.colour, habitat: group.habitat, size: group.size, mobile: group.mobile });
+            colour: group.colour, habitat: group.habitat, size: group.size, mobile: group.mobile,
+            ...(group.morphology ? { morphology: group.morphology } : {}) });
         }
       }
       return markers;
