@@ -2,7 +2,14 @@
 
 ## Status
 
-**Current: Rounded plant marks — 2026-09-25.** Decision 074 replaces thin
+**Current: Compact playback and requested inspection — 2026-09-25.** Decision 076
+applies four execution optimizations while preserving biological timing and rules.
+
+**Configurable development profiling — 2026-09-25.** Decision 075 adds
+`npm run debugdev`, detailed phase reports and independent measurement/output
+controls without changing biological outcomes.
+
+**Rounded plant marks — 2026-09-25.** Decision 074 replaces thin
 plant silhouettes and straight vein strokes with broad rounded forms.
 
 **Restore playback after Tree of life — 2026-09-24.** Decision 072
@@ -3721,3 +3728,217 @@ map fixtures in light/dark at desktop/phone widths; shapes remain compact and
 labels fit. Existing browser checks cover focus, disabled controls, assets and
 layout overflow. Scope/dependency review and `git diff --check` passed. These
 checks validate presentation, not ecological behavior.
+
+## 075 — Configurable development profiling — 2026-09-25
+
+The requested `npm run debugdev` starts Vite in `debugdev` mode. Root
+`degugdev-config.json` retains the requested filename and controls the master
+switch, reporting interval, measurement groups/individual phases, output groups/
+individual phases, startup catalogue, calculation descriptions and grouping.
+Configuration is validated at server startup; changes require a restart/reload.
+Normal development, direct static-source hosting and production leave profiling
+inactive. Production bundling removes the browser profiler and its configuration;
+optional neutral model hooks remain available to headless tooling.
+
+### Ownership and measurement
+
+V3 accepts optional entry/exit listeners for execution phases. Listeners receive
+booleans, no authoritative state, and their return values are ignored. Listener
+exceptions are contained. No simulation clock, browser API, configuration import,
+console output, random draw or saved diagnostic field was added. Enabled phases
+wrap existing model functions once at construction; disabled ones retain their
+original functions. The ecology module emits optional prepare/light/demand/
+grazing/hunting/rate boundaries. The helper job executor passes only locally
+constructed listeners, never functions in worker messages. V1/V2 are unchanged.
+
+UI adapters own clock reads and bounded per-phase aggregates. Separate named UI,
+coordinator, helper and temporary generation contexts report real calls, total,
+mean and maximum elapsed milliseconds and explanations. The latest workload comes
+from the common completed observation: day/revision/turn, organisms, living/
+extinct species, occupied hexes, population pools and candidate directions.
+Reported advancement per window includes idle and instrumentation time. Ordinary
+UI introduction/advance round trips are timed separately from synchronous reply
+posting, which cannot measure full structured-clone delivery latency.
+
+Broad measurement is enabled by default. Frequent climate, gene, ecological and
+score/route/cache detail is optional to limit observer overhead. Output switches
+are independent of measurement switches; neither skips biological calculations.
+Rows are inclusive, sorted by total time, and explicitly warn against summing
+nested phases or overlapping worker windows. Timings include scheduling/GC stalls
+and profiler overhead; they are not exclusive CPU samples or device-independent
+benchmarks. Canvas instrumentation does not include deferred browser paint/layout.
+No complete memory profiler, per-organism logging, giant event buffer or timing
+assertions were added. The temporary generation worker flushes before replying;
+long-lived contexts report periodically, and the main page flushes on pagehide.
+
+Save export now takes the completed day from its already-created checkpoint,
+avoiding an otherwise unnecessary full `observe()` copy/query. An export still
+runs in the existing ordered command queue. Rules revision, ecological
+coefficients, genes, checkpoint format and observation contents are unchanged.
+
+### Performance direction
+
+The current code and decision 069 support prioritizing on-demand estimated
+candidate ranges, eligible/zero-demand feeding passes, per-species population
+indexes, cached stable gene descriptions and compact observations/less frequent
+notebook rendering. These recommendations and the measurements needed to assess
+them are documented in `docs/PERFORMANCE.md`. No biological turn is skipped and
+no additional approximation, species cap or worker-count change is introduced.
+Large general speedups are not claimed for this profiling step.
+
+### Validation and limitations
+
+Focused checks compare complete states and observations with every diagnostic
+phase enabled, continued/restored runs, detached helper jobs and deliberately
+throwing listeners. Fake-clock checks cover timing aggregation, error completion,
+disabled clock reads, independent output controls and invalid configuration.
+Real Chromium checks run the debug and normal Vite modes at desktop and phone
+widths, restore a dense save, step through real coordinator/helper work, inspect
+reports and verify normal development silence. They capture both themes and
+check overflow.
+
+Final verification: `npm run build` and `npm test` passed, including all headless
+checks and 149 Chromium checks (one existing desktop touch duplicate skipped).
+Light/dark screenshots at desktop/phone widths were inspected. A separate real
+`npm run debugdev -- --port 5175 --strictPort` session loaded setup and the atlas
+and produced UI, generation and coordinator reports without page errors. Static
+subdirectory/source-worker tests passed; the production assets contain no profiler
+catalogue/configuration strings. `git diff --check`, dependency review and
+`npm ls --omit=dev` passed; runtime dependencies remain empty.
+
+A local Node comparison with an archived pre-change model used the same dense
+twelve-species, 1,824-pool fixture, restored before each four-day advancement and
+complete serial observation. After three warmups and seven interleaved samples,
+median advancement was 13.98 ms before / 13.09 ms after, and observation was
+235.12 ms before / 227.71 ms after, with diagnostics disabled. Every checkpoint
+and observation matched exactly. This small sample found no disabled-mode
+regression; its variation does not establish a speedup. It also reinforces that
+full observations can dominate this artificial workload. It excludes browser
+transport/rendering and is not a claim about an evolved world or another device.
+
+## 076 — Compact playback, requested details and execution reuse — 2026-09-25
+
+The user approved all four priorities in 075, then explicitly chose to keep
+biological timing and mutation rules unchanged. The proposed half-frequency
+biology and increased mutation likelihood remain deferred. V3 rules
+`v3-populations-5`, three turns per ten days, eight mutation trials per assessment,
+twelve-turn assessment cadence, seeded random stream and checkpoint format remain
+unchanged. Existing compatible saves continue without migration.
+
+### Model work and observations
+
+V3 now indexes populations by species, lazily rebuilding the index whenever the
+population array is replaced. Index rows preserve original order and references;
+count/reserve edits during branching remain visible, and the next merged array
+invalidates the index before another species lookup. Genome descriptions use a
+WeakMap keyed by established/candidate genome identity. Accepted adaptations and
+candidate improvements already replace genomes rather than mutate them. Public
+observations remain detached; callers cannot mutate either cache or state.
+
+Grazing and hunting stop when no positive demand remains. A zero-demand entry
+returns neutral allocation inputs without evaluating canopy access or capture.
+This does not remove an active competitor, reorder sources/active allocation,
+change food caps, introduce an approximation or consume a different random draw.
+
+`observe(options)` and `observeAsync(execute, options)` retain their earlier full
+output by default. The optional `detail: summary` projection includes all current
+counts, per-hex census/display groups, species identities/populations/locations,
+statistics and history. Species summary descriptors contain model-derived size
+and enabled acquisition systems. It omits repeated traits/variants/ranges; earlier
+attempts carry their run/date identities while the tree query retains full history.
+Optional `speciesId` adds that species' inherited traits, and `includeTendencies`
+adds its estimated ranges. Detail-level/count metadata distinguish unrequested
+information from empty data. The common contract documents these extensions.
+
+Collapsed observations do not construct ecological communities or candidate score
+jobs. Selected-range queries prepare only that species' jobs, keeping the existing
+adaptive helper threshold and deterministic scoring order. Full observations still
+support existing benchmarks and headless callers. The model caches one full and
+one requested projection per completed revision; changing inspection does not
+retain an unbounded collection of snapshots. Both caches invalidate at the same
+existing completed-state boundaries.
+
+### Browser scheduling and inspection
+
+This supersedes 069's use of full observations for ordinary browser playback.
+Initialize, restore and playback request compact observations. A read-only
+`observe` worker command loads a changed selection without advancing time. The
+notebook requests genes for its expanded species and ranges only while Possible
+adaptations is open. EN/PL loading phrases identify pending detail; no disabled
+feature is presented as functional and no absent gene/range result is fabricated.
+
+Every reply still contains one complete revision. UI replaces the observation as
+a whole rather than merging an asynchronous detail reply into a newer census.
+The existing single outstanding life command and worker command queue retain
+ordering; world/session identity discards replaced workers. Selection can change
+while a request is in flight: its reply does not change the user's selection,
+and the latest desired inspection is requested after it completes. Closing a
+species or adaptation panel stops requesting that detail on following updates.
+The renderer consumes the same counts/locations/display groups and knows nothing
+about model internals or cache layouts.
+
+Automatic atlas playback requests at most one batch per 100 ms. It accumulates
+explicit elapsed simulated days into the existing bounded five-day batch; every
+required biological update still executes and the 1×–10× targets are unchanged.
+Paused steps and explicit inspection do not wait for this cadence. Camera and
+cosmetic animation redraw independently. The notebook updates from the same
+completed observation as the map and reuses the chart for an unchanged
+run/revision/day/locale, avoiding redraws on inspection-only replies and controls.
+
+### Validation and performance
+
+An archived copy of the code immediately before this step was compared with the
+optimized model at equal days. Complete checkpoints and full observations matched
+exactly for a dense twelve-species fixture at days 1/4/41/160, and for two seeded
+small worlds with both land and water introductions at days 40/360/720/1440.
+This includes population reserves, statistics, random state and candidate history.
+It establishes equality for these scenarios in the same Node runtime, not a
+cross-browser floating-point guarantee or ecological calibration.
+
+New focused checks cover compact/full census equivalence, missing-detail flags,
+no scoring/helper work for summary/genes-only queries, selected-only jobs, public
+snapshot mutation, description reuse, cache invalidation, async and restored
+continuation. Real-browser checks hold an inspection reply while the user selects
+another species, then verify correct lazy detail, EN/PL updates, batching and exact
+same-browser checkpoint continuation after saving. The existing full-worker and
+helper failure checks retain their original coverage. Debug-mode tests open a
+larger selected range to exercise real helpers now that collapsed playback does
+not need them.
+
+The new `scripts/benchmark-life-observations.js` compares actual production-worker
+full/collapsed/genes/ranges paths from identical state. It reports full request/reply
+latency and observation bytes while verifying checkpoints and requested data.
+Restore and Canvas/DOM work are outside its timed interval. The following local
+Chromium measurements use the same optimized build for every mode, isolating
+requested-detail savings rather than measuring all four changes independently.
+Each cell shows the range across two passes with reversed mode order. The evolved
+world starts at day 4,320 and continues forty five-day batches. The dense fixture
+restores before each four-day batch, with three warmups and fifteen timed samples.
+
+| Workload / requested detail | Total timed work | Median request | Final observation bytes |
+| --- | ---: | ---: | ---: |
+| Evolved water / full | 672.6–684.2 ms | 14.5–14.8 ms | 364,038 |
+| Evolved water / collapsed | 370.9–385.4 ms | 6.9–7.2 ms | 134,415 |
+| Evolved water / selected genes | 373.3–376.0 ms | 6.8–6.9 ms | 142,383 |
+| Evolved water / selected ranges | 397.1–407.8 ms | 7.5–7.8 ms | 145,998 |
+| Dense fixture / full | 1,644.8–1,755.4 ms | 101.2–102.2 ms | 858,523 |
+| Dense fixture / collapsed | 242.4–248.7 ms | 15.9–16.6 ms | 394,572 |
+| Dense fixture / selected genes | 253.7–261.5 ms | 15.6–17.1 ms | 424,404 |
+| Dense fixture / selected ranges | 488.4–521.5 ms | 31.9–33.0 ms | 428,055 |
+
+Collapsed requests took about 43–46% less total time in the evolved workload and
+85–86% less in the dense fixture, with final serialized observations 63% and 54%
+smaller respectively. Full dense observations used three helpers; these selected
+queries stayed below the helper threshold. Every mode produced identical final
+checkpoints, census/map output and requested detail. These two local workloads do
+not establish a whole-application or universal speed multiplier. Open adaptation
+panels still incur their selected range work; advancement, rendering and growing
+species/gene counts remain costs.
+
+Final verification: `npm run build` and `npm test` passed with 170 headless checks
+and 151 Chromium checks; one existing desktop duplicate of the touch check was
+skipped. The browser suite covers normal/debug Vite startup, both viewport sizes,
+both themes, EN/PL, lazy inspection, tree navigation, save/restore, production and
+source deployment. Light/dark desktop and phone screenshots were inspected.
+`git diff --check` passed; runtime dependencies remain empty, and the simulation
+keeps browser services and clocks outside its boundary.

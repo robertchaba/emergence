@@ -7,6 +7,7 @@ import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
 import { recordGenome, validateLineage, observeTree, inspectGeneHistory } from './lineage.js';
 import { detachObservationJobs } from './observation-jobs.js';
+import { traceCalls } from './diagnostics.js';
 
 export const MODEL_ID = 'v3';
 export const RULES_REVISION = 'v3-populations-5';
@@ -48,7 +49,7 @@ function worldIdentity(world) {
 
 /** Sparse population model. A species has one expressed genome; candidates are
  * hypotheses about adaptation, never additional organisms or carrier cohorts. */
-export function createLifeModel(world, { seed = `${world.seed}:life-v3`, runId } = {}) {
+export function createLifeModel(world, { seed = `${world.seed}:life-v3`, runId } = {}, diagnostics = {}) {
   validateDay(world.day);
   if (typeof seed !== 'string' && (typeof seed !== 'number' || !Number.isFinite(seed))) throw new TypeError('Invalid life seed.');
   const identity = worldIdentity(world);
@@ -59,10 +60,10 @@ export function createLifeModel(world, { seed = `${world.seed}:life-v3`, runId }
     day: world.day, startDay: world.day, revision: 0, introduced: false,
     biologicalTurns: 0, turnCredit: 0, species: [], populations: [],
     nextSpecies: 1, nextCandidate: 1, stats: initialStats(), history: [],
-    randomState: createRandom(seed).exportState() });
+    randomState: createRandom(seed).exportState() }, diagnostics);
 }
 
-export function restoreLifeModel(world, checkpoint) {
+export function restoreLifeModel(world, checkpoint, diagnostics = {}) {
   if (!checkpoint || checkpoint.format !== FORMAT || checkpoint.modelId !== MODEL_ID
     || checkpoint.rulesRevision !== RULES_REVISION || checkpoint.worldId !== worldIdentity(world).id) {
     throw new TypeError('Incompatible life checkpoint.');
@@ -124,10 +125,20 @@ export function restoreLifeModel(world, checkpoint) {
     pools.add(key);
   }
   createRandom(state.seed, state.randomState);
-  return buildModel(world, state);
+  return buildModel(world, state, diagnostics);
 }
 
-function buildModel(world, state) {
+function buildModel(world, state, diagnostics) {
+  const ecologyDiagnostics = Object.keys(diagnostics).some(key => key.startsWith('ecology.')) ? diagnostics : undefined;
+  const readClimate = traceCalls(climateAt, diagnostics['life.climate']);
+  const describeUncached = traceCalls(describeGenome, diagnostics['genes.describe']);
+  const descriptions = new WeakMap();
+  const describe = genome => {
+    if (!descriptions.has(genome)) descriptions.set(genome, describeUncached(genome));
+    return descriptions.get(genome);
+  };
+  const derive = traceCalls(deriveGenome, diagnostics['genes.derive']);
+  const cloneObservation = traceCalls(copy, diagnostics['observation.copy']);
   const geography = { width: world.width, height: world.height,
     climateVariability: copy(world.climateVariability ?? null),
     hexes: world.hexes.map(hex => ({ ...hex, neighbors: [...hex.neighbors] })) };
@@ -135,19 +146,36 @@ function buildModel(world, state) {
   let random = createRandom(state.seed, state.randomState);
   let environmentDay = state.day;
   let cachedObservation = null;
+  let cachedCompact = null;
   const climates = new Map();
   const phenotypes = new WeakMap();
   const geneticKeys = new WeakMap();
   const scoreCaches = new WeakMap();
   const phenotype = genome => {
-    if (!phenotypes.has(genome)) phenotypes.set(genome, deriveGenome(genome));
+    if (!phenotypes.has(genome)) phenotypes.set(genome, derive(genome));
     return phenotypes.get(genome);
   };
+
+  // Population arrays are replaced after demographic/dispersal/branching work.
+  // Keep references and iteration order; live count/reserve edits remain visible.
+  let indexedPopulations = null;
+  let populationIndex;
+  function rowsForSpecies(id) {
+    if (indexedPopulations !== state.populations) {
+      populationIndex = new Map();
+      for (const row of state.populations) {
+        if (!populationIndex.has(row.speciesId)) populationIndex.set(row.speciesId, []);
+        populationIndex.get(row.speciesId).push(row);
+      }
+      indexedPopulations = state.populations;
+    }
+    return populationIndex.get(id) ?? [];
+  }
 
   function environment(hexId) {
     if (!climates.has(hexId)) {
       const hex = geography.hexes[hexId];
-      climates.set(hexId, { ...hex, ...climateAt(geography, hex, environmentDay) });
+      climates.set(hexId, { ...hex, ...readClimate(geography, hex, environmentDay) });
     }
     return climates.get(hexId);
   }
@@ -207,7 +235,7 @@ function buildModel(world, state) {
     const key = scoreKey(genome, row, excludedSpeciesId, independentLineage);
     if (!cache.has(key)) cache.set(key, scoreSpecies(genome, environment(row.hexId), row.habitat,
       community.get(habitatKey(row)) ?? [], { population: 1, excludeSpeciesId: excludedSpeciesId,
-        independentLineage, derived: phenotype(genome) }));
+        independentLineage, derived: phenotype(genome), diagnostics: ecologyDiagnostics }));
     return cache.get(key);
   }
 
@@ -224,7 +252,7 @@ function buildModel(world, state) {
       const rows = residents.map(row => ({ speciesId: row.speciesId, population: row.count,
         habitat: row.habitat, genome: speciesById.get(row.speciesId).genome,
         derived: phenotype(speciesById.get(row.speciesId).genome) }));
-      const scores = evaluateCommunity(environment(first.hexId), first.habitat, rows);
+      const scores = evaluateCommunity(environment(first.hexId), first.habitat, rows, ecologyDiagnostics);
       residents.forEach((row, index) => {
         const score = scores[index];
         const deaths = Math.min(row.count, roundedExpectation(row.count * clamp(score.deathRate), random.next));
@@ -375,12 +403,12 @@ function buildModel(world, state) {
   }
 
   function novel(record, genome, community, branching = false) {
-    const parentRows = state.populations.filter(row => row.speciesId === record.id);
+    const parentRows = rowsForSpecies(record.id);
     for (const other of state.species) {
       if (other.extinctDay !== null || (!branching && other.id === record.id)) continue;
       if (genomeKey(other.genome) === genomeKey(genome)) return false;
       const occupied = new Map();
-      for (const row of [...parentRows, ...state.populations.filter(item => item.speciesId === other.id)]) {
+      for (const row of [...parentRows, ...rowsForSpecies(other.id)]) {
         const key = habitatKey(row);
         if (!occupied.has(key)) occupied.set(key, { ...row });
         else occupied.get(key).count += row.count;
@@ -438,7 +466,7 @@ function buildModel(world, state) {
     let community = communities();
     // Newly named species wait until the next assessment before evolving.
     for (const record of [...state.species]) {
-      const rows = state.populations.filter(row => row.speciesId === record.id);
+      const rows = rowsForSpecies(record.id);
       if (!rows.length) { record.candidates = []; continue; }
       const population = rows.reduce((sum, row) => sum + row.count, 0);
       const samples = sampleRows(rows);
@@ -542,7 +570,7 @@ function buildModel(world, state) {
             const established = previous.find(resident => resident.speciesId === '__prospective_branch__')?.population ?? 0;
             projected.push({ speciesId: '__prospective_branch__', genome: candidate.genome,
               derived: phenotype(candidate.genome), population: count + established, habitat: row.habitat });
-            if (evaluateCommunity(environment(row.hexId), row.habitat, projected).at(-1).score <= 0) continue;
+            if (evaluateCommunity(environment(row.hexId), row.habitat, projected, ecologyDiagnostics).at(-1).score <= 0) continue;
             transfers.push({ row: sourceRow, destination: row, count });
             sources.add(sourceRow); projectedPools.set(key, projected);
             break;
@@ -591,7 +619,7 @@ function buildModel(world, state) {
         variants: living.size, occupiedHexes: new Set(state.populations.map(row => row.hexId)).size });
       if (state.history.length > 180) state.history.splice(0, state.history.length - 180);
     }
-    cachedObservation = null;
+    cachedObservation = null; cachedCompact = null;
   }
 
   function introduce(hexId) {
@@ -622,7 +650,7 @@ function buildModel(world, state) {
     if (day < state.day) throw new RangeError('Life cannot advance backwards.');
     if (!state.introduced && day > state.day) {
       state.revision += day - state.day; state.day = day; environmentDay = day;
-      climates.clear(); cachedObservation = null; return;
+      climates.clear(); cachedObservation = null; cachedCompact = null; return;
     }
     while (state.day < day) {
       environmentDay = state.day + 1; climates.clear(); state.turnCredit += 3;
@@ -637,11 +665,42 @@ function buildModel(world, state) {
     }
   }
 
-  function buildObservation(community = communities()) {
+  function observationOptions(options = {}) {
+    if (options.detail === undefined || options.detail === 'full') return { detail: 'full' };
+    if (options.detail !== 'summary' || options.speciesId != null && typeof options.speciesId !== 'string'
+      || options.includeTendencies !== undefined && typeof options.includeTendencies !== 'boolean') {
+      throw new TypeError('Invalid observation detail request.');
+    }
+    return { detail: 'summary', speciesId: options.speciesId ?? null,
+      includeTendencies: options.includeTendencies ?? false };
+  }
+
+  function rangeRecords(options) {
+    if (options.detail === 'full') return state.species;
+    const record = options.includeTendencies && speciesById.get(options.speciesId);
+    return record ? [record] : [];
+  }
+
+  function cachedFor(options) {
+    return options.detail === 'full' ? cachedObservation
+      : cachedCompact?.key === JSON.stringify(options) ? cachedCompact.value : null;
+  }
+
+  function cacheResult(options, value) {
+    if (options.detail === 'full') cachedObservation = value;
+    else cachedCompact = { key: JSON.stringify(options), value };
+    return value;
+  }
+
+  function buildObservation(options, community) {
+    const compact = options.detail === 'summary';
+    const ranges = new Set(rangeRecords(options).map(record => record.id));
+    // A collapsed notebook never constructs communities or scores candidates.
+    if (!community && ranges.size) community = communities();
     const speciesRows = [];
     const hexes = new Map();
     for (const record of state.species) {
-      const rows = state.populations.filter(row => row.speciesId === record.id);
+      const rows = rowsForSpecies(record.id);
       if (!rows.length) continue;
       const derived = phenotype(record.genome);
       const locationCounts = new Map();
@@ -650,28 +709,37 @@ function buildModel(world, state) {
       for (const row of rows) locationCounts.set(row.hexId, (locationCounts.get(row.hexId) ?? 0) + row.count);
       const locations = [...locationCounts].map(([hexId, population]) => ({ hexId, population })).sort((a, b) => a.hexId - b.hexId);
       const population = rows.reduce((sum, row) => sum + row.count, 0);
-      const described = describeGenome(record.genome);
-      const variant = { id: `${record.id}-phenotype-${record.genomeRevision}`, population,
-        originDay: record.originDay, parentId: record.parentId, role: derived.role,
-        size: derived.size, cells: derived.cells, temperatureRange: [...derived.temperatureRange],
-        habitats: [...derived.habitats], traits: described, locations };
-      const traits = described.filter(trait => trait.active).map(trait => ({ key: trait.key, population,
-        expressions: [{ ...trait, population, cells: derived.cells, temperatureRange: [...derived.temperatureRange],
-          ...(derived.elevationRange ? { elevationRange: [...derived.elevationRange] } : {}),
-          ...(derived.depthRange ? { depthRange: [...derived.depthRange] } : {}), locations }] }));
-      const tendencies = record.candidates.map(candidate => {
-        const analysis = assess(record, candidate.genome, rows, community);
-        const favorable = [...new Set(analysis.evaluations.filter(item => item.candidate.score > 0
-          && item.difference >= EVOLUTION_RULES.minimumAdvantage).map(item => item.sourceRow.hexId))].sort((a, b) => a - b);
-        return { id: candidate.id, traits: describeGenome(candidate.genome),
-          changes: describeGenome(candidate.genome).filter(trait => trait.value !== record.genome[trait.key])
-            .map(trait => ({ ...trait, from: record.genome[trait.key], to: trait.value })),
-          strength: clamp(analysis.support), rangeQuality: 'estimated',
-          locations: favorable.map(hexId => ({ hexId })), roleChange: rolesDiffer(record.genome, candidate.genome),
-          advantage: analysis.maximumAdvantage, originDay: candidate.originDay };
-      });
-      speciesRows.push({ id: record.id, name: record.name, parentId: record.parentId,
-        originDay: record.originDay, extinctDay: null, population, locations, variants: [variant], traits, tendencies });
+      const described = describe(record.genome);
+      if (compact && record.id !== options.speciesId) {
+        speciesRows.push({ id: record.id, name: record.name, parentId: record.parentId,
+          originDay: record.originDay, extinctDay: null, population, locations,
+          detailLevel: 'summary', tendencyCount: record.candidates.length,
+          summary: { size: described.find(trait => trait.key === 'size'), energySources } });
+      } else {
+        const variant = { id: `${record.id}-phenotype-${record.genomeRevision}`, population,
+          originDay: record.originDay, parentId: record.parentId, role: derived.role,
+          size: derived.size, cells: derived.cells, temperatureRange: [...derived.temperatureRange],
+          habitats: [...derived.habitats], traits: described, locations };
+        const traits = described.filter(trait => trait.active).map(trait => ({ key: trait.key, population,
+          expressions: [{ ...trait, population, cells: derived.cells, temperatureRange: [...derived.temperatureRange],
+            ...(derived.elevationRange ? { elevationRange: [...derived.elevationRange] } : {}),
+            ...(derived.depthRange ? { depthRange: [...derived.depthRange] } : {}), locations }] }));
+        const tendencies = ranges.has(record.id) ? record.candidates.map(candidate => {
+          const analysis = assess(record, candidate.genome, rows, community);
+          const favorable = [...new Set(analysis.evaluations.filter(item => item.candidate.score > 0
+            && item.difference >= EVOLUTION_RULES.minimumAdvantage).map(item => item.sourceRow.hexId))].sort((a, b) => a - b);
+          const candidateTraits = describe(candidate.genome);
+          return { id: candidate.id, traits: candidateTraits,
+            changes: candidateTraits.filter(trait => trait.value !== record.genome[trait.key])
+              .map(trait => ({ ...trait, from: record.genome[trait.key], to: trait.value })),
+            strength: clamp(analysis.support), rangeQuality: 'estimated',
+            locations: favorable.map(hexId => ({ hexId })), roleChange: rolesDiffer(record.genome, candidate.genome),
+            advantage: analysis.maximumAdvantage, originDay: candidate.originDay };
+        }) : undefined;
+        speciesRows.push({ id: record.id, name: record.name, parentId: record.parentId,
+          originDay: record.originDay, extinctDay: null, population, locations, variants: [variant], traits, ...(tendencies ? { tendencies } : {}),
+          ...(compact ? { detailLevel: ranges.has(record.id) ? 'full' : 'genes', tendencyCount: record.candidates.length } : {}) });
+      }
       for (const row of rows) {
         if (!hexes.has(row.hexId)) hexes.set(row.hexId, { hexId: row.hexId, population: 0,
           species: new Map(), display: new Map() });
@@ -692,13 +760,15 @@ function buildModel(world, state) {
         .sort((a, b) => b.population - a.population || order(a.id, b.id)),
       display: [...hex.display.values()] })).sort((a, b) => a.hexId - b.hexId);
     const organisms = hexRows.reduce((sum, row) => sum + row.population, 0);
-    return { runId: state.runId, worldId: state.worldId, worldIdentity: state.worldIdentity,
+    return { ...(compact ? { detailLevel: 'summary', inspection: { speciesId: options.speciesId, includeTendencies: options.includeTendencies } } : {}),
+      runId: state.runId, worldId: state.worldId, worldIdentity: state.worldIdentity,
       generatorVersion: state.worldIdentity.generatorVersion, modelId: MODEL_ID, rulesRevision: RULES_REVISION,
       contractVersion: CONTRACT_VERSION, day: state.day, startDay: state.startDay, revision: state.revision,
       biologicalTurns: state.biologicalTurns, attempt: state.attempt,
       // Full accepted-genome logs are queried on demand, not retransmitted at playback cadence.
-      previousAttempts: state.previousAttempts.map(attempt => ({ ...attempt,
-        species: attempt.species.map(({ genomeHistory, ...record }) => record) })),
+      previousAttempts: state.previousAttempts.map(attempt => compact
+        ? { runId: attempt.runId, startDay: attempt.startDay, endDay: attempt.endDay }
+        : { ...attempt, species: attempt.species.map(({ genomeHistory, ...record }) => record) }),
       status: !state.introduced ? 'not-introduced' : organisms ? 'living' : 'extinct',
       counts: { organisms, species: speciesRows.length, speciesByEnergy: speciesByEnergy(speciesRows.map(row => row.id)), occupiedHexes: hexRows.length,
         variants: speciesRows.length, extinctSpecies: state.species.filter(record => record.extinctDay !== null).length },
@@ -719,32 +789,12 @@ function buildModel(world, state) {
         validation: 'experimental-uncalibrated' } };
   }
 
-  function observe() {
-    if (!cachedObservation) cachedObservation = buildObservation();
-    return copy(cachedObservation);
+  function observe(request) {
+    const options = observationOptions(request);
+    return cloneObservation(cachedFor(options) ?? cacheResult(options, buildObservation(options)));
   }
 
-  /** Optional execution of independent, read-only range scores. The browser
-   * transports opaque jobs; all partition contents and ecology stay in V3.
-   * No commands may overlap this query. Results never enter saved state. */
-  async function observeAsync(execute) {
-    if (cachedObservation || state.populations.length < 64
-      || !state.species.some(record => record.candidates.length)) return observe();
-    const residents = new Map();
-    for (const row of state.populations) {
-      const key = habitatKey(row);
-      residents.set(key, (residents.get(key) ?? 0) + 1);
-    }
-    const work = state.populations.reduce((sum, row) => {
-      const candidates = speciesById.get(row.speciesId).candidates.length;
-      return sum + (candidates ? candidates + 1 : 0) * (residents.get(habitatKey(row)) + 1) ** 2;
-    }, 0);
-    // Sparse communities were faster locally in browser measurements. Estimate
-    // before constructing/detaching jobs; this changes execution only.
-    if (work < 100000) return observe();
-    const revision = state.revision;
-    const runId = state.runId;
-    const community = communities();
+  function prepareObservationJobs(community, records) {
     const jobs = new Map();
     const keys = new Set();
     const add = (genome, row, excludedSpeciesId, independentLineage = false) => {
@@ -757,9 +807,9 @@ function buildModel(world, state) {
       jobs.get(location).queries.push({ key, genome, derived: phenotype(genome),
         excludeSpeciesId: excludedSpeciesId, independentLineage });
     };
-    for (const record of state.species) {
+    for (const record of records) {
       if (!record.candidates.length) continue;
-      const rows = state.populations.filter(row => row.speciesId === record.id);
+      const rows = rowsForSpecies(record.id);
       if (!rows.length) continue;
       for (const candidate of record.candidates) {
         for (const row of [...rows, ...frontierRows(record.genome, candidate.genome, rows)]) {
@@ -768,14 +818,42 @@ function buildModel(world, state) {
         }
       }
     }
+    return { jobs, keys };
+  }
+
+  /** Optional execution of independent, read-only range scores. The browser
+   * transports opaque jobs; all partition contents and ecology stay in V3.
+   * No commands may overlap this query. Results never enter saved state. */
+  async function observeAsync(execute, request) {
+    const options = observationOptions(request);
+    const records = rangeRecords(options);
+    if (cachedFor(options) || state.populations.length < 64
+      || !records.some(record => record.candidates.length)) return observe(options);
+    const requestedIds = new Set(records.map(record => record.id));
+    const residents = new Map();
+    for (const row of state.populations) {
+      const key = habitatKey(row);
+      residents.set(key, (residents.get(key) ?? 0) + 1);
+    }
+    const work = state.populations.reduce((sum, row) => {
+      const candidates = requestedIds.has(row.speciesId) ? speciesById.get(row.speciesId).candidates.length : 0;
+      return sum + (candidates ? candidates + 1 : 0) * (residents.get(habitatKey(row)) + 1) ** 2;
+    }, 0);
+    // Sparse communities were faster locally in browser measurements. Estimate
+    // before constructing/detaching jobs; this changes execution only.
+    if (work < 100000) return observe(options);
+    const revision = state.revision;
+    const runId = state.runId;
+    const community = communities();
+    const { jobs, keys } = prepareObservationJobs(community, records);
     // The executor receives detached values, including genomes and geography.
-    const results = await execute(detachObservationJobs([...jobs.values()]));
+    const detach = traceCalls(detachObservationJobs, diagnostics['observation.detach']);
+    const results = await execute(detach([...jobs.values()]));
     if (state.revision !== revision || state.runId !== runId) throw new Error('Observation superseded by a life command.');
     const scores = new Map(results);
     if (scores.size !== keys.size || [...keys].some(key => !scores.has(key))) throw new Error('Incomplete observation scores.');
     scoreCaches.set(community, scores);
-    cachedObservation = buildObservation(community);
-    return copy(cachedObservation);
+    return cloneObservation(cacheResult(options, buildObservation(options, community)));
   }
 
   function inspectHex(hexId) {
@@ -792,6 +870,22 @@ function buildModel(world, state) {
     if (!record) throw new RangeError('Unknown species ID.');
     return { runId: state.runId, revision: state.revision, day: state.day, ...record };
   }
+
+  // Wrap only enabled phases, once per model. Timing remains in the caller.
+  advanceTo = traceCalls(advanceTo, diagnostics['life.advance']);
+  demography = traceCalls(demography, diagnostics['life.demography']);
+  disperse = traceCalls(disperse, diagnostics['life.dispersal']);
+  evolve = traceCalls(evolve, diagnostics['life.evolution']);
+  updateHistory = traceCalls(updateHistory, diagnostics['life.history']);
+  communities = traceCalls(communities, diagnostics['life.communities']);
+  environment = traceCalls(environment, diagnostics['life.environment']);
+  routes = traceCalls(routes, diagnostics['life.routes']);
+  assess = traceCalls(assess, diagnostics['life.assess']);
+  scoreAt = traceCalls(scoreAt, diagnostics['life.score']);
+  randomTrials = traceCalls(randomTrials, diagnostics['life.mutations']);
+  novel = traceCalls(novel, diagnostics['life.novelty']);
+  prepareObservationJobs = traceCalls(prepareObservationJobs, diagnostics['observation.prepare']);
+  buildObservation = traceCalls(buildObservation, diagnostics['observation.assemble']);
 
   const exportState = () => copy({ ...state, randomState: random.exportState() });
   return { introduce, advanceTo, observe, observeAsync, inspectHex, inspectSpecies, exportState,

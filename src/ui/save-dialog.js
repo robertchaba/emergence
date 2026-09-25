@@ -58,7 +58,7 @@ export function createRestoreDialog({ onOpen, onRestore, prepareRestore }) {
       input.focus();
     }
     try {
-      candidate = new Worker(new URL('./life-worker.js', import.meta.url), { type: 'module' });
+      candidate = new Worker(new URL('./life-worker.js', import.meta.url), { type: 'module', name: 'life coordinator' });
       const worker = candidate;
       worker.onmessage = async ({ data }) => {
         if (candidate !== worker) return;
@@ -72,7 +72,7 @@ export function createRestoreDialog({ onOpen, onRestore, prepareRestore }) {
         onRestore(worker, data, prepared);
       };
       worker.onerror = () => { if (candidate === worker) fail(); };
-      worker.postMessage({ command: 'restore', file });
+      worker.postMessage({ command: 'restore', file, observationOptions: { detail: 'summary' } });
     } catch { fail(); }
   });
   document.body.append(dialog);

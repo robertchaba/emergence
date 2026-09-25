@@ -2,11 +2,12 @@ import { scoreSpecies } from './ecology.js';
 
 /** Pure V3 calculations over a detached completed census. Neither worker count
  * nor completion order changes the arithmetic within any ecological score. */
-export function evaluateObservationJobs(jobs) {
+export function evaluateObservationJobs(jobs, diagnostics) {
+  const ecologyDiagnostics = diagnostics && Object.keys(diagnostics).some(key => key.startsWith('ecology.')) ? diagnostics : undefined;
   return jobs.flatMap(({ hex, habitat, community, queries }) => queries.map(query => [query.key,
     { score: scoreSpecies(query.genome, hex, habitat, community, { population: 1,
       excludeSpeciesId: query.excludeSpeciesId, independentLineage: query.independentLineage,
-      derived: query.derived }).score }]));
+      derived: query.derived, diagnostics: ecologyDiagnostics }).score }]));
 }
 
 /** Preserve shared immutable genome/phenotype references in the detached job

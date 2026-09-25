@@ -47,6 +47,31 @@ rejected. Scores never enter checkpoints or consume randomness, and the returned
 observation has the same contents as `observe()`. This changes execution only;
 rules revision, checkpoint format and synchronous headless APIs are preserved.
 
+Browser playback uses `observe({ detail: 'summary' })` (or the same options as
+the second argument to `observeAsync`). It returns the complete census, species
+locations and map display data, with compact size/acquisition descriptors.
+`{ detail: 'summary', speciesId }` additionally supplies inherited traits for one
+species. `includeTendencies: true` calculates that species' estimated adaptation
+ranges. Omitted detail is explicitly labelled; it is never an empty/zero result.
+Each response remains one complete revision, with its requested inspection
+identified. Default `observe()`/`observeAsync(execute)` still return full detail
+for all species, preserving existing headless tools and checks.
+
+Genome descriptions are cached by immutable genome identity, and population
+records are indexed by species whenever the population array changes. Feeding
+passes stop when no positive demand remains; zero-demand entries avoid access/
+capture calculations while preserving source order and active allocations.
+These are execution changes, not new approximations or biological coefficients.
+
+For development profiling, `createLifeModel(world, options, diagnostics)` and
+`restoreLifeModel(world, checkpoint, diagnostics)` accept optional phase listeners.
+Listeners receive entry/exit booleans only; their return values are ignored and
+their failures cannot interrupt model work. The model reads no clocks, records no
+timing state and exposes no private populations to the listener. Disabled function
+phases retain their original functions. Ecological listeners can also accompany
+detached observation jobs. Clock reads, aggregation, configuration and console
+output belong to UI adapters. See the [profiling guide](../../../../docs/PERFORMANCE.md).
+
 The browser's save/restore adapter carries this complete checkpoint without
 interpreting population or genome records. Restore validates required metadata,
 clocks, counters, histories, PRNG words, species, candidates and populations

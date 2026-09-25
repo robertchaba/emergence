@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "debugdev": "vite --mode debugdev --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "npm run test:headless && playwright test",

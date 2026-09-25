@@ -394,6 +394,31 @@ were 0.0974 and 0.1032 ms respectively. This isolates the absence of individual
 action loops. It does not cover increasing the number of hexes, species or
 candidate comparisons.
 
+## Execution optimizations — 2026-09-25
+
+Population indexing, genome-description caching and zero-demand feeding skips
+retain the same biological rules. Comparison with an archived pre-change model
+produced identical complete checkpoints and full observations for two seeds with
+both land and water introductions through days 40/360/720/1440, and a dense
+twelve-species fixture through days 1/4/41/160, in one Node runtime.
+
+Compact observations preserve the complete current census/map data while fetching
+selected traits and estimated ranges on demand. Focused tests cover requested
+job scope, cache invalidation, detached public values and restored continuation.
+Chromium tests cover changed selection during pending inspection, deferred detail
+after closing the tree, locale changes, playback batching and exact same-browser
+save continuation. Full `npm test` passed: 170 headless checks and 151 browser
+checks, with one existing desktop touch duplicate skipped.
+
+The production-worker benchmark compares full, collapsed, selected-gene and
+selected-range queries from identical state. In two local passes, collapsed
+requests took about 43–46% less total time for an evolved small water world and
+85–86% less for the artificial dense fixture. Every mode retained identical
+checkpoints and requested data. These measurements isolate requested-detail work
+in the current build; they exclude restore, DOM and Canvas work. See
+[profiling instructions](../../../../../docs/PERFORMANCE.md) and architecture
+decision 076 for the command, sample counts, measurements and limitations.
+
 ## Limits
 
 Stochastic rounding changes demographic variance; pooled reserve bookkeeping and

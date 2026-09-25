@@ -313,3 +313,30 @@ ancestors, unrelated branches and later parental adaptations do not appear in th
 projection. No active record produces an empty sequence. Incomplete saves still
 expose only known records, with the existing completeness warning. This projection
 is the tree's default highlight; full `branches` are an explicit display option.
+
+## Compact census and requested inspection — 2026-09-25
+
+A `detailLevel: summary` observation retains complete current counts, extant
+species identities/populations/locations, per-hex census, map display groups,
+statistics and bounded daily chart history. Each summary species declares
+`detailLevel: summary`, a `tendencyCount`, and model-described `summary.size` and
+`summary.energySources` for its list entry. It omits full traits, variants and
+estimated ranges. Missing detail means not requested, never absent genes or no
+adaptation opportunities. The summary's `previousAttempts` contains run/date
+identities; the complete archives remain available in the on-demand tree query.
+
+`inspection` identifies the requested `speciesId` and `includeTendencies` flag.
+The selected living record declares `detailLevel: genes` with complete inherited
+traits/variants, or `detailLevel: full` with current tendencies as well. A zero
+`tendencyCount` means no candidates; an omitted `tendencies` field with a positive
+count means their ranges have not been requested. An extinct/missing requested
+species does not acquire a fabricated record. Full default observations preserve
+their earlier shape and availability semantics.
+
+Inspection responses replace the complete displayed observation. Counts,
+locations, traits and estimated ranges therefore share its run/revision/day;
+consumers never attach details from an older reply to a newer census. UI can
+show a localized loading state while the requested selection is missing. It
+must retain the current selection when an older selection's reply arrives and
+request the latest selection after the outstanding command completes. Neither
+queries, detail level nor request ordering consumes biological randomness.

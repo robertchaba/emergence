@@ -34,7 +34,7 @@ function element(tag, className, text) {
 }
 
 /** Common observations only: the model supplies names and carrier summaries. */
-export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
+export function createLifeNotebook({ onSpeciesSelect, onVariantSelect, onInspect }) {
   const speciesPanel = document.querySelector('#species-panel');
   const list = document.querySelector('#species-list');
   const detail = element('div', 'species-detail');
@@ -46,8 +46,11 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   const tendencies = element('details', 'species-tendencies');
   const tendencyHeading = element('summary', 'gene-heading');
   const tendencyList = element('ul', 'tendency-list');
-  tendencies.append(tendencyHeading, tendencyList);
-  detail.append(population, localPopulation, heading, traits, tendencies);
+  const geneLoading = element('p');
+  const tendencyLoading = element('p');
+  geneLoading.setAttribute('role', 'status'); tendencyLoading.setAttribute('role', 'status');
+  tendencies.append(tendencyHeading, tendencyLoading, tendencyList);
+  detail.append(population, localPopulation, heading, geneLoading, traits, tendencies);
   const buttons = new Map();
   const numbers = createNumberAnimator();
   let observation = null;
@@ -67,6 +70,12 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
   let totalHexes = 0;
   let populationSpeciesId = null;
   let populationHexId = null;
+  let trendKey = null;
+
+  tendencies.addEventListener('toggle', () => {
+    if (!tendencies.open && selectedVariant?.startsWith('tendency:')) selectedVariant = null;
+    renderSpecies();
+  });
 
   function highlight(id) {
     if (highlightedId === id) return;
@@ -166,8 +175,12 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     for (const [key, row] of traitRows) if (!visibleTraits.has(key)) { row.remove(); traitRows.delete(key); }
     for (const [id, node] of expressionNodes) if (!visibleExpressions.has(id)) { node.remove(); expressionNodes.delete(id); }
     if (focusedTrait?.isConnected && document.activeElement !== focusedTrait) focusedTrait.focus({ preventScroll: true });
+    geneLoading.hidden = species.detailLevel !== 'summary';
+    geneLoading.textContent = t('geneDetailsLoading');
     const directions = species.tendencies ?? [];
-    tendencies.hidden = directions.length === 0;
+    tendencies.hidden = (species.tendencyCount ?? directions.length) === 0;
+    tendencyLoading.hidden = !tendencies.open || species.tendencies !== undefined;
+    tendencyLoading.textContent = t('tendencyDetailsLoading');
     tendencyHeading.textContent = t('tendencyHeading');
     const visibleTendencies = new Set();
     for (const direction of directions) {
@@ -252,14 +265,14 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
         });
       }
       button.querySelector('.species-name').textContent = species.name ?? t('speciesName', { id: species.id });
-      const sizes = (species.traits?.find(trait => trait.key === 'size')?.expressions ?? [])
+      const sizes = species.summary ? [geneValue(species.summary.size)] : (species.traits?.find(trait => trait.key === 'size')?.expressions ?? [])
         .filter(expression => expression.population / species.population >= minimumExpressionShare)
         .sort((a, b) => a.value - b.value)
         .map(geneValue);
       const size = button.querySelector('.species-size');
       size.hidden = sizes.length === 0;
       size.textContent = [...new Set(sizes)].join(', ');
-      const sources = energyKeys.filter(key => species.traits?.some(trait => trait.key === key
+      const sources = species.summary?.energySources ?? energyKeys.filter(key => species.traits?.some(trait => trait.key === key
         && trait.expressions.some(expression => expression.value > 0
           && expression.population / species.population >= minimumExpressionShare)));
       const energy = button.querySelector('.species-energy');
@@ -276,6 +289,9 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
       button.setAttribute('aria-expanded', String(expandedId === species.id));
       button.title = t(expandedId === species.id ? 'collapseSpecies' : 'expandSpecies');
       if (expandedId === species.id) {
+        detail.dataset.speciesId = species.id;
+        detail.dataset.revision = String(observation.revision);
+        detail.dataset.level = species.detailLevel ?? 'full';
         button.setAttribute('aria-controls', detail.id);
         if (detail.parentElement !== button.parentElement) button.parentElement.append(detail);
         numbers.set(population, species.population,
@@ -293,6 +309,8 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
       } else button.removeAttribute('aria-controls');
     }
     if (expandedId == null) detail.remove();
+    onInspect?.({ speciesId: expandedId ?? null,
+      includeTendencies: expandedId != null && tendencies.open && !tendencies.hidden });
   }
 
   function renderControls() {
@@ -320,6 +338,15 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     const key = failed ? retryAvailable ? 'lifeInitializationError' : 'lifeError' : messageKey;
     message.textContent = key ? t(key) : '';
     message.hidden = !key;
+    renderTrend(counts);
+    renderControls();
+    renderSpecies();
+  }
+
+  function renderTrend(counts) {
+    const key = `${observation?.runId}|${observation?.revision}|${observation?.day}|${document.documentElement.lang}`;
+    if (trendKey === key) return;
+    trendKey = key;
     const categories = [...energyKeys, 'other'];
     const energyCounts = counts.speciesByEnergy;
     const history = observation?.history?.length ? observation.history : [{ day: observation?.day ?? 1, species: 0 }];
@@ -353,8 +380,6 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
       }
       drawing.append(legend);
     }
-    renderControls();
-    renderSpecies();
   }
 
   function setPin(id) {
@@ -389,7 +414,7 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect }) {
     reset() {
       numbers.reset(); populationSpeciesId = null;
       failed = false; retryAvailable = false; expandedId = undefined; traitSpeciesId = null;
-      messageKey = ''; observation = null; pinnedId = null; totalHexes = 0;
+      trendKey = null; messageKey = ''; observation = null; pinnedId = null; totalHexes = 0;
       highlight(null); render();
     },
   };

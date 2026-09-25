@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "reportIntervalMs": 3000,
+  "measure": {
+    "simulation": true,
+    "observations": true,
+    "helpers": true,
+    "worker": true,
+    "ui": true,
+    "rendering": true,
+    "generation": true,
+    "workload": true,
+    "climate": false,
+    "genes": false,
+    "ecology": false,
+    "detail": false
+  },
+  "output": {
+    "startup": true,
+    "descriptions": true,
+    "collapsed": false,
+    "simulation": true,
+    "observations": true,
+    "helpers": true,
+    "worker": true,
+    "ui": true,
+    "rendering": true,
+    "generation": true,
+    "workload": true,
+    "climate": true,
+    "genes": true,
+    "ecology": true,
+    "detail": true
+  }
+}

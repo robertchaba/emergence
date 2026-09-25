@@ -299,6 +299,23 @@ hard reference barriers such as permanent ice, high ridges, and wide deep ocean.
 
 ### Performance and workers
 
+Playback sends a compact census/map snapshot. Opening a species loads its
+inherited traits; expanding **Possible adaptations** calculates that species'
+estimated ranges. Short loading messages are available in both languages.
+Automatic playback publishes at most ten complete revisions per second, batching
+the same simulated days without changing speed targets or biological updates.
+The notebook reuses its chart when only inspection or selection changes.
+
+Run **`npm run debugdev`** for detailed browser-console performance reports.
+Edit [`degugdev-config.json`](degugdev-config.json) to select measurements and
+console output separately, then restart the command and reload. Reports identify
+simulation phases, observation/copying, helper work, UI updates and drawing, with
+call counts, total/average/worst time and completed-world workload. Optional
+detail covers genes, climate, grazing and hunting. Switches control diagnostics;
+they never disable biological calculations. Normal dev and production stay quiet.
+See the [profiling guide and optimization suggestions](docs/PERFORMANCE.md)
+for individual phase overrides, timing interpretation and overhead limitations.
+
 Playback uses up to **four life workers**: one coordinator owns the simulation,
 and up to three helpers calculate independent adaptation-range scores for the
 notebook. Dense workloads share that work; sparse worlds stay on the coordinator
@@ -316,6 +333,18 @@ To compare one worker with the adaptive four-worker path in Chromium:
 npm run build
 node scripts/benchmark-life-workers.js 4320
 ```
+
+To compare full observations, collapsed details, inherited traits and open
+adaptation ranges using identical production-worker simulations:
+
+```sh
+npm run build
+node scripts/benchmark-life-observations.js 4320
+```
+
+This reports request/reply timings and snapshot sizes and checks exact checkpoint,
+census and requested-detail equivalence. It excludes Canvas/DOM work and includes
+a deliberately dense fixture, so its ratios are workload-specific.
 
 The script checks complete state and observation equality. It reports production
 worker timings including transport for an evolved small world and a deliberately

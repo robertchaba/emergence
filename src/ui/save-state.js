@@ -14,7 +14,7 @@ export function createSave(world, checkpoint, view) {
     life: checkpoint, view };
 }
 
-export function restoreSave(saved) {
+export function restoreSave(saved, diagnostics, observationOptions) {
   if (!saved || saved.format !== SAVE_FORMAT || saved.generatorVersion !== GENERATOR_VERSION
     || saved.weatherVersion !== WEATHER_VERSION) throw new TypeError('Incompatible save file.');
   const { settings, view } = saved;
@@ -32,7 +32,7 @@ export function restoreSave(saved) {
   }
   const geography = generateWorld(settings);
   if (view.pinnedId !== null && !geography.hexes[view.pinnedId]) throw new TypeError('Invalid saved hex.');
-  const model = restoreLifeModel(geography, saved.life);
-  const observation = model.observe();
+  const model = restoreLifeModel(geography, saved.life, diagnostics);
+  const observation = model.observe(observationOptions);
   return { model, world: setDay(geography, observation.day), observation, view };
 }

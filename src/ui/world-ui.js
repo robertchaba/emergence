@@ -1,3 +1,4 @@
+import { debug } from './debugdev.js';
 import { t, formatNumber } from './locale.js';
 import { setDay } from '../simulation/climate.js';
 import { createMapRenderer, MAP_TOKEN_NAMES } from '../rendering/map.js';
@@ -5,6 +6,8 @@ import { createLifeNotebook } from './life-notebook.js';
 import { createNumberAnimator } from './number-animation.js';
 import { createRestoreDialog, downloadSave } from './save-dialog.js';
 import { createTreeOfLife } from './tree-of-life.js';
+
+const updateClimate = debug?.wrap('ui.climate', setDay) ?? setDay;
 
 const number = { format: (value) => formatNumber(value) };
 const integer = { format: (value) => formatNumber(value, 'integer') };
@@ -73,6 +76,9 @@ export function initWorldUI(restored = null) {
   let lifeWorker = null;
   let lifeRevision = 0;
   let lifeBusy = false;
+  let commandTiming = null;
+  let desiredInspection = { speciesId: null, includeTendencies: false };
+  let lastPlaybackRequest = -Infinity;
   let lifePendingCommand = null;
   let playAfterIntroduction = false;
   let lifeFailed = false;
@@ -85,6 +91,11 @@ export function initWorldUI(restored = null) {
   let saveStatusKey = '';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const notebook = createLifeNotebook({
+    onInspect(request) {
+      desiredInspection = request;
+      // Run after rendering; never re-enter the notebook while it builds rows.
+      queueMicrotask(refreshInspection);
+    },
     onSpeciesSelect(id) { selectedSpeciesId = id; queueDraw(); },
     onVariantSelect(variant) { selectedVariant = variant; queueDraw(); },
   });
@@ -102,6 +113,7 @@ export function initWorldUI(restored = null) {
       setPlaying(treePlayback.playing && !lifeFailed && life?.status !== 'extinct');
       treePlayback = null;
       queueDraw();
+      queueMicrotask(refreshInspection);
     },
     onRequest(message) {
       try { lifeWorker.postMessage(message); }
@@ -206,9 +218,10 @@ export function initWorldUI(restored = null) {
     lifePendingCommand = 'initialize';
     updateLifeInteraction();
     try {
-      lifeWorker = new Worker(new URL('./life-worker.js', import.meta.url), { type: 'module' });
+      lifeWorker = new Worker(new URL('./life-worker.js', import.meta.url), { type: 'module', name: 'life coordinator' });
       attachLifeWorker();
-      lifeWorker.postMessage({ command: 'initialize', world, options: { runId: `life-${lifeRevision}` } });
+      lifeWorker.postMessage({ command: 'initialize', world, options: { runId: `life-${lifeRevision}` },
+        observationOptions: { detail: 'summary' } });
     } catch { lifeFailure('initialize'); }
   }
 
@@ -216,6 +229,7 @@ export function initWorldUI(restored = null) {
     const session = lifeRevision;
     lifeWorker.onmessage = ({ data }) => {
       if (session !== lifeRevision) return;
+      if (data.command === lifePendingCommand) { debug?.end(commandTiming); commandTiming = null; }
       if (data.command === 'tree' || data.command === 'gene-history') { tree.receive(data); return; }
       if (data.command === 'export') {
         saving = false;
@@ -225,6 +239,7 @@ export function initWorldUI(restored = null) {
           showSaveStatus('savedState');
         } catch { showSaveStatus('saveFailed'); }
         updateLifeInteraction();
+        queueMicrotask(refreshInspection);
         return;
       }
       if (data.error) { lifeFailure(data.command); return; }
@@ -239,8 +254,9 @@ export function initWorldUI(restored = null) {
     updatePlaybackState();
     const previousDay = world.day;
     life = data.observation;
+    debug?.workload(life, data.command);
     hasVisibleLife = life.hexes.some(hex => hex.display.some(group => group.population > 0));
-    if (life.day !== world.day) world = setDay(world, life.day);
+    if (life.day !== world.day) world = updateClimate(world, life.day);
     measuredDays += Math.max(0, world.day - previousDay);
     notebook.update(life, { busy: false, pinnedId, totalHexes: world.hexes.length });
     if (data.command === 'introduce') {
@@ -290,8 +306,18 @@ export function initWorldUI(restored = null) {
     lifePendingCommand = command.command;
     updateLifeInteraction();
     updatePlaybackState();
-    lifeWorker.postMessage(command);
+    commandTiming = debug?.start('worker.roundTrip');
+    lifeWorker.postMessage({ ...command, observationOptions: { detail: 'summary', ...desiredInspection } });
     return true;
+  }
+
+  function refreshInspection() {
+    if (!life || life.detailLevel !== 'summary' || !desiredInspection.speciesId
+      || lifeBusy || lifeFailed || saving || tree.open) return;
+    const loaded = life.inspection;
+    if (loaded?.speciesId === desiredInspection.speciesId
+      && (!desiredInspection.includeTendencies || loaded.includeTendencies)) return;
+    requestLifeCommand({ command: 'observe' });
   }
 
   function readSettings() {
@@ -341,6 +367,10 @@ export function initWorldUI(restored = null) {
   function queueDraw() {
     if (frame === null) frame = requestAnimationFrame(draw);
   }
+
+  draw = debug?.wrap('ui.draw', draw) ?? draw;
+  acceptLifeMessage = debug?.wrap('ui.accept', acceptLifeMessage) ?? acceptLifeMessage;
+  notebook.update = debug?.wrap('ui.notebook', notebook.update) ?? notebook.update;
 
   const resize = new ResizeObserver(queueDraw);
   resize.observe(previewCanvas.parentElement);
@@ -428,6 +458,7 @@ export function initWorldUI(restored = null) {
 
   function resetClock() {
     clockTimestamp = null;
+    lastPlaybackRequest = -Infinity;
     dayCredit = 0;
     measuredElapsed = 0;
     measuredDays = 0;
@@ -497,7 +528,7 @@ export function initWorldUI(restored = null) {
       previewSurface.removeAttribute('aria-busy');
     };
     try {
-      generationWorker = new Worker(new URL('./generation-worker.js', import.meta.url), { type: 'module' });
+      generationWorker = new Worker(new URL('./generation-worker.js', import.meta.url), { type: 'module', name: 'world generation' });
       generationWorker.onmessage = (event) => finish(event.data.world ?? null);
       generationWorker.onerror = () => finish(null);
       generationWorker.postMessage(settings);
@@ -581,14 +612,20 @@ export function initWorldUI(restored = null) {
       dayCredit = Math.min(5, dayCredit + Math.min(250, elapsed) * daysPerSecond / 1000);
       measuredElapsed += elapsed;
       const days = Math.floor(dayCredit + 1e-9);
-      if (days > 0 && (workspace.hidden || !lifeBusy && !lifeFailed)) {
+      // Publish complete revisions at most 10 times/s. Accumulate the same
+      // explicit days, then execute all of them in the existing bounded batch.
+      if (days > 0 && (workspace.hidden || !lifeBusy && !lifeFailed
+        && timestamp - lastPlaybackRequest >= 100)) {
         dayCredit = Math.max(0, dayCredit - days);
         if (workspace.hidden) {
-          world = setDay(world, world.day + days);
+          world = updateClimate(world, world.day + days);
           measuredDays += days;
           updateDayReadout();
           queueDraw();
-        } else requestLifeCommand({ command: 'advance', day: world.day + days });
+        } else {
+          lastPlaybackRequest = timestamp;
+          requestLifeCommand({ command: 'advance', day: world.day + days });
+        }
       }
       if (!workspace.hidden && measuredElapsed >= 1000) {
         showActualSpeed(measuredDays * 1000 / measuredElapsed);
@@ -603,7 +640,7 @@ export function initWorldUI(restored = null) {
 
   startButton.addEventListener('click', () => {
     if (!world || startButton.disabled) return;
-    world = setDay(world, 1);
+    world = updateClimate(world, 1);
     setPlaying(false);
     updateDayReadout();
     openWorkspace();

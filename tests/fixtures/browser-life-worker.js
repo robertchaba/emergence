@@ -17,7 +17,7 @@ export const lifeWorkerHarness = `
 
 // Runs inside page.evaluate; all diagnostics/configuration stay in this harness.
 export async function exerciseLifeWorker({ url, saved, workers = 4, rounds = 1,
-  warmups = 0, advanceDays = 1, reset = true, failure = false, queueQueries = false }) {
+  warmups = 0, advanceDays = 1, reset = true, failure = false, queueQueries = false, observationOptions }) {
   const harness = new URL('./life-test-worker.js', url);
   harness.search = new URLSearchParams({ target: url, workers, failure }).toString();
   const worker = new Worker(harness, { type: 'module' });
@@ -39,7 +39,7 @@ export async function exerciseLifeWorker({ url, saved, workers = 4, rounds = 1,
     const command = data => new Promise((resolve, reject) => {
       pending.push({ resolve, reject }); worker.postMessage(data);
     });
-    const restore = () => command({ command: 'restore', file: new File([JSON.stringify(saved)], 'fixture.json') });
+    const restore = () => command({ command: 'restore', file: new File([JSON.stringify(saved)], 'fixture.json'), observationOptions });
     let observation;
     let exported;
     let tree;
@@ -48,7 +48,7 @@ export async function exerciseLifeWorker({ url, saved, workers = 4, rounds = 1,
     for (let index = 0; index < rounds + warmups; index += 1) {
       if (reset && index > 0) await restore();
       const start = performance.now();
-      const advance = command({ command: 'advance', day: saved.life.day + advanceDays * (reset ? 1 : index + 1) });
+      const advance = command({ command: 'advance', day: saved.life.day + advanceDays * (reset ? 1 : index + 1), observationOptions });
       const queries = queueQueries ? [command({ command: 'tree', requestId: 71 }),
         command({ command: 'export', view: saved.view })] : [];
       observation = (await advance).observation;

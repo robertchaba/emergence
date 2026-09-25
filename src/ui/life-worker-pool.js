@@ -3,8 +3,10 @@ import { evaluateObservationJobs, observationJobCost } from '../simulation/life/
 /** One coordinator plus at most three helpers, created only for substantial
  * read-only work. Worker lifetime is bounded by the owning life worker. */
 export function createLifeWorkerPool({ concurrency = globalThis.navigator?.hardwareConcurrency ?? 1,
-  createWorker = () => new Worker(new URL('./life-observation-worker.js', import.meta.url), { type: 'module' }),
-  timeout = 10000 } = {}) {
+  createWorker = index => new Worker(new URL('./life-observation-worker.js', import.meta.url), { type: 'module', name: `observation helper ${index}` }),
+  timeout = 10000, debug = null } = {}) {
+  const localEvaluation = jobs => evaluateObservationJobs(jobs, debug?.listeners);
+  const evaluateLocal = debug?.wrap('pool.local', localEvaluation) ?? localEvaluation;
   const count = Math.max(1, Math.min(4, Math.floor(concurrency) || 1));
   let helpers = [];
   let disabled = count === 1;
@@ -41,9 +43,9 @@ export function createLifeWorkerPool({ concurrency = globalThis.navigator?.hardw
 
   async function evaluate(jobs) {
     const work = jobs.reduce((sum, job) => sum + observationJobCost(job), 0);
-    if (disabled || jobs.length < count || work < 20000) return evaluateObservationJobs(jobs);
+    if (disabled || jobs.length < count || work < 20000) return evaluateLocal(jobs);
     try {
-      while (helpers.length < count - 1) helpers.push(createWorker());
+      while (helpers.length < count - 1) helpers.push(createWorker(helpers.length + 1));
       const batches = Array.from({ length: count }, () => ({ jobs: [], cost: 0 }));
       for (const job of [...jobs].sort((a, b) => observationJobCost(b) - observationJobCost(a))) {
         const batch = batches.reduce((least, item) => item.cost < least.cost ? item : least);
@@ -52,16 +54,17 @@ export function createLifeWorkerPool({ concurrency = globalThis.navigator?.hardw
       const remote = helpers.map((helper, index) => dispatch(helper, batches[index + 1].jobs));
       // Attach rejection handling before the coordinator executes its own share.
       const completed = Promise.allSettled(remote);
-      const local = evaluateObservationJobs(batches[0].jobs);
+      const local = evaluateLocal(batches[0].jobs);
       const results = await completed;
       if (results.some(result => result.status === 'rejected')) throw new Error('Observation helpers unavailable.');
       return [...local, ...results.flatMap(result => result.value)];
     } catch {
       close();
       // Read-only jobs are safe to repeat; no random draw or day is replayed.
-      return evaluateObservationJobs(jobs);
+      return evaluateLocal(jobs);
     }
   }
 
-  return { evaluate, close, get enabled() { return !disabled; } };
+  return { evaluate: debug ? jobs => debug.measureAsync('pool.total', () => evaluate(jobs)) : evaluate,
+    close, get enabled() { return !disabled; } };
 }

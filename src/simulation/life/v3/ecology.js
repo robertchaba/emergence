@@ -1,3 +1,4 @@
+import { traceEvent } from './diagnostics.js';
 import { candidateMutations, deriveGenome, founderGenome } from './genes/genome.js';
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
@@ -104,7 +105,8 @@ export function captureProbability(predatorGenome, preyGenome, predator = derive
  * fraction of the represented population withdrawn per biological turn.
  * Both habitat pools receive fixed portions on river hexes, so their separate
  * evaluations cannot double the hex's photosynthetic resource budget. */
-export function evaluateCommunity(hex, habitat, community = []) {
+export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
+  if (diagnostics) traceEvent(diagnostics['ecology.prepare'], true);
   const rows = community.map(row => {
     const matches = (row.habitat ?? habitat) === habitat;
     const population = matches ? Math.max(0, row.population ?? row.count ?? 0) : 0;
@@ -112,6 +114,8 @@ export function evaluateCommunity(hex, habitat, community = []) {
     return { ...row, population, derived,
       environment: matches ? row.environment ?? environmentalPerformance(row.genome, hex, habitat, derived) : 0 };
   });
+  if (diagnostics) traceEvent(diagnostics['ecology.prepare'], false);
+  if (diagnostics) traceEvent(diagnostics['ecology.light'], true);
   const riverShare = hasLand(hex) && hasWater(hex) ? habitat === 'land' ? 0.7 : 0.3 : 1;
   const budget = riverShare * (habitat === 'water' ? ECOLOGY_RULES.waterLightBudget
     / (1 + waterDepth(hex) / 180) : ECOLOGY_RULES.lightBudget);
@@ -120,6 +124,8 @@ export function evaluateCommunity(hex, habitat, community = []) {
       * ECOLOGY_RULES.photosynthesisRate * row.environment;
     return { cap, weight: cap * (habitat === 'land' ? row.derived.landCompetition : 1) };
   }), budget);
+  if (diagnostics) traceEvent(diagnostics['ecology.light'], false);
+  if (diagnostics) traceEvent(diagnostics['ecology.feedingSetup'], true);
   const remainingPhoto = [...photo];
   const food = rows.map(() => 0);
   const grazingFood = rows.map(() => 0);
@@ -131,11 +137,13 @@ export function evaluateCommunity(hex, habitat, community = []) {
   const predationDemand = rows.map(row => row.population * row.derived.cells * row.derived.predationShare
     * row.environment * ECOLOGY_RULES.huntingEffort);
 
-  for (let source = 0; source < rows.length; source += 1) {
+  if (diagnostics) traceEvent(diagnostics['ecology.feedingSetup'], false);
+  if (diagnostics) traceEvent(diagnostics['ecology.grazing'], true);
+  for (let source = 0; source < rows.length && grazingDemand.some(demand => demand > 0); source += 1) {
     if (!(photo[source] > 0)) continue;
     const available = photo[source] * ECOLOGY_RULES.grazingFraction;
     const demands = rows.map((consumer, index) => {
-      if (consumer.speciesId != null && consumer.speciesId === rows[source].speciesId) return { cap: 0, weight: 0, access: 0 };
+      if (!(grazingDemand[index] > 0) || consumer.speciesId != null && consumer.speciesId === rows[source].speciesId) return { cap: 0, weight: 0, access: 0 };
       const access = grazingAccess(consumer.genome, rows[source].genome, consumer.derived, rows[source].derived);
       const reach = grazingReachFraction(consumer.genome, consumer.derived, rows[source].derived);
       // Short browsers reach only part of a canopy per unit of foraging effort,
@@ -152,13 +160,15 @@ export function evaluateCommunity(hex, habitat, community = []) {
     }
   }
 
-  for (let source = 0; source < rows.length; source += 1) {
+  if (diagnostics) traceEvent(diagnostics['ecology.grazing'], false);
+  if (diagnostics) traceEvent(diagnostics['ecology.hunting'], true);
+  for (let source = 0; source < rows.length && predationDemand.some(demand => demand > 0); source += 1) {
     const prey = rows[source];
     if (!(prey.population > 0) || !(prey.genome.plantFeeding || prey.genome.animalFeeding)) continue;
     const tissue = prey.derived.cells * 1.4;
     const available = prey.population * ECOLOGY_RULES.preyFraction;
     const demands = rows.map((predator, index) => {
-      if (index === source || (predator.speciesId != null && predator.speciesId === prey.speciesId)) return { cap: 0, weight: 0, capture: 0 };
+      if (!(predationDemand[index] > 0) || index === source || (predator.speciesId != null && predator.speciesId === prey.speciesId)) return { cap: 0, weight: 0, capture: 0 };
       const capture = captureProbability(predator.genome, prey.genome, predator.derived, prey.derived);
       // Successful effort is extensive in hunter population. A per-species
       // available*capture cap would create extra kills merely by adding names.
@@ -177,7 +187,9 @@ export function evaluateCommunity(hex, habitat, community = []) {
     }
   }
 
-  return rows.map((row, index) => {
+  if (diagnostics) traceEvent(diagnostics['ecology.hunting'], false);
+  if (diagnostics) traceEvent(diagnostics['ecology.rates'], true);
+  const result = rows.map((row, index) => {
     const population = row.population || 1;
     const production = Math.max(0, remainingPhoto[index]) / population;
     const intake = production + food[index] / population;
@@ -195,6 +207,8 @@ export function evaluateCommunity(hex, habitat, community = []) {
       capacity: budget / Math.max(1, row.derived.upkeep),
       resourceBudget: budget };
   });
+  if (diagnostics) traceEvent(diagnostics['ecology.rates'], false);
+  return result;
 }
 
 /** A rare candidate is evaluated against exactly the supplied resident census.
@@ -206,7 +220,7 @@ export function scoreSpecies(genome, hex, habitat, community = [], options = {})
     derived: options.derived,
     speciesId: options.excludeSpeciesId != null && !options.independentLineage ? options.excludeSpeciesId
       : `__candidate__:${options.excludeSpeciesId ?? options.speciesId ?? ''}`,
-    population: options.population ?? 1, habitat }]).at(-1);
+    population: options.population ?? 1, habitat }], options.diagnostics).at(-1);
 }
 
 /** Condition the founder first, then pay for 1–3 random viable one-gene changes.
