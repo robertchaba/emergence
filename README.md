@@ -251,6 +251,10 @@ its range. The selected hex has a thick gold rim above the species and adaptatio
 highlights.
 Coloured energy labels distinguish photosynthesis (green),
 plant feeding (brown), and animal feeding (red); mixed feeders show each source.
+When the selected hex uses its entire available light budget, each photosynthesis
+label also shows that species' share of the light. Shares describe current light
+capture before grazing; they disappear whenever any light remains unused. River
+hexes must use both their land and water portions before showing percentages.
 Established traits describe the whole species. Up to three
 possible adaptations appear in a collapsed **Possible adaptations** section.
 Expand it to see brief changes and estimated hex counts (`~`). Click a direction
@@ -287,6 +291,8 @@ Bare land keeps its softly warm stone greys in both themes.
 On phones, pinning scrolls the local record into view; the
 notebook scrolls independently. Theme and language changes preserve the run and
 selection. Returning to setup and starting another world resets to day 1.
+The notebook always reserves its vertical scrollbar, keeping its content width
+steady as species details open and close.
 
 The preview's land budget counts the non-marine footprint before freshwater
 lakes; dry land is reported separately. Spring discharge and runoff use reference

@@ -212,6 +212,8 @@ test('touch pinch zooms without creating a pin', async ({ page, context }, testI
 
 test('both themes fit desktop and phone workspace layouts', async ({ page }, testInfo) => {
   const map = await openWorld(page);
+  await expect(page.locator('.notebook')).toHaveCSS('overflow-y', 'scroll');
+  await expect(page.locator('.notebook')).toHaveCSS('scrollbar-gutter', 'stable');
   await map.press('ArrowRight');
   for (const theme of ['light', 'dark']) {
     await chooseTheme(page, theme);

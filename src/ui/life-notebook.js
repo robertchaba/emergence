@@ -276,7 +276,9 @@ export function createLifeNotebook({ onSpeciesSelect, onVariantSelect, onInspect
         && trait.expressions.some(expression => expression.value > 0
           && expression.population / species.population >= minimumExpressionShare)));
       const energy = button.querySelector('.species-energy');
-      const labels = sources.map(key => t(geneKeys[key]));
+      const labels = sources.map(key => key === 'photosynthesis' && Number.isFinite(occupant.lightShare)
+        ? t('photosynthesisLightShare', { share: formatNumber(occupant.lightShare, 'percent') })
+        : t(geneKeys[key]));
       if (energy.textContent !== labels.join('')) {
         energy.replaceChildren(...sources.map((key, index) => {
           const label = element('span', 'species-energy-label', labels[index]);

@@ -111,14 +111,20 @@ test('species size and energy labels, ordered genomes and collapsible details su
     await expect(choices.locator('.species-size')).toHaveText(locale === 'en'
       ? ['Tiny', 'Small', 'Moderately large', 'Enormous']
       : ['Maleńki', 'Mały', 'Umiarkowanie duży', 'Olbrzymi']);
+    const share = initial.hexes.find(hex => hex.hexId === site.id).species.find(row => row.id === 'species-4').lightShare;
+    const percentage = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(share);
+    const photosynthesis = locale === 'en' ? 'Photosynthesis' : 'Fotosynteza';
+    const label = share === undefined ? photosynthesis
+      : locale === 'en' ? `${photosynthesis} · ${percentage} of light` : `${photosynthesis} · ${percentage} światła`;
     await expect(mixed.locator('.species-energy-label')).toHaveText(locale === 'en'
-      ? ['Photosynthesis', 'Plant feeding', 'Animal feeding'] : ['Fotosynteza', 'Roślinożerność', 'Mięsożerność']);
+      ? [label, 'Plant feeding', 'Animal feeding'] : [label, 'Roślinożerność', 'Mięsożerność']);
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
       const sizeBounds = await first.locator('.species-size').boundingBox();
       const energyBounds = await first.locator('.species-energy-label').boundingBox();
-      expect(Math.abs(sizeBounds.y - energyBounds.y)).toBeLessThan(1);
-      expect(sizeBounds.x).toBeGreaterThanOrEqual(energyBounds.x + energyBounds.width);
+      if (Math.abs(sizeBounds.y - energyBounds.y) < 1) {
+        expect(sizeBounds.x).toBeGreaterThanOrEqual(energyBounds.x + energyBounds.width);
+      } else expect(sizeBounds.y).toBeGreaterThanOrEqual(energyBounds.y + energyBounds.height);
       await page.locator('.life-overview').scrollIntoViewIfNeeded();
       await page.screenshot({ path: testInfo.outputPath(`energy-chart-${locale}-${theme}.png`) });
       await mixed.focus();

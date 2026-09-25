@@ -103,6 +103,16 @@ survival, diversification and eventual outcomes are not guaranteed.
 
 ## Energy-source census
 
+Per-hex species rows optionally expose `lightShare` when all available light is
+used. It is the species' share of gross photosynthetic allocation across that
+hex, recomputed from current populations and climate using the same allocator as
+biology. Mixed feeders with photosynthesis participate. Unused land or water
+portions on a river suppress all shares; when both are full, each species' amounts
+are added and divided by the combined budget. Unsaturated hexes and consumers
+omit the field. Full and compact observations provide the same shares without
+feeding calculations or candidate scoring. No light histories, checkpoint fields,
+random draws, ecological coefficients or rules revisions are added.
+
 Map display groups also expose `energySources`: the enabled photosynthesis,
 plant-feeding and animal-feeding capabilities of the established genome. All
 eight combinations remain separate even when role, size, habitat and mobility

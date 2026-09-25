@@ -54,6 +54,22 @@ function allocate(entries, budget) {
   return result;
 }
 
+/** The same gross light allocation serves biology and read-only inspection.
+ * Rows supply prepared populations, phenotypes and environmental performance
+ * for one habitat. Exhaustion uses demand before any display rounding. */
+export function allocateLight(hex, habitat, rows) {
+  const riverShare = hasLand(hex) && hasWater(hex) ? habitat === 'land' ? 0.7 : 0.3 : 1;
+  const budget = riverShare * (habitat === 'water' ? ECOLOGY_RULES.waterLightBudget
+    / (1 + waterDepth(hex) / 180) : ECOLOGY_RULES.lightBudget);
+  const demands = rows.map(row => {
+    const cap = row.population * row.derived.cells * row.derived.photosynthesisShare
+      * ECOLOGY_RULES.photosynthesisRate * row.environment;
+    return { cap, weight: cap * (habitat === 'land' ? row.derived.landCompetition : 1) };
+  });
+  const demand = demands.reduce((sum, row) => sum + (row.weight > 0 ? row.cap : 0), 0);
+  return { budget, allocations: allocate(demands, budget), exhausted: budget > 0 && demand >= budget };
+}
+
 /** Access fractions are nested portions of one plant's production. A collection
  * of poorly adapted grazers cannot expose the protected portion by multiplying
  * species labels. Higher-access consumers alone can use the additional bands. */
@@ -116,14 +132,7 @@ export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
   });
   if (diagnostics) traceEvent(diagnostics['ecology.prepare'], false);
   if (diagnostics) traceEvent(diagnostics['ecology.light'], true);
-  const riverShare = hasLand(hex) && hasWater(hex) ? habitat === 'land' ? 0.7 : 0.3 : 1;
-  const budget = riverShare * (habitat === 'water' ? ECOLOGY_RULES.waterLightBudget
-    / (1 + waterDepth(hex) / 180) : ECOLOGY_RULES.lightBudget);
-  const photo = allocate(rows.map(row => {
-    const cap = row.population * row.derived.cells * row.derived.photosynthesisShare
-      * ECOLOGY_RULES.photosynthesisRate * row.environment;
-    return { cap, weight: cap * (habitat === 'land' ? row.derived.landCompetition : 1) };
-  }), budget);
+  const { budget, allocations: photo } = allocateLight(hex, habitat, rows);
   if (diagnostics) traceEvent(diagnostics['ecology.light'], false);
   if (diagnostics) traceEvent(diagnostics['ecology.feedingSetup'], true);
   const remainingPhoto = [...photo];

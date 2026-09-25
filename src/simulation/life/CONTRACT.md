@@ -340,3 +340,21 @@ show a localized loading state while the requested selection is missing. It
 must retain the current selection when an older selection's reply arrives and
 request the latest selection after the outstanding command completes. Neither
 queries, detail level nor request ordering consumes biological randomness.
+
+## Optional local light shares — 2026-09-25
+
+`hexes[].species[].lightShare`, when present, is a fraction in [0,1] of the
+whole physical hex's available photosynthetic resource budget captured by that
+species. It describes the current completed census and conditions, before energy
+is removed by grazing, rather than historical intake or a population fraction.
+The model supplies it only for photosynthesizing occupants when the whole hex's
+budget is utilized. Shares then sum to one within numerical precision; a species
+present in multiple habitats has one combined share. A capable species capturing
+no light can explicitly receive zero. Non-photosynthesizers omit the field.
+
+An absent share is not zero: the hex may have unused light, or the model may not
+provide this optional observation. UI shows percentages only when supplied and
+formats them for the locale; it never infers saturation from rounded percentages,
+population sizes, genes or broad roles. Full, compact and hex inspection queries
+use the same revision and meaning. The active V3 model supplies this extension;
+preserved V1/V2 observations remain unchanged.

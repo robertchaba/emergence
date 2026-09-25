@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Compact playback and requested inspection — 2026-09-25.** Decision 076
+**Current: Local light shares and a steady notebook scrollbar — 2026-09-25.**
+Decision 077 shows photosynthetic light shares only on fully utilized hexes and
+keeps the notebook's vertical scrollbar space present.
+
+**Compact playback and requested inspection — 2026-09-25.** Decision 076
 applies four execution optimizations while preserving biological timing and rules.
 
 **Configurable development profiling — 2026-09-25.** Decision 075 adds
@@ -3942,3 +3946,78 @@ both themes, EN/PL, lazy inspection, tree navigation, save/restore, production a
 source deployment. Light/dark desktop and phone screenshots were inspected.
 `git diff --check` passed; runtime dependencies remain empty, and the simulation
 keeps browser services and clocks outside its boundary.
+
+## 077 — Local light shares and a persistent notebook scrollbar — 2026-09-25
+
+The user requests each local photosynthesizing species' share of finite light,
+visible only when the selected hex utilizes its entire supply. A follow-up asks
+for an always-present simulation scrollbar to avoid appearing/disappearing bars.
+
+V3 exposes optional `hexes[].species[].lightShare` in full and compact observations
+and hex inspection. The existing weighted, capped light allocation is factored
+into one model-owned helper shared by biology and observation. Inspection uses
+current populations, established phenotypes and current-day climate, with the
+same stable species order. It reports gross capture before grazing, not retained
+energy, population share or a previous turn's accumulated measurement. Mixed
+feeders participate whenever their established genome supports photosynthesis.
+
+Exhaustion is checked against unrounded positive demand and the existing budget,
+including exact equality. River hexes retain their 70% land / 30% depth-adjusted
+water portions: both must be exhausted, including an otherwise empty habitat.
+Amounts for the same species are combined across habitats and divided by their
+total available budget. Otherwise every share is omitted. Non-photosynthetic
+species omit the field; capable species with no effective capture can show zero
+on an otherwise fully allocated hex. Shares sum to one within floating-point
+precision. No budget, competition coefficient, feeding rule, random draw, model
+revision or saved-state format changes.
+
+The notebook appends a locale-formatted percentage and "of light" / "światła"
+to the existing photosynthesis label, including collapsed entries. It consumes
+only the optional model observation and removes the percentage immediately when
+changing to an unsaturated hex or receiving an unsaturated revision. Existing
+theme tokens and wrapping apply. Display rounding never decides availability.
+Older model observations lacking shares keep their existing energy labels.
+
+The notebook uses native `overflow-y: scroll` and `scrollbar-gutter: stable` in
+both viewport layouts. This retains the themed scrollbar and reserves its space
+as content grows or collapses, without introducing another scroll container or
+changing map controls. Chromium/WebKit receive an explicit 12 px native track
+and thumb styled from existing panel/muted theme tokens, so overlay fading does
+not hide the track. Other browsers keep the shared native scrollbar colours;
+their platform controls determine its appearance. Scrolling and keyboard/touch
+interaction remain native, without a JavaScript scrollbar replacement.
+
+This refines 076's collapsed-observation work: summary inspection now performs
+only the additional light allocation for occupied producer hexes. It still skips
+feeding calculations, candidate scoring and helper jobs unless ranges are
+requested. Biological calculations remain inside V3; UI owns localization and
+scrolling, and rendering receives no new biological responsibilities.
+
+Validation: focused model checks cover finite allocation and demand caps, canopy
+weights, exact and near-full exhaustion, mixed feeders, gross versus grazed
+production, unused river portions, cross-habitat aggregation, detached queries,
+compact/full/async consistency and unchanged checkpoint continuation. Browser
+checks cover actual worker observations, collapsed and expanded entries, EN/PL,
+both themes, desktop/phone and 320 px wrapping, keyboard focus, live refresh,
+hex changes and constant notebook width through disclosure changes.
+
+Final verification: `npm run build` and `npm test` passed with 173 headless checks
+and 153 Chromium checks; one existing desktop touch duplicate remains skipped.
+The two focused browser checks also passed with Chromium's default screenshot
+scrollbar hiding disabled. Light/dark desktop and phone screenshots were visually
+inspected with actual native scrollbar painting. The full suite includes normal
+development startup and source/production worker loading. `git diff --check` and
+dependency review passed; runtime dependencies remain empty.
+
+A comparison against the pre-change model at days 1, 4, 41 and 160 of the mixed
+light fixture produced identical complete checkpoints and existing observations
+after removing only the new share fields. Same-browser serial/helper comparisons
+remain exact. Chromium-versus-Node light fractions can differ in their last bits
+through climate exponentials; cross-runtime checks allow 12 decimal places for
+this field alone and still compare all other observations exactly. This is not
+a claim of cross-browser numerical identity.
+
+Limits: these percentages describe V3's existing abstract photosynthetic resource
+budget, not measured irradiance or a scientifically calibrated canopy. Independently
+rounded percentages may not visibly sum to exactly 100%. No biological balancing
+claim follows from the interface and deterministic allocation checks.

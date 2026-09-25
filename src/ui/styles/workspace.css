@@ -81,7 +81,15 @@ button:hover:not(:disabled) { filter: brightness(1.06); }
 #world-map { touch-action: none; cursor: grab; }
 #world-map:active { cursor: grabbing; }
 #world-map:focus-visible { outline-offset: -4px; }
-.notebook { grid-column: 2; grid-row: 1 / -1; min-height: 0; overflow-y: auto; border-left: var(--frame-width) var(--frame-style) var(--color-rule); background: var(--color-workspace-panel); }
+.notebook { grid-column: 2; grid-row: 1 / -1; min-height: 0; overflow-y: scroll; scrollbar-gutter: stable; border-left: var(--frame-width) var(--frame-style) var(--color-rule); background: var(--color-workspace-panel); }
+/* An explicit native track also stays visible with Chromium/WebKit overlay
+   scrollbars. Other browsers retain the shared native scrollbar colours. */
+@supports selector(::-webkit-scrollbar) {
+  .notebook { scrollbar-color: auto; }
+  .notebook::-webkit-scrollbar { width: 12px; }
+  .notebook::-webkit-scrollbar-track { background: var(--color-panel); }
+  .notebook::-webkit-scrollbar-thumb { min-height: 36px; border: 3px solid var(--color-panel); border-radius: var(--panel-radius); background: var(--color-muted); }
+}
 .notebook-heading { padding: 26px 24px 16px; }
 .notebook-heading .eyebrow { font-size: var(--text-notebook); }
 .life-panel { margin: 0 24px 24px; padding: 24px 20px 18px; border: var(--frame-width) var(--frame-style) var(--color-rule-strong); background: var(--color-panel); text-align: center; }

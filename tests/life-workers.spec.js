@@ -9,6 +9,24 @@ const { world, checkpoint } = workerFixture();
 const view = { camera: { x: 0, y: 0, zoom: 1 }, layer: 'terrain', pinnedId: null, speed: 10 };
 const saved = createSave(world, checkpoint, view);
 
+function expectHeadlessObservation(actual, expected) {
+  // Light capture uses climate's exponentials, whose last bits can differ
+  // between Chromium and Node. Worker-to-worker comparisons remain exact.
+  const comparable = structuredClone(actual);
+  for (let hexIndex = 0; hexIndex < expected.hexes.length; hexIndex += 1) {
+    for (let index = 0; index < expected.hexes[hexIndex].species.length; index += 1) {
+      const share = expected.hexes[hexIndex].species[index].lightShare;
+      const row = comparable.hexes[hexIndex].species[index];
+      if (share === undefined) expect(row.lightShare).toBeUndefined();
+      else {
+        expect(row.lightShare).toBeCloseTo(share, 12);
+        row.lightShare = share;
+      }
+    }
+  }
+  expect(comparable).toEqual(expected);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/assets/life-test-worker.js?*', route => route.fulfill({
     contentType: 'text/javascript', body: lifeWorkerHarness }));
@@ -28,7 +46,7 @@ test('four real workers match one worker and headless state while queued queries
   expect(parallel.tree).toEqual(serial.tree);
   const headless = restoreLifeModel(world, checkpoint);
   headless.advanceTo(checkpoint.day + 1);
-  expect(parallel.observation).toEqual(headless.observe());
+  expectHeadlessObservation(parallel.observation, headless.observe());
   expect(parallel.checkpoint).toEqual(headless.exportState());
   expect(parallel.tree).toEqual(headless.observeTree());
   const continued = await page.evaluate(exerciseLifeWorker, { url,
@@ -53,7 +71,7 @@ test('unavailable or crashing helpers fall back to the same completed observatio
   expect(result.helpers).toBe(0);
   const headless = restoreLifeModel(world, checkpoint);
   headless.advanceTo(checkpoint.day + 1);
-  expect(result.observation).toEqual(headless.observe());
+  expectHeadlessObservation(result.observation, headless.observe());
   expect(result.checkpoint).toEqual(headless.exportState());
   expect(result.responses).toEqual(['restore', 'advance', 'tree', 'export']);
   const errors = [];

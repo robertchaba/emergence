@@ -2,7 +2,7 @@ import { climateAt } from '../../climate.js';
 import { hashSeed } from '../../noise.js';
 import { candidateMutations, deriveGenome, describeGenome, geneticDistance,
   genomeKey, validateGenome } from './genes/genome.js';
-import { environmentalPerformance, evaluateCommunity, founderForSite, scoreSpecies, supportsHabitat, waterDepth } from './ecology.js';
+import { allocateLight, environmentalPerformance, evaluateCommunity, founderForSite, scoreSpecies, supportsHabitat, waterDepth } from './ecology.js';
 import { createRandom, roundedExpectation } from './random.js';
 import { speciesName } from './names.js';
 import { recordGenome, validateLineage, observeTree, inspectGeneHistory } from './lineage.js';
@@ -695,7 +695,7 @@ function buildModel(world, state, diagnostics) {
   function buildObservation(options, community) {
     const compact = options.detail === 'summary';
     const ranges = new Set(rangeRecords(options).map(record => record.id));
-    // A collapsed notebook never constructs communities or scores candidates.
+    // A collapsed notebook only allocates light; it never scores candidates.
     if (!community && ranges.size) community = communities();
     const speciesRows = [];
     const hexes = new Map();
@@ -742,10 +742,12 @@ function buildModel(world, state, diagnostics) {
       }
       for (const row of rows) {
         if (!hexes.has(row.hexId)) hexes.set(row.hexId, { hexId: row.hexId, population: 0,
-          species: new Map(), display: new Map() });
+          species: new Map(), display: new Map(), producers: [] });
         const hex = hexes.get(row.hexId);
         hex.population += row.count;
         hex.species.set(row.speciesId, (hex.species.get(row.speciesId) ?? 0) + row.count);
+        if (record.genome.photosynthesis) hex.producers.push({ speciesId: record.id,
+          habitat: row.habitat, population: row.count, genome: record.genome, derived });
         const mobile = record.genome.movement > 0;
         const key = `${derived.role}|${energySources.join(',')}|${derived.size}|${row.habitat}|${mobile}`;
         if (!hex.display.has(key)) hex.display.set(key, { role: derived.role, size: derived.size,
@@ -754,11 +756,15 @@ function buildModel(world, state, diagnostics) {
       }
     }
     speciesRows.sort((a, b) => b.population - a.population || order(a.id, b.id));
-    const hexRows = [...hexes.values()].map(hex => ({ hexId: hex.hexId, population: hex.population,
-      speciesCount: hex.species.size, variants: hex.species.size,
-      species: [...hex.species].map(([id, population]) => ({ id, population }))
-        .sort((a, b) => b.population - a.population || order(a.id, b.id)),
-      display: [...hex.display.values()] })).sort((a, b) => a.hexId - b.hexId);
+    const hexRows = [...hexes.values()].map(hex => {
+      const shares = lightShares(hex.hexId, hex.producers);
+      return { hexId: hex.hexId, population: hex.population,
+        speciesCount: hex.species.size, variants: hex.species.size,
+        species: [...hex.species].map(([id, population]) => ({ id, population,
+          ...(shares?.has(id) ? { lightShare: shares.get(id) } : {}) }))
+          .sort((a, b) => b.population - a.population || order(a.id, b.id)),
+        display: [...hex.display.values()] };
+    }).sort((a, b) => a.hexId - b.hexId);
     const organisms = hexRows.reduce((sum, row) => sum + row.population, 0);
     return { ...(compact ? { detailLevel: 'summary', inspection: { speciesId: options.speciesId, includeTendencies: options.includeTendencies } } : {}),
       runId: state.runId, worldId: state.worldId, worldIdentity: state.worldIdentity,
@@ -787,6 +793,27 @@ function buildModel(world, state, diagnostics) {
         stochasticEvents: 'stochastic-rounded-expectations',
         predation: 'finite-aggregate-withdrawals', dispersal: 'aggregate-conductance',
         validation: 'experimental-uncalibrated' } };
+  }
+
+  function lightShares(hexId, producers) {
+    if (!producers.length) return null;
+    const hex = environment(hexId);
+    const shares = new Map();
+    let budget = 0;
+    // Include unused habitat pools: one crowded river bank is not a fully
+    // utilized hex when its water still has spare light (or vice versa).
+    for (const habitat of ['land', 'water']) {
+      if (!(habitat === 'land' ? hasLand(hex) : hasWater(hex))) continue;
+      const rows = producers.filter(row => row.habitat === habitat)
+        .sort((a, b) => order(a.speciesId, b.speciesId))
+        .map(row => ({ ...row, environment: environmentalPerformance(row.genome, hex, habitat, row.derived) }));
+      const light = allocateLight(hex, habitat, rows);
+      if (!light.exhausted) return null;
+      budget += light.budget;
+      rows.forEach((row, index) => shares.set(row.speciesId,
+        (shares.get(row.speciesId) ?? 0) + light.allocations[index]));
+    }
+    return new Map([...shares].map(([id, amount]) => [id, amount / budget]));
   }
 
   function observe(request) {
