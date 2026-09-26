@@ -2,7 +2,22 @@
 
 ## Status
 
-**Current: V4 evolutionary tradeoffs and trait-informed map marks — 2026-09-25.**
+**Current: Plain land and quieter water engraving — 2026-09-26.** Decision 083
+removes land decoration and reduces water ink opacity by about one quarter.
+
+**Clean land with fine relief etching — 2026-09-26.** Decision 082
+replaces land stippling with sparse curved marks and retains the approved oceans.
+
+**Reference-guided atlas engraving — 2026-09-26.** Decision 081 uses
+flowing water lines, clustered stippling and fine grain from the supplied image.
+
+**Delicate terrain decoration — 2026-09-26.** Decision 080 keeps
+clean terrain fills with sparse etched ground marks, ripples and shore accents.
+
+**Subtle terrain textures — 2026-09-26.** Decision 079 adds ground grain,
+sparse water ripples and fine shoreline strokes to the terrain layer.
+
+**V4 evolutionary tradeoffs and trait-informed map marks — 2026-09-25.**
 Decision 078 activates V4, preserving V3 and adding 18 genes, stronger sexual
 reproduction and sharper competition for existing resources.
 
@@ -4158,3 +4173,169 @@ copy. It was not adopted. The user tested the current 1.20 implementation and
 explicitly reported being very happy with its unfolding and appearance, so the
 validated workspace behavior is retained. Remaining trajectory variability is
 recorded as a limitation, not addressed with forced species counts or extinctions.
+
+## 079 — Subtle terrain textures — 2026-09-26
+
+Refines 020/041's terrain presentation while retaining their river geometry,
+mineral land palette and blue seas. The user requested faint textures and subtle
+decoration to make the terrain more attractive. Terrain now has fine two-tone
+ground grain, sparse paired water ripples and a delicate double shore line along
+actual land/water hex boundaries, including lakes and the cylindrical seam.
+These are illustrative surface marks, not new physical or ecological observations.
+
+Decoration is anchored in hex coordinates and cached by the supplied read-only
+geography. A local reproducible cosmetic sequence uses hex identity and elevation;
+it never reads or consumes biological randomness, browser clocks or engine state.
+Rendering remains independent of UI and simulation implementations. Existing
+damage clips repaint the marks with their cells; unchanged frames still skip
+raster work. Marks fade in between 7 and 20 CSS-pixel hex radii and have capped
+ink widths at close zoom. Frost attenuates land grain; ice suppresses open-water
+ripples and shore marks. Rivers, life silhouettes and selections draw above them.
+Elevation, temperature, moisture and region diagnostics retain their earlier fills.
+
+Five dedicated colour/alpha tokens live in `tokens.css`, with matching explicit
+dark and system-dark fallback values. The existing UI token adapter supplies them
+to Canvas. No additional assets, runtime dependencies, controls, translated copy,
+saved-state changes or biological rules are introduced. Usage is unchanged;
+the rendering README records the new presentation boundary.
+
+Validation: `npm run build` and `npm test` passed (212 headless/rendering checks,
+157 Chromium checks, one existing skipped duplicate). The subsequently added
+decoration regression also passes with all 28 renderer checks. It covers stable
+geometry across warm seasons and camera returns, frozen-water suppression,
+diagnostic-layer exclusion, low-zoom omission and read-only snapshots. Existing
+pixel comparisons confirm partial seasonal redraws match fresh frames in both
+themes, at fractional DPR, across the longitude seam and beneath life/selection
+overlays. Light/dark terrain was visually inspected at desktop and phone widths
+and close zoom, including frost, shore lines, original assets, focus and disabled
+controls. Both viewport checks reported no page errors or horizontal overflow;
+the existing suite covers both locales and narrower layouts. `git diff --check`
+and scope/dependency review passed. No simulation implementation changed.
+
+Detail intentionally disappears at distant phone/overview scales and does not
+represent measured sediment, currents or a finer-resolution coastline. Visual
+checks are limited to Chromium; no ecological or cross-browser claim is implied.
+
+## 080 — Clean fills with delicate ground accents — 2026-09-26
+
+Refines 079 after the user clarified that continuous mottling is too heavy and
+only subtle decoration is wanted. The attempted raster texture is removed in
+full, including its temporary surface factory and palette. Terrain retains its
+clean existing fills, fine water ripples and shore accents. Ground speckles are
+reduced from at most 40 to 24 candidates per hex. Roughly one third of land cells
+receive a small group of three fine curved hatch strokes, using the existing
+low-opacity ground ink. These are generic engraving marks, not vegetation or
+new terrain classifications.
+
+The geometry is cached and anchored to each hex. Marks remain under rivers,
+organisms and selections, fade at overview scale and attenuate beneath frost.
+No new controls, assets, runtime dependencies, browser allocation API or colour
+tokens remain from this revision. Simulation, saved state, diagnostics and usage
+are unchanged; existing token and layer boundaries are preserved.
+
+Validation: `npm run build` and `npm test` passed with 213 headless/rendering
+checks and 157 Chromium checks; one existing duplicate remains skipped. The
+focused decoration test includes the ground strokes and their exclusion from
+diagnostic layers. Seasonal partial/full-frame pixel comparisons and life
+overlay checks pass in both themes. Final light/dark atlas views were inspected
+at desktop and phone widths, including close zoom, focus, disabled controls and
+original assets, with no page errors or horizontal overflow. `git diff --check`
+and scope review passed. The temporary raster implementation and its UI/test
+factory wiring are absent from the final diff. Validation is limited to Chromium.
+
+The decoration remains intentionally faint at normal zoom and disappears in
+very small overview cells. This is a presentation choice, not added geography.
+
+## 081 — Reference-guided atlas engraving — 2026-09-26
+
+Supersedes 079/080's isolated ripple pairs and three-stroke ground motifs. The
+user supplied an atlas image showing fine flowing water lines, clustered mineral
+stippling and paper grain. The map adopts those graphic details while preserving
+its physical colour fills, river network and interactive overlays. The supplied
+image is a visual reference, not new terrain data or a request to change the
+surrounding interface.
+
+Open water now carries parallel cubic engraving curves from a periodic physical
+coordinate field. A union of open-water hexes clips the field, including lakes;
+longitude periods are integer divisions of the circumference. The lines are
+decorative, not simulated or observed currents. Land has fine scattered grain
+and occasional denser groups of tiny ink flecks; water has fewer pale fleck
+groups. Frozen surfaces retain reduced grain and omit the water lines and shore
+accents. Detail fades between 4 and 12 CSS-pixel hex radii, keeping it visible at
+ordinary atlas scales without crowding tiny overview cells. Stroke and fleck
+sizes remain capped at closer zoom.
+
+Geometry is cached by the read-only geography snapshot and remains fixed through
+camera, theme, season and life changes. Water curves are drawn once through the
+union mask so individual hex clips cannot nick their shared edges. Drawing leaves
+rivers, life silhouettes and selections above the engraving. The new
+water-fleck colour and revised ink opacity are root theme tokens with matching
+system-dark fallback values. The UI/browser boundary, diagnostic layers, saved
+state and simulation are unchanged. No runtime dependency, bitmap asset or
+continuous shaded noise surface is added. Rendering documentation is updated;
+usage remains unchanged.
+
+This supersedes 021's local frost repainting at scales where the engraving is
+visible. Translucent stippling made small raster differences accumulate along
+partial freeze/thaw damage boundaries. Such transitions now recompose the full
+terrain frame; unchanged frames still skip drawing, while life motion/census
+changes retain local repainting. Tiny undecorated overviews retain their earlier
+frost path. This trades extra work on freeze/thaw frames for clean composition;
+it changes no simulated timing. Existing pixel tolerances are unchanged.
+
+Validation at this stage: the build, 213 headless/rendering checks and all ten
+focused seasonal-repaint/life-visual browser checks passed. The complete browser
+rerun was interrupted for the user's land feedback; decision 083 records final
+validation of the retained water treatment and plain ground.
+The treatment approximates the supplied illustration with scalable Canvas marks;
+it does not reproduce its generated geography, page layout or every ink detail.
+
+## 082 — Clean land with fine relief etching — 2026-09-26
+
+Supersedes 081's land grain and clustered stippling after the user described the
+effect as dark powder. The user explicitly approved the ocean appearance.
+Land now has clean fills with occasional groups of three thin, gently curved
+relief strokes. The short marks occupy roughly one third of land cells, leaving
+open space between them. Their rise responds loosely to elevation, but they are
+illustrative engraving rather than measured contours or new terrain data.
+
+Ocean curves, flecks, grain, shoreline accents and their sampling sequence are
+unchanged. Both themes continue using supplied root colour tokens. Ground marks
+remain cached in hex coordinates, attenuate beneath frost, fade at distant zoom
+and draw below rivers, life and selection. No interface, simulation, diagnostic
+layer, saved state, dependency or usage changes are introduced. The rendering
+README reflects the revised appearance.
+
+Validation at this stage: the build and 213 headless/rendering checks passed;
+the browser rerun was interrupted for the user's further direction. A direct Chromium
+comparison against the approved ocean renderer produced identical RGBA pixels
+in both themes at desktop/phone sizes, fractional DPR and three cameras per size.
+Both themes were visually inspected at desktop and phone widths, including close
+zoom, original artwork, focus and disabled controls; no page errors or horizontal
+overflow were reported. Fine decoration intentionally disappears at the smallest
+overview scales. Visual validation is limited to Chromium.
+
+## 083 — Plain land and quieter water engraving — 2026-09-26
+
+Supersedes all land decoration in 079–082: the user requested plain land and the
+same water treatment with more transparency. Land no longer generates or draws
+grain, flecks or relief marks. Water retains the approved curve geometry and
+cosmetic sampling, with the grain, waves, flecks and shore accents about one
+quarter lower in opacity. The unused land highlight token is removed. All ink
+changes remain in root theme tokens, including the system-dark fallback.
+
+The renderer remains read-only. Physical shading, rivers, life, selections,
+diagnostic layers, simulation and saved state are unchanged. The earlier frost
+recomposition boundary remains; documentation now describes water-only engraving.
+Usage does not change.
+
+Validation: `npm run build` and `npm test` passed with 213 headless/rendering
+checks and 157 Chromium checks; one existing duplicate remains skipped. The
+decoration regression now verifies plain land both warm and frozen, as well as
+stable water geometry, ice behavior and plain diagnostics. Existing seasonal
+partial/fresh-frame pixel comparisons and life overlay checks pass in both
+themes. Light/dark desktop and phone views were visually inspected, including
+close zoom, focus, original assets and disabled controls; neither viewport
+reported page errors or horizontal overflow. Scope/dependency review and
+`git diff --check` passed. Decoration still fades away in tiny overview cells;
+browser validation is limited to Chromium.

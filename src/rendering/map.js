@@ -11,6 +11,7 @@ const CORNERS = Array.from({ length: 6 }, (_, index) => {
 export const MAP_TOKEN_NAMES = Object.freeze([
   'ground', 'sea-deep', 'sea-shallow', 'lake', 'land-low', 'land-high',
   'relief-shadow', 'relief-light', 'ice', 'frost', 'river', 'river-bank', 'spring',
+  'grain-shadow', 'water-ripple', 'water-fleck', 'shore-line', 'shore-echo',
   'spring-ring', 'grid', 'pin', 'pin-outline', 'pin-fill', 'temperature-cold',
   'temperature-hot', 'humidity-dry', 'humidity-wet', 'humidity-water',
   'region-barrier', 'region-boundary', 'pass', 'pass-outline',
@@ -148,6 +149,7 @@ export function createMapRenderer(canvas, { tokens }) {
   let temperatureRamp;
   let colorCache = new WeakMap();
   const geometryCache = new WeakMap();
+  const surfaceCache = new WeakMap();
   const lifeGeometryCache = new WeakMap();
   let cachedLife = null;
   let cachedTerritory = null;
@@ -329,6 +331,166 @@ export function createMapRenderer(canvas, { tokens }) {
     return cached.get(layer);
   }
 
+  // Fixed water marks in hex coordinates: they travel with the map and
+  // never consume simulation randomness. Cache geometry, not seasonal state.
+  function surfaceGeometry(world) {
+    if (surfaceCache.has(world)) return surfaceCache.get(world);
+    const circumference = world.width * ROOT_THREE;
+    const surfaces = world.hexes.map((hex) => {
+      if (hex.waterType === 'none') return null;
+      let ticket = Math.imul(hex.id + 1, 0x9e3779b1) ^ Math.round(hex.bedElevation * 10);
+      const sample = () => {
+        ticket = (ticket + 0x6d2b79f5) | 0;
+        let value = Math.imul(ticket ^ (ticket >>> 15), ticket | 1);
+        value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+        return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+      };
+      const grain = [];
+      const flecks = [];
+      const cluster = sample() < 0.24;
+      const clusterX = (sample() - 0.5) * 0.9;
+      const clusterY = (sample() - 0.5) * 1.1;
+      for (let index = 0; index < 32; index++) {
+        const x = (sample() - 0.5) * 1.68;
+        const y = (sample() - 0.5) * 1.94;
+        if (insideHex(x / 0.97, y / 0.97)) grain.push({ x, y, size: 0.45 + sample() * 0.55 });
+      }
+      if (cluster) {
+        for (let index = 0; index < 28; index++) {
+          const x = clusterX + (sample() + sample() - 1) * 0.62;
+          const y = clusterY + (sample() + sample() - 1) * 0.75;
+          if (insideHex(x / 0.94, y / 0.94)) {
+            flecks.push({ x, y, size: 0.55 + sample() * 0.8, angle: sample() * Math.PI });
+          }
+        }
+      }
+      const shores = [];
+      const from = center(hex);
+      for (const id of hex.neighbors) {
+        const neighbor = world.hexes[id];
+        if (neighbor.waterType !== 'none') continue;
+        const to = center(neighbor);
+        const dx = modulo(to.x - from.x + circumference / 2, circumference) - circumference / 2;
+        const dy = to.y - from.y;
+        const length = Math.hypot(dx, dy);
+        shores.push({ x: dx / 2, y: dy / 2, nx: dx / length, ny: dy / length });
+      }
+      return { grain, flecks, shores };
+    });
+    const lines = [];
+    if (world.hexes.some(hex => hex.waterType !== 'none')) {
+      const frequency = Math.PI * 2 * Math.max(1, Math.round(world.width / 6)) / circumference;
+      const wave = (x, level) => ({
+        y: level + Math.sin(x * frequency + level * 0.34) * 0.5
+          + Math.sin(x * frequency * 2 - level * 0.24 + 1.6) * 0.18,
+        slope: Math.cos(x * frequency + level * 0.34) * frequency * 0.5
+          + Math.cos(x * frequency * 2 - level * 0.24 + 1.6) * frequency * 0.36,
+      });
+      const count = Math.ceil(circumference / 1.5);
+      const span = circumference / count;
+      for (let row = -4; row <= Math.ceil((world.height * 1.5 + 1.3) / 0.20); row++) {
+        const level = row * 0.20;
+        const segments = [];
+        for (let column = 0; column < count; column++) {
+          const left = wave(column * span, level);
+          const right = wave((column + 1) * span, level);
+          segments.push({ middle: (column + 0.5) * span, span,
+            ys: [left.y, left.y + left.slope * span / 3, right.y - right.slope * span / 3, right.y] });
+        }
+        lines.push({ level, segments });
+      }
+    }
+    const geometry = { hexes: surfaces, lines };
+    surfaceCache.set(world, geometry);
+    return geometry;
+  }
+
+  function drawWaterLines(world, lines, cells, view) {
+    const water = cells.filter(({ hex }) => hex.waterType !== 'none' && hex.temperature >= 0);
+    if (!water.length) return;
+    context.save();
+    context.beginPath();
+    let top = height, bottom = 0;
+    for (const { x, y } of water) {
+      polygon(context, x, y, view.scale, false);
+      top = Math.min(top, y - view.scale);
+      bottom = Math.max(bottom, y + view.scale);
+    }
+    // Clip once to the water union: internal hex edges cannot nick the lines,
+    // and each curve is painted exactly once even where adjacent cells meet.
+    context.clip();
+    context.globalAlpha = clamp((view.scale - 4) / 8);
+    context.lineWidth = Math.min(0.8, Math.max(0.4, view.scale * 0.022));
+    context.strokeStyle = palette['water-ripple'];
+    context.beginPath();
+    for (const band of lines) {
+      const y = view.y + band.level * view.scale;
+      if (y + view.scale < top || y - view.scale > bottom) continue;
+      for (const segment of band.segments) {
+        const point = projected({ x: segment.middle, y: band.level }, world, view);
+        const x = view.x + point.x * view.scale;
+        const half = segment.span * view.scale / 2;
+        if (x + half < 0 || x - half > width) continue;
+        const ys = segment.ys.map(value => view.y + value * view.scale);
+        context.moveTo(x - half, ys[0]);
+        context.bezierCurveTo(x - half / 3, ys[1], x + half / 3, ys[2], x + half, ys[3]);
+      }
+    }
+    context.stroke();
+    context.restore();
+  }
+
+  function drawSurface(hex, surface, x, y, scale) {
+    const detail = clamp((scale - 4) / 8);
+    if (!detail) return;
+    const frozen = hex.temperature < 0;
+    context.save();
+    context.globalAlpha = detail * (frozen ? 0.25 : 0.55);
+    for (const [parity, ink] of ['grain-shadow', 'water-fleck'].entries()) {
+      if (!surface.grain.length) break;
+      context.beginPath();
+      for (let index = parity; index < surface.grain.length; index += 2) {
+        const point = surface.grain[index];
+        const size = Math.min(1.3, scale * 0.052) * point.size;
+        context.rect(x + point.x * scale, y + point.y * scale, size, size * 0.7);
+      }
+      context.fillStyle = palette[ink];
+      context.fill();
+    }
+    context.globalAlpha = detail * (frozen ? 0.20 : 1);
+    if (surface.flecks.length) {
+      context.beginPath();
+      for (const mark of surface.flecks) {
+        const left = x + mark.x * scale;
+        const top = y + mark.y * scale;
+        const size = Math.min(1.7, scale * 0.055) * mark.size;
+        context.moveTo(left, top);
+        context.lineTo(left + Math.cos(mark.angle) * size, top + Math.sin(mark.angle) * size);
+      }
+      context.lineCap = 'round';
+      context.lineWidth = Math.min(0.85, scale * 0.032);
+      context.strokeStyle = palette['water-fleck'];
+      context.stroke();
+    }
+    if (!frozen) {
+      context.lineCap = 'round';
+      context.lineWidth = Math.min(0.85, scale * 0.035);
+      for (const [inset, halfLength, ink] of [[0.035, 0.47, 'shore-line'], [0.15, 0.39, 'shore-echo']]) {
+        if (!surface.shores.length) break;
+        context.beginPath();
+        for (const edge of surface.shores) {
+          const mx = x + (edge.x - edge.nx * inset) * scale;
+          const my = y + (edge.y - edge.ny * inset) * scale;
+          context.moveTo(mx - edge.ny * halfLength * scale, my + edge.nx * halfLength * scale);
+          context.lineTo(mx + edge.ny * halfLength * scale, my - edge.nx * halfLength * scale);
+        }
+        context.strokeStyle = palette[ink];
+        context.stroke();
+      }
+    }
+    context.restore();
+  }
+
   // A cylindrical edge is not a long straight line across the map: unwrap to
   // the nearest longitude and draw a second clipped segment on the other edge.
   function connection(world, fromId, toId, view, stroke, lineWidth, dash = []) {
@@ -470,9 +632,13 @@ export function createMapRenderer(canvas, { tokens }) {
       && previousFrame.lifeRunId === life?.runId;
     const frame = { geography, layer, zoom: camera.zoom, x: camera.x, y: camera.y, pinnedId, hoveredId, frozen,
       lifeHexes, selectedSpeciesId, territorySignature, lifeRunId: life?.runId, motionTime };
+    // Recompose engraved terrain when frost changes its base colours. Small
+    // clipped ink fragments otherwise accumulate at freeze/thaw boundaries.
+    // Ordinary life motion and census changes retain the local repaint path.
+    const changingFrost = stable && view.scale > 4 && frozen?.some((value, id) => value !== previousFrame.frozen[id]);
     let damagedRows = null;
     context.save();
-    if (stable && ['terrain', 'elevation', 'regions'].includes(layer)) {
+    if (stable && !changingFrost && ['terrain', 'elevation', 'regions'].includes(layer)) {
       const changed = new Set(frozen ? frozen.flatMap((value, id) => value !== previousFrame.frozen[id] ? [id] : []) : []);
       if (motionTime !== previousFrame.motionTime) {
         for (const [id, summary] of lifeHexes) if (summary.animated) changed.add(id);
@@ -540,6 +706,8 @@ export function createMapRenderer(canvas, { tokens }) {
     }
     context.clip();
 
+    const surfaces = layer === 'terrain' && view.scale > 4 ? surfaceGeometry(geography) : null;
+    const visibleSurfaces = [];
     for (const hex of world.hexes) {
       if (damagedRows) {
         const range = damagedRows.get(hex.row);
@@ -550,6 +718,7 @@ export function createMapRenderer(canvas, { tokens }) {
       if (y + view.scale < 0 || y - view.scale > height) continue;
       const x = view.x + position.x * view.scale;
       if (x + view.scale < 0 || x - view.scale > width) continue;
+      if (surfaces && hex.waterType !== 'none') visibleSurfaces.push({ hex, x, y });
       polygon(context, x, y, view.scale + 0.35);
       const tint = lifeHexes?.get(hex.id)?.tint ?? 0;
       context.fillStyle = tint && ['terrain', 'elevation'].includes(layer)
@@ -562,6 +731,9 @@ export function createMapRenderer(canvas, { tokens }) {
         context.stroke();
       }
     }
+
+    if (surfaces) drawWaterLines(world, surfaces.lines, visibleSurfaces, view);
+    for (const { hex, x, y } of visibleSurfaces) drawSurface(hex, surfaces.hexes[hex.id], x, y, view.scale);
 
     context.lineCap = 'round';
     if (layer === 'terrain' || layer === 'elevation') {

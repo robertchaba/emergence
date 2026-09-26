@@ -65,6 +65,11 @@
   --map-land-high: #b4b1a8;
   --map-relief-shadow: #575650;
   --map-relief-light: #e3e0d7;
+  --map-grain-shadow: rgb(54 48 38 / 13%);
+  --map-water-ripple: rgb(190 223 225 / 10%);
+  --map-water-fleck: rgb(216 228 215 / 13%);
+  --map-shore-line: rgb(220 225 203 / 21%);
+  --map-shore-echo: rgb(190 218 211 / 9%);
   --map-ice: #dfecef;
   --map-frost: #fffefa;
   --map-river: #527c87;
@@ -194,6 +199,11 @@
   --map-land-high: #aaa89f;
   --map-relief-shadow: #464640;
   --map-relief-light: #d8d6ce;
+  --map-grain-shadow: rgb(29 35 29 / 13%);
+  --map-water-ripple: rgb(166 209 216 / 9%);
+  --map-water-fleck: rgb(196 220 205 / 13%);
+  --map-shore-line: rgb(202 222 197 / 20%);
+  --map-shore-echo: rgb(156 204 197 / 8%);
   --map-ice: #cbdfe4;
   --map-frost: #f5f7f2;
   --map-river: #587f87;
@@ -325,6 +335,11 @@
     --map-land-high: #aaa89f;
     --map-relief-shadow: #464640;
     --map-relief-light: #d8d6ce;
+    --map-grain-shadow: rgb(29 35 29 / 13%);
+    --map-water-ripple: rgb(166 209 216 / 9%);
+    --map-water-fleck: rgb(196 220 205 / 13%);
+    --map-shore-line: rgb(202 222 197 / 20%);
+    --map-shore-echo: rgb(156 204 197 / 8%);
     --map-ice: #cbdfe4;
     --map-frost: #f5f7f2;
     --map-river: #587f87;
