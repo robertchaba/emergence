@@ -2,7 +2,10 @@
 
 ## Status
 
-**Current: Plain land and quieter water engraving — 2026-09-26.** Decision 083
+**Current: Plain terrain with shore accents — 2026-09-26.** Decision 084 removes
+surface textures, retains decorative shores and restores local frost/ice repainting.
+
+**Plain land and quieter water engraving — 2026-09-26.** Decision 083
 removes land decoration and reduces water ink opacity by about one quarter.
 
 **Clean land with fine relief etching — 2026-09-26.** Decision 082
@@ -4339,3 +4342,23 @@ close zoom, focus, original assets and disabled controls; neither viewport
 reported page errors or horizontal overflow. Scope/dependency review and
 `git diff --check` passed. Decoration still fades away in tiny overview cells;
 browser validation is limited to Chromium.
+
+## 084 — Plain terrain with shore accents — 2026-09-26
+
+Supersedes the remaining surface textures in 079–083 after the user requested
+removing water textures as well, then clarified that decorative shores can stay.
+Both land and water now use their plain physical colour fills. Water curves,
+grain, flecks, their cached geometry and three dedicated colour tokens are
+removed. The paired shoreline strokes retain their geometry, opacity, root
+theme tokens, overview fade and suppression beneath ice. Only the physical shore
+geometry remains cached. Rivers, springs, ice, hex outlines, life and selections
+retain their existing presentation.
+
+The texture-specific full repaint on freeze/thaw from 081 is no longer needed;
+the renderer again repaints frost/ice changes locally at every scale. The
+decoration test is narrowed to the retained shore accents; existing renderer and
+seasonal pixel checks cover the restored behavior. Simulation, saved state, layer boundaries,
+interface controls, assets and usage are unchanged. The rendering README records
+the plain surfaces and restored repaint behavior.
+
+Validation is recorded after the build, tests and visual checks finish.

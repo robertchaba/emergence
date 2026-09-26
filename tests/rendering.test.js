@@ -279,7 +279,7 @@ test('unchanged terrain skips raster work, with invalidation for presentation ch
   }
 });
 
-test('water decoration stays anchored, respects ice, and leaves land and diagnostics clear', () => {
+test('shore accents stay anchored, respect ice, and leave land and diagnostics clear', () => {
   const { map, calls, fills, strokes } = renderer();
   const base = fixture();
   const world = freezeDeep({ ...base, hexes: base.hexes.map(hex => ({ ...hex,
@@ -295,22 +295,16 @@ test('water decoration stays anchored, respects ice, and leaves land and diagnos
     return structuredClone({ calls, fills, strokes });
   };
   const first = capture(world);
-  assert.ok(fills.includes(tokens['--map-grain-shadow']));
-  assert.ok(strokes.includes(tokens['--map-water-ripple']));
+  assert.ok(strokes.includes(tokens['--map-shore-echo']));
   assert.ok(strokes.includes(tokens['--map-shore-line']), 'coasts include the wrapped land/water boundary');
   const nextDay = { ...world, day: 2, hexes: world.hexes.map(hex => ({ ...hex, temperature: 12 })) };
-  assert.deepEqual(capture(nextDay), first, 'a warm seasonal update cannot move or resample decoration');
+  assert.deepEqual(capture(nextDay), first, 'a warm seasonal update cannot move shore accents');
   capture(world, 'terrain', { zoom: 3, x: 100, y: 20 });
-  assert.deepEqual(capture(world), first, 'returning the camera restores exactly the same texture');
+  assert.deepEqual(capture(world), first, 'returning the camera restores exactly the same shores');
   capture({ ...world, hexes: world.hexes.map(hex => ({ ...hex, temperature: -5 })) });
-  assert.ok(fills.includes(tokens['--map-grain-shadow']), 'frozen water retains faint grain');
-  assert.equal(strokes.includes(tokens['--map-water-ripple']), false, 'ice has no ripples');
   assert.equal(strokes.includes(tokens['--map-shore-line']), false, 'ice has no open-water shore decoration');
   for (const layer of ['elevation', 'temperature', 'humidity', 'regions']) {
     capture(world, layer);
-    assert.equal(fills.includes(tokens['--map-grain-shadow']), false, layer);
-    assert.equal(strokes.includes(tokens['--map-grain-shadow']), false, layer);
-    assert.equal(strokes.includes(tokens['--map-water-ripple']), false, layer);
     assert.equal(strokes.includes(tokens['--map-shore-line']), false, layer);
   }
   for (const temperature of [10, -5]) {
@@ -318,15 +312,14 @@ test('water decoration stays anchored, respects ice, and leaves land and diagnos
     map.setTokens(tokens);
     calls.length = fills.length = strokes.length = 0;
     map.draw(land);
-    for (const ink of ['grain-shadow', 'water-fleck', 'water-ripple', 'shore-line', 'shore-echo']) {
+    for (const ink of ['shore-line', 'shore-echo']) {
       assert.equal(fills.includes(tokens[`--map-${ink}`]), false, 'land has no texture');
       assert.equal(strokes.includes(tokens[`--map-${ink}`]), false, 'land has no decorative strokes');
     }
   }
   map.resize(20, 20);
   capture(world);
-  assert.equal(fills.includes(tokens['--map-grain-shadow']), false, 'distant views omit fine detail');
-  assert.equal(strokes.includes(tokens['--map-water-ripple']), false);
+  assert.equal(strokes.includes(tokens['--map-shore-line']), false, 'distant views omit shore accents');
   assert.equal(JSON.stringify(world), before);
 });
 
