@@ -1,20 +1,23 @@
 # Life model V5
 
 V5 is active. It extends the preserved V4 population model with four browsing
-traits (44 genes total) and a limited food refuge for undersized plant eaters.
+traits and one aquatic hunting trait (45 genes total), plus a limited food refuge
+for undersized plant eaters.
 Small browsers can obtain scarce food from tall plants, while increasing body
 size improves both the accessible food fraction and collection efficiency.
 V1–V4 remain independent, unchanged implementations. Shared geography, weather,
 the 360-day calendar, three biological turns per ten days and playback speeds
 retain their meanings.
 
-Rules: `v5-populations-1`. Checkpoint: `emergence-life-v5-checkpoint-1`.
-V5 rejects V1–V4 checkpoints; no genomes or random streams are silently migrated.
-The active browser starts and restores V5 runs only. Start a new world to use V5;
-older saves remain usable with their preserved model implementation.
+Rules: `v5-populations-2`. Checkpoint: `emergence-life-v5-checkpoint-1`.
+V5 rejects V1–V4 and earlier V5 rules checkpoints; no genomes or random streams
+are silently migrated. Revision 2 requires a new run, while retaining model V5.
+The active browser starts and restores current V5 runs only. V1–V4 saves require
+their preserved implementations; earlier V5 saves require the earlier project
+revision. Start a new run to use these rules.
 
 - [Complete rules and approximations](docs/RULES.md)
-- [44 genes and their tradeoffs](genes/docs/GENES.md)
+- [45 genes and their tradeoffs](genes/docs/GENES.md)
 - [Validation and balance limits](docs/VALIDATION.md)
 
 ```js
@@ -35,6 +38,14 @@ Once ordinary reach matches plant height, height penalties disappear and these
 traits provide no further browsing benefit while continuing to incur costs.
 These are selection pressures, not guaranteed survival or a prescribed outcome.
 
+Revision 2 modestly increases hunting effort and permits smaller predator
+founding populations only when actual animal intake funds viable founders.
+Paid streamlining improves sustained aquatic hunting increasingly with body
+size. Existing filter feeding also improves collection of smaller size-1–3
+animal prey by moving water consumers. These traits share finite prey and retain
+capture defenses; neither creates plankton or prescribes a whale lineage. Large
+hunters still need enough local prey, and empty or depleted water cannot feed them.
+
 One established genome describes a species. Integer populations and pooled
 reserves occupy species/hex/habitat records. Up to three hypothetical adaptation
 directions compete for acceptance across the whole species; they are never
@@ -47,7 +58,7 @@ The V4 public API remains: `observe`, `observeAsync`, `inspectHex`,
 `inspectSpecies`, `observeTree`, `inspectGeneHistory`, `exportState` and explicit
 introduction/advancement. Compact observations, requested gene/tendency details,
 local light shares, morphology and accepted-genome histories keep their common
-meanings. The four new traits appear through those same read-only observations
+meanings. The V5 traits appear through those same read-only observations
 and English/Polish descriptions. Queries return detached data, do not advance
 evolution and consume no randomness. Diagnostic listeners read no clocks and
 cannot change results. Asynchronous helpers execute detached model-owned jobs;

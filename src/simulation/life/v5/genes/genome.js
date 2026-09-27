@@ -14,6 +14,7 @@ export const TRAITS = Object.freeze([
   ['filterFeeding', 0, 3], ['dormancy', 0, 3], ['insulation', 0, 3],
   ['offspringInvestment', 0, 3], ['mateAttraction', 0, 3], ['clonalGrowth', 0, 3],
   ['treeClimbing', 0, 3], ['fallenForaging', 0, 3], ['branchPulling', 0, 3], ['longReach', 0, 3],
+  ['streamlining', 0, 3],
 ].map(([key, min, max]) => Object.freeze({ key, min, max })));
 
 export const GENE_RULES = Object.freeze({ mixedSystemPenalty: 0.08,
@@ -118,7 +119,8 @@ export function deriveGenome(g) {
     + 0.022 * g.cooperativeHunting + 0.014 * g.herding + 0.022 * g.burrowing
     + 0.02 * g.filterFeeding + 0.018 * g.dormancy + 0.018 * g.insulation
     + 0.008 * g.offspringInvestment + 0.012 * g.mateAttraction + 0.025 * g.clonalGrowth
-    + 0.009 * g.treeClimbing + 0.005 * g.fallenForaging + 0.007 * g.branchPulling + 0.008 * g.longReach;
+    + 0.009 * g.treeClimbing + 0.005 * g.fallenForaging + 0.007 * g.branchPulling + 0.008 * g.longReach
+    + 0.012 * g.streamlining;
   const construction = 1 + 0.08 * (g.size - 1) + 1.3 * traitCost
     + GENE_RULES.additionalSystemConstructionCost * Math.max(0, systems - 1)
     + GENE_RULES.photosyntheticGrazingConstructionCost * g.photosynthesis * g.plantFeeding
@@ -126,7 +128,8 @@ export function deriveGenome(g) {
     + 0.035 * paidMovement + 0.035 * g.armor + 0.07 * g.flight
     + 0.06 * g.deepRoots + 0.07 * g.propaguleDispersal
     + 0.14 * g.offspringInvestment + 0.04 * g.dormancy
-    + 0.018 * g.treeClimbing + 0.01 * g.fallenForaging + 0.015 * g.branchPulling + 0.02 * g.longReach;
+    + 0.018 * g.treeClimbing + 0.01 * g.fallenForaging + 0.015 * g.branchPulling + 0.02 * g.longReach
+    + 0.025 * g.streamlining;
   const flightEfficiency = g.movement ? g.flight * structure.flight
     / (1 + 0.12 * (g.size - 1) + covering.drag * g.armor + 0.15 * g.trunk) : 0;
   const speed = g.movement * (1 + structure.speed) * (1 + 0.2 * flightEfficiency)

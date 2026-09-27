@@ -67,7 +67,7 @@ export const treeMessages = {
     treeGeneHelp_cooperativeHunting: 'Improves capture and access to larger prey when enough of the same species live locally. The energy cost remains in sparse populations.',
     treeGeneHelp_herding: 'Reduces capture when enough of the same species live locally, but costs energy even when the population is too sparse to benefit.',
     treeGeneHelp_burrowing: 'Buffers land temperature stress and predation, but reduces movement and photosynthetic efficiency and costs energy.',
-    treeGeneHelp_filterFeeding: 'Improves feeding on available small aquatic plants, but reduces other grazing efficiency and costs energy. It does not create a new food supply.',
+    treeGeneHelp_filterFeeding: 'Improves feeding on available small aquatic plants and lets moving aquatic animal eaters bulk-feed on smaller animals of body size 1–3, with greater benefit for larger hunters. It costs upkeep and construction and reduces other feeding efficiency. It creates no new food supply.',
     treeGeneHelp_dormancy: 'Reduces activity and upkeep under environmental stress, and also reduces deaths from starvation. It requires ongoing maintenance and more costly construction.',
     treeGeneHelp_insulation: 'Improves performance in cold conditions, but worsens heat stress, slows movement and costs energy.',
     treeGeneHelp_offspringInvestment: 'Improves resource-funded recruitment under climatic or predation stress, but each offspring costs more to produce.',
@@ -77,6 +77,7 @@ export const treeMessages = {
     treeGeneHelp_fallenForaging: 'Lets mobile land browsers gather up to 8% of otherwise unreachable plant food from fallen or low material. It costs upkeep and construction and shares the 25% limit with other access traits. It creates no extra food and adds nothing within ordinary reach.',
     treeGeneHelp_branchPulling: 'Lets mobile land browsers with bite strength pull up to 10% of otherwise unreachable food from woody plants, with greater benefit at larger body sizes. It costs upkeep and construction, shares the 25% limit with other access traits, and adds nothing within ordinary reach.',
     treeGeneHelp_longReach: 'Extends access to at most 10% of otherwise unreachable plant food on land or in water. It costs upkeep and construction, shares the 25% limit with other access traits, and adds nothing once ordinary body reach is sufficient.',
+    treeGeneHelp_streamlining: 'Improves hunting efficiency for moving animal eaters in water, with greater benefit at larger body sizes. It costs upkeep and construction even on land or when stationary, where it provides no benefit. Available prey still limits food intake.',
   },
   pl: {
     treeTitle: 'Drzewo życia', treeEyebrow: 'Kronika ewolucji', treeBack: '← Wróć do atlasu',
@@ -146,7 +147,7 @@ export const treeMessages = {
     treeGeneHelp_cooperativeHunting: 'Ułatwia chwytanie i dostęp do większych ofiar, gdy lokalnie żyje dość osobników tego samego gatunku. Koszt energetyczny pozostaje także w nielicznych populacjach.',
     treeGeneHelp_herding: 'Utrudnia schwytanie, gdy lokalnie żyje dość osobników tego samego gatunku, lecz kosztuje energię nawet w populacji zbyt nielicznej, by skorzystać z ochrony.',
     treeGeneHelp_burrowing: 'Łagodzi stres termiczny i drapieżnictwo na lądzie, lecz ogranicza ruch i wydajność fotosyntezy oraz kosztuje energię.',
-    treeGeneHelp_filterFeeding: 'Ułatwia zjadanie dostępnych małych roślin wodnych, lecz pogarsza inne formy roślinożerności i kosztuje energię. Nie tworzy nowego źródła pokarmu.',
+    treeGeneHelp_filterFeeding: 'Ułatwia zjadanie dostępnych małych roślin wodnych, a poruszającym się wodnym mięsożercom pozwala zbierać wiele mniejszych zwierząt o rozmiarze ciała 1–3. Więksi łowcy zyskują więcej. Cecha kosztuje utrzymanie i budowę oraz pogarsza wydajność innych sposobów żerowania. Nie tworzy nowego źródła pokarmu.',
     treeGeneHelp_dormancy: 'Ogranicza aktywność i koszt utrzymania przy stresie środowiskowym, a także zmniejsza śmiertelność głodową. Wymaga stałych nakładów i droższej budowy.',
     treeGeneHelp_insulation: 'Poprawia wydajność w chłodzie, lecz nasila stres cieplny, spowalnia ruch i kosztuje energię.',
     treeGeneHelp_offspringInvestment: 'Poprawia rozród finansowany zasobami przy stresie klimatycznym lub drapieżnictwie, lecz zwiększa koszt wytworzenia każdego potomka.',
@@ -156,5 +157,6 @@ export const treeMessages = {
     treeGeneHelp_fallenForaging: 'Pozwala ruchliwym lądowym roślinożercom zbierać do 8% pokarmu roślinnego poza zwykłym zasięgiem z opadłych lub nisko położonych fragmentów. Kosztuje utrzymanie i budowę i dzieli limit 25% z innymi cechami dostępu. Nie tworzy dodatkowego pokarmu ani nie pomaga w zwykłym zasięgu.',
     treeGeneHelp_branchPulling: 'Pozwala ruchliwym lądowym roślinożercom o silnym ugryzieniu przyciągać do 10% pokarmu poza zwykłym zasięgiem ze zdrewniałych roślin, skuteczniej przy większym ciele. Kosztuje utrzymanie i budowę, dzieli limit 25% z innymi cechami dostępu i nie pomaga w zwykłym zasięgu.',
     treeGeneHelp_longReach: 'Daje dostęp do najwyżej 10% pokarmu roślinnego poza zwykłym zasięgiem na lądzie lub w wodzie. Kosztuje utrzymanie i budowę i dzieli limit 25% z innymi cechami dostępu. Nie pomaga, gdy zwykły zasięg ciała już wystarcza.',
+    treeGeneHelp_streamlining: 'Poprawia wydajność polowania poruszających się mięsożerców w wodzie; większe ciała zyskują więcej. Kosztuje utrzymanie i budowę także na lądzie oraz u organizmów osiadłych, którym nie daje korzyści. Ilość pokarmu nadal ogranicza dostępność ofiar.',
   },
 };

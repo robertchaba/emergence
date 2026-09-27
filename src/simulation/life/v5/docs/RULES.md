@@ -1,18 +1,19 @@
 # V5 population rules — 2026-09-27
 
 V5 preserves V4's population representation, demographic rates, bounded
-selection, defenses and dispersal. It changes browsing access and collection
-efficiency, adding four context-dependent genes to the inherited 40. A scarce
+selection, defenses and dispersal. Revision 2 adds modest hunting help, smaller
+resource-funded predator founding groups and paid aquatic hunting specializations. It changes browsing access and collection
+efficiency, adding four browsing genes and streamlining to the inherited 40. A scarce
 low-food refuge gives short plant eaters a chance to persist while selection
 favors greater reach. Alternative strategies relieve only part of the mismatch;
 no body size, species, survival period or ecological outcome is guaranteed.
 All coefficients are experimental game rules.
 
-Identifiers: `modelId: v5`, `rulesRevision: v5-populations-1`, checkpoint format
+Identifiers: `modelId: v5`, `rulesRevision: v5-populations-2`, checkpoint format
 `emergence-life-v5-checkpoint-1`, common contract `life-observations-1`.
 V1–V4 implementations and research are preserved. Shared geography, climate,
 calendar and speed meanings do not change. The rules below explicitly retain
-V4 behavior except for the browsing formulas and four genes described here;
+V4 behavior except for the browsing, hunting and founding changes described here;
 references to V3 identify inherited design history, not V5 validation evidence.
 
 ## State, introduction and timing
@@ -205,9 +206,35 @@ V3's protection against repeated free attempts at differently labelled sources.
 
 Grazing effort remains population × cells × grazing share × environment × activity
 × `2.2 (1+0.7 speed/(1+speed))`; hunting uses the corresponding predation share
-and coefficient 3.6. The first movement level for non-photosynthetic consumers
+and coefficient 4.2 (revision 1 used 3.6). The first movement level for non-photosynthetic consumers
 keeps V3's free locomotion repurposing; subsequent levels are paid. Mixed-feeding
 maintenance/construction penalties and all 22 original trait effects are retained.
+
+## Aquatic hunting specializations — revision 2
+
+Hunting demand is still finite attempted effort. For a moving animal eater in
+water, streamlining multiplies collection by
+`S = 1 + 0.12 × streamlining × (size−1)/9`; otherwise `S = 1`. It represents
+sustained swimming/search efficiency, not increased geographic dispersal or
+an override of capture defenses. Its maximum multiplier is 1.36. All expression
+pays upkeep and construction, including on land, without movement or at size 1.
+
+Filter feeding retains its plant interactions. In animal feeding, a moving
+water hunter targeting a smaller size-1–3 animal gets
+`F = 1 + 0.30 × filterFeeding × (hunterSize−preySize)/9` (maximum 1.90).
+Other animal targets, land and stationary feeding receive
+`F = 1/(1+0.15 × filterFeeding)`. This is specialization in collecting existing
+small prey, not a new plankton pool. The animal-feeding system remains required;
+filter feeding alone does not enable predation.
+
+Each target's kill cap is `remainingEffort/preyTissue × capture × S × F` and
+competition weight is `remainingEffort × (capture × S × F)^1.2`. A kill spends
+`preyTissue/(capture × S × F)` attempted effort. The same 12% prey limit and 60%
+conversion apply across all hunters, including mixed feeders. Neither collection
+multiplier changes prey eligibility or the capture probability's [0.02,0.95]
+bounds. Splitting identical prey cannot reset effort. Body growth can become
+advantageous with these traits in prey-rich water, but finite local food and
+paid body costs can prevent large hunters from persisting.
 
 ## Dispersal
 
@@ -267,8 +294,14 @@ A candidate entering an occupied acquisition signature must also beat incumbents
 by ≥0.005. All proposed branch destinations are checked at actual founding density,
 removing transferred parents and combining incoming transfers before testing
 finite food. Ordinary branches test 25% source transfer; animal-feeding candidates
-try 25%, 12.5%, 6.25% and 3.125%, using the largest viable choice. At least 20
-organisms must transfer overall. Branching conserves population, and new lineages
+try 25%, 12.5%, 6.25% and 3.125%, then one organism if needed, using the largest
+viable distinct choice. The singleton fallback retains a parent at its source
+and cannot exceed the existing frontier-settlement limit. At least 20 source
+organisms must support the branch. At least six organisms must transfer overall
+if every final projected destination supplies positive animal intake; otherwise
+the original 20-founder minimum remains. Merely carrying an unused animal-feeding
+gene does not earn the lower minimum. Every destination still needs a positive
+net score at actual founding density. Branching conserves population, and new lineages
 can subsequently go extinct. No identities are merged or protected from extinction.
 
 Search remains selection-guided and can miss neutral or longer costly paths.
@@ -287,7 +320,7 @@ branch-time expressions without inventing earlier unrecorded history.
 
 Checkpoints contain model/rules/world identity, complete PRNG state, partial-turn
 credit, species/genomes/histories, candidates, populations/reserves and counters.
-All 44 required loci must validate. V1–V4 checkpoints are incompatible; restore never
+All 45 required loci must validate. V1–V4 and revision-1 V5 checkpoints are incompatible; restore never
 fills missing new genes and then continues a different random stream as if equal.
 Browser timing, helpers, queries, locale, camera and theme do not affect biology.
 

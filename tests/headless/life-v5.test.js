@@ -7,7 +7,7 @@ import { createLifeModel as createV4, restoreLifeModel as restoreV4 } from '../.
 import { TRAITS, founderGenome, validateGenome } from '../../src/simulation/life/v5/genes/genome.js';
 import { evaluateObservationJobs } from '../../src/simulation/life/v5/observation-jobs.js';
 
-const additions = ['treeClimbing', 'fallenForaging', 'branchPulling', 'longReach'];
+const additions = ['treeClimbing', 'fallenForaging', 'branchPulling', 'longReach', 'streamlining'];
 function fixture() {
   return assignClimate({ width: 6, height: 7, day: 0, seed: 'v5-fixture', version: 'fixture',
     hexes: createGrid(6, 7).map(hex => ({ ...hex, bedElevation: -100,
@@ -41,12 +41,13 @@ test('V5 identifies a separate life model, rejects V4 saves in both directions a
   assert.equal(model.introduce(18).ok, true);
   const introduced = model.exportState();
   assert.equal(introduced.modelId, 'v5');
-  assert.equal(introduced.rulesRevision, 'v5-populations-1');
+  assert.equal(introduced.rulesRevision, 'v5-populations-2');
   assert.equal(introduced.format, 'emergence-life-v5-checkpoint-1');
   assert.equal(model.introduce(19).reason, 'already-introduced');
   assert.deepEqual(model.exportState(), introduced);
   assert.throws(() => restoreLifeModel(world, createV4(world).exportState()), /Incompatible/);
   assert.throws(() => restoreV4(world, introduced), /Incompatible/);
+  assert.throws(() => restoreLifeModel(world, { ...introduced, rulesRevision: 'v5-populations-1' }), /Incompatible/);
   assert.deepEqual(world, physical);
   reconcile(model);
 });
@@ -79,7 +80,7 @@ test('V5 replay and partial-turn continuation preserve biology independently of 
   assert.notEqual(resumed.observe().counts.organisms, -1);
   for (const species of checkpoint.species) {
     assert.equal(validateGenome(species.genome), true);
-    assert.equal(Object.keys(species.genome).length, 44);
+    assert.equal(Object.keys(species.genome).length, 45);
     assert.deepEqual(species.genomeHistory.at(-1).genome, species.genome);
     assert.ok(species.candidates.every(candidate => validateGenome(candidate.genome)));
   }
@@ -113,7 +114,7 @@ test('V5 saves require every new locus in accepted genomes, candidate genomes an
   }
 });
 
-test('V5 new gene histories retain appearance, loss and reappearance as detached 44-trait observations', () => {
+test('V5 new gene histories retain appearance, loss and reappearance as detached 45-trait observations', () => {
   const world = fixture();
   const model = createLifeModel(world);
   model.introduce(18);
@@ -159,7 +160,7 @@ test('V5 asynchronous new-gene scoring matches serial observations and cannot mu
     { ...base, genomeHistory: undefined, genome: plant, candidates: [] },
     ...Array.from({ length: 11 }, (_, speciesIndex) => ({
       ...base, id: `species-${speciesIndex + 2}`, genomeHistory: undefined, genome: consumer,
-      candidates: [{ treeClimbing: 1 }, { fallenForaging: 1 }, { branchPulling: 1, longReach: 1 }]
+      candidates: [{ treeClimbing: 1 }, { fallenForaging: 1 }, { branchPulling: 1, longReach: 1, streamlining: 1 }]
         .map((changes, index) => ({ id: `direction-${speciesIndex * 3 + index + 1}`, genome: { ...consumer, ...changes },
           originDay: 0, lastEvaluation: 0, support: 0, advantage: 0, age: 0, steps: Object.keys(changes).length })),
     })),

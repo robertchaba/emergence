@@ -1,5 +1,107 @@
 # V5 validation — 2026-09-27
 
+## Current revision 2 — predator establishment and aquatic hunting
+
+Rules `v5-populations-2` retain model V5 and its browsing rules, add streamlining
+as the 45th trait, extend animal filtering, raise hunting effort from 3.6 to 4.2,
+and permit smaller prey-funded founding groups. Earlier V5 saves require their
+earlier project revision. Historical revision-1 measurements below remain
+preserved; they do not describe the current seeded trajectory.
+
+### Focused checks and interpretation
+
+The new checks cover modest hunting relief, paid aquatic specialization,
+unchanged capture defenses and size eligibility, no food without appropriate
+prey, finite tissue/effort under source splitting, and selection for camouflage,
+herding and poison only when actual hunting pressure rewards their costs.
+Founding fixtures exercise fewer than 20 real predator founders, singleton
+transfers with retained parents, continued parent support, no-prey rejection,
+ordinary 20-founder branches, unused animal-feeding genes, population
+conservation and saved continuation. All 45 genes are required in current,
+candidate and historical genomes; earlier V5 rules are explicitly rejected.
+
+In an ideal shallow-water probe with 100,000 size-1 animal prey, a moving pure
+hunter with maximal filter feeding and streamlining improves net score from
+0.1677 at size 7 to 0.1787 at size 8 (and 0.1999 at size 10). Without those traits,
+extra size lowers the score on the same small prey. A single filter-feeding
+step is advantageous for a size-7 hunter; a single streamlining step is
+advantageous for a size-8 hunter. These comparisons demonstrate a selectable
+conditional route rather than assigning a preferred size.
+
+That deliberately abundant prey fixture isolates collection efficiency; it is
+not a food-web equilibrium. With only ten size-1 prey, the large specialized
+hunter has a negative score. Finite light, trophic transfer, local prey limits
+and the integer census strongly restrict sustainable large-animal density.
+No current check demonstrates a persistent natural whale-like lineage.
+
+### Paired seeded observations
+
+The pre-change revision-1 source is commit
+`1217490e6f90c3b48d7eead3230fe0e8f37a4c1b`. Both revisions use Small worlds,
+world seed `emergence`, biological seed `emergence:life-v5`, and samples every
+3,000 elapsed days. The comparison runs the same harness against each source
+revision; the current harness's added diagnostic can evaluate either revision's
+saved census using that revision's ecology implementation.
+
+```sh
+node scripts/check-life-v5-balance.js 15000 small emergence water v5 emergence:life-v5 3000
+node scripts/check-life-v5-balance.js 15000 small emergence land v5 emergence:life-v5 3000
+```
+
+Final day-15,000 observations:
+
+| Introduction / rules | Organisms | Living / extinct species | Pure grazers / predators / mixed | Animal-feeding body cells | Current animal intake / turn |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Water hex 168, revision 1 | 73,913 | 50 / 36 | 24 / 1 / 4 | 774 | 267.47 |
+| Water hex 168, revision 2 | 29,255 | 51 / 55 | 23 / 4 / 3 | 592 | 347.83 |
+| Dry land hex 173, revision 1 | 68 | 4 / 6 | 2 / 0 / 0 | 0 | 0 |
+| Dry land hex 173, revision 2 | 181 | 5 / 2 | 0 / 0 / 0 | 0 | 0 |
+
+Water-start animal feeders (including mixed acquisition) number 94 organisms
+in seven species, versus 360 in five before; their share of consumer body-cell
+biomass is 2.23%, versus 2.18%. The revised sample has about 30% more current
+animal intake and four pure predator species instead of one, but lower absolute
+animal-feeder biomass and fewer organisms. Expected current prey removals are
+119.53 versus 210.12 per biological turn across 33 versus 39 hunted hexes.
+These measures describe different aspects of the food web; none alone establishes
+greater stability or universal predator success.
+
+In the revised water-start panel, aquatic animal eaters remain sizes 1–2.
+Pure land predators reach size 3, while mixed land feeders reach size 4. Neither
+of the two living streamlining carriers eats animals. No whale-like lineage
+emerged. Animal feeding is already present at the day-6,000 revised sample
+(three mixed species), versus none then in revision 1, but the dry-land panel
+retains only producers. Adding a trait changes mutation options, draw use and
+later history even before hunting starts. These paired runs are observational,
+not an isolated causal test or a guarantee that consumers persist in every seed.
+
+The harness's `currentPredation` re-evaluates the completed census and climate
+without advancing the simulation. It reports expected allocated energy and prey
+withdrawals per biological turn, not historical intake or realized integer
+deaths. The existing cumulative `predationDeaths` floors local expectations and
+can undercount small-population predation; it is retained with this limitation.
+
+### Integration validation
+
+`npm run build` and `npm test` passed: **238 headless/rendering checks and 157
+Chromium checks**, with one pre-existing duplicate desktop touch check skipped.
+These include 11 new hunting/founding checks, the expanded 45-gene catalogue,
+strict revision validation, deterministic continuation and asynchronous scoring.
+Browser coverage includes save restore, worker/headless agreement, EN/PL notebook
+and tree gene descriptions, and development/source/debug startup.
+
+All 24 focused screenshots (notebook, streamlining help and filter-feeding help
+across EN/PL, light/dark and desktop/phone) were inspected: wrapping, focus,
+selected states and original artwork remain usable, with no clipping found.
+The first browser run exposed a test-only race when scrolling during asynchronous
+gene-history replacement; waiting for completed history fixed it. An old
+44-trait assertion was updated to the new catalogue count. The final full suite
+passes. `git diff --check` and scope/dependency review pass; no V1–V4 engine,
+rendering, style or runtime dependency changes were made. Browser verification
+is limited to Chromium, and these checks do not establish ecological realism.
+
+## Historical revision 1 — scope
+
 V5 is an experimental extension of V4's population representation. Its specific
 balance aim is to leave a scarce food refuge for undersized plant eaters while
 favoring increased body size in tall-plant communities. Capped alternatives
@@ -9,7 +111,7 @@ The original V4 measurements remain in [V4 validation](../../v4/docs/VALIDATION.
 changing the gene catalogue also changes seeded trajectories, so those results
 are historical context, not validation of this model.
 
-## Focused verification
+## Historical revision 1 — Focused verification
 
 `npm run build` and `npm test` pass: **227 headless/rendering checks and 157
 Chromium checks**, with one existing duplicate desktop touch check skipped.
@@ -43,7 +145,7 @@ verification is limited to Chromium.
 These checks establish implemented behavior and bounded examples, not universal
 evolutionary outcomes, scientific calibration or cross-browser numerical identity.
 
-## Reproducible seeded panels
+## Historical revision 1 — Reproducible seeded panels
 
 The observational harness uses `physical-world-4`, explicit introduction sites,
 world seed `emergence` and explicit biological seed `emergence:life-v5` for both
@@ -98,7 +200,7 @@ occupy sizes 1–5 (respectively 5, 13, 3, 2 and 1 species). This varied outcome
 shows that the size advantage in a controlled tall-canopy fixture does not mean
 all world grazers become large or that alternative traits disappear.
 
-## Controlled canopy competition
+## Historical revision 1 — Controlled canopy competition
 
 The focused fixture uses ideal 20°C humid land, size-10/trunk-10 plants and
 moving pure grazers. Against 100 plants, a rare size-1 ordinary grazer has 4.96%
@@ -133,7 +235,7 @@ excludes it: small expected populations approach zero by turn 1,500. This proves
 neither stable minority coexistence on one hex nor a guaranteed whole-world
 outcome. Different local environments and traits can change the comparison.
 
-## Limits
+## Historical revision 1 — Limits
 
 The alternative-route caps restrict the proportion of existing edible production
 that can be reached; they do not impose a species or organism quota. Small bodies

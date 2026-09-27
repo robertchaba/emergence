@@ -16,10 +16,10 @@ const allRoutes = { treeClimbing: 3, fallenForaging: 3, branchPulling: 3, longRe
 const close = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-8,
   `${message}: ${actual} versus ${expected}`);
 
-test('V5 adds four reversible paid loci to a complete 44-locus genome', () => {
-  assert.equal(TRAITS.length, 44);
-  assert.deepEqual(TRAITS.slice(-4).map(({ key }) => key), additions);
-  for (const key of additions) {
+test('V5 adds five reversible paid loci to a complete 45-locus genome', () => {
+  assert.equal(TRAITS.length, 45);
+  assert.deepEqual(TRAITS.slice(-5).map(({ key }) => key), [...additions, 'streamlining']);
+  for (const key of [...additions, 'streamlining']) {
     for (let value = 0; value <= 3; value += 1) {
       const original = grazer({ [key]: value });
       assert.equal(validateGenome(original), true);

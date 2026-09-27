@@ -10,12 +10,13 @@ import { detachObservationJobs } from './observation-jobs.js';
 import { traceCalls } from './diagnostics.js';
 
 export const MODEL_ID = 'v5';
-export const RULES_REVISION = 'v5-populations-1';
+export const RULES_REVISION = 'v5-populations-2';
 export const CONTRACT_VERSION = 'life-observations-1';
 const FORMAT = 'emergence-life-v5-checkpoint-1';
 export const EVOLUTION_RULES = Object.freeze({ maximumCandidates: 3, assessmentTurns: 12,
   sampleLocations: 12, trialMutations: 8, compoundTrials: 2, minimumAdvantage: 0.005,
   preliminaryAdvantage: 0.001, persistenceAssessments: 4, minimumPopulation: 20,
+  minimumPredatorPopulation: 6,
   broadSupport: 0.8, minimumProfileDifference: 0.03, minimumDietDifference: 0.35 });
 const copy = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
@@ -562,6 +563,7 @@ function buildModel(world, state, diagnostics) {
         const transfers = [];
         const sources = new Set();
         const projectedPools = new Map();
+        const projectedPredation = new Map();
         targets.sort((a, b) => b.difference - a.difference || populationOrder(a.row, b.row));
         for (const { row, sourceRow } of targets) {
           if (sources.has(sourceRow)) continue;
@@ -570,8 +572,11 @@ function buildModel(world, state, diagnostics) {
           // Predators cannot start at the same density as their prey. Back off
           // only when the larger split fails its real finite-food check.
           const fractions = candidate.genome.animalFeeding ? [0.25, 0.125, 0.0625, 0.03125] : [0.25];
-          for (const fraction of fractions) {
-            const count = Math.floor((row.sourceRow ? row.count / 0.25 : row.count) * fraction);
+          const counts = fractions.map(fraction => Math.floor((row.sourceRow ? row.count / 0.25 : row.count) * fraction));
+          // Sparse large-bodied lineages can test one real founder. Preserve a
+          // parent at the source and the existing frontier settlement limit.
+          if (candidate.genome.animalFeeding && sourceRow.count > 1 && (!row.sourceRow || row.count >= 1)) counts.push(1);
+          for (const count of new Set(counts)) {
             if (!count) continue;
             const projected = previous.filter(resident => resident.speciesId !== '__prospective_branch__')
               .map(resident => ({ ...resident, population: resident.population
@@ -579,16 +584,24 @@ function buildModel(world, state, diagnostics) {
             const established = previous.find(resident => resident.speciesId === '__prospective_branch__')?.population ?? 0;
             projected.push({ speciesId: '__prospective_branch__', genome: candidate.genome,
               derived: phenotype(candidate.genome), population: count + established, habitat: row.habitat });
-            if (evaluateCommunity(environment(row.hexId), row.habitat, projected, ecologyDiagnostics).at(-1).score <= 0) continue;
+            const score = evaluateCommunity(environment(row.hexId), row.habitat, projected, ecologyDiagnostics).at(-1);
+            if (score.score <= 0) continue;
             transfers.push({ row: sourceRow, destination: row, count });
             sources.add(sourceRow); projectedPools.set(key, projected);
+            projectedPredation.set(key, score.predationFood);
             break;
           }
         }
         const supportPopulation = transfers.reduce((sum, item) => sum + item.row.count, 0);
         const transferPopulation = transfers.reduce((sum, item) => sum + item.count, 0);
+        // A trophic level supports fewer bodies than its prey. The lower floor
+        // requires real animal intake at every funded destination; possessing
+        // an unused feeding gene cannot relax ordinary lineage establishment.
+        const minimumTransfer = candidate.genome.animalFeeding && projectedPredation.size > 0
+          && [...projectedPredation.values()].every(food => food > 0)
+          ? EVOLUTION_RULES.minimumPredatorPopulation : EVOLUTION_RULES.minimumPopulation;
         if (supportPopulation < EVOLUTION_RULES.minimumPopulation
-          || transferPopulation < EVOLUTION_RULES.minimumPopulation) continue;
+          || transferPopulation < minimumTransfer) continue;
         // A new lineage starts from existing parent population. No candidate
         // body, food or demographic activity existed before this acceptance.
         const child = newSpecies(candidate.genome, record.id);

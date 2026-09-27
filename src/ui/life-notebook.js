@@ -29,6 +29,7 @@ const geneKeys = {
   offspringInvestment: 'geneOffspringInvestment', mateAttraction: 'geneMateAttraction', clonalGrowth: 'geneClonalGrowth',
   treeClimbing: 'geneTreeClimbing', fallenForaging: 'geneFallenForaging',
   branchPulling: 'geneBranchPulling', longReach: 'geneLongReach',
+  streamlining: 'geneStreamlining',
 };
 const rejectionKeys = {
   'already-introduced': 'lifeAlreadyIntroduced', 'unknown-hex': 'lifeUnknownHex',

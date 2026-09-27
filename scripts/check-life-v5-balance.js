@@ -1,4 +1,5 @@
 import { generateWorld } from '../src/simulation/world.js';
+import { climateAt } from '../src/simulation/climate.js';
 
 // Observational paired panel, never a species-count quota. Both versions use the
 // same explicit biological seed; their different genomes still change draw use.
@@ -13,7 +14,7 @@ if (!Number.isSafeInteger(days) || days < 1 || !Number.isSafeInteger(interval) |
 }
 const { createLifeModel } = await import(`../src/simulation/life/${version}/model.js`);
 const { TRAITS, deriveGenome } = await import(`../src/simulation/life/${version}/genes/genome.js`);
-const { ECOLOGY_RULES } = await import(`../src/simulation/life/${version}/ecology.js`);
+const { ECOLOGY_RULES, evaluateCommunity } = await import(`../src/simulation/life/${version}/ecology.js`);
 const world = generateWorld({ seed, size });
 const site = /^\d+$/.test(siteChoice) ? world.hexes.find(hex => hex.id === Number(siteChoice))
   : world.hexes.filter(hex => !hex.permanentIce && hex.temperature >= 15 && hex.temperature <= 30
@@ -44,6 +45,39 @@ function firstExtinctionCrossover(species) {
   return null;
 }
 
+// Re-evaluate the completed-day census and climate without advancing life or
+// consuming randomness. These are current allocated food/expected prey removals
+// per biological turn, not accumulated intake or realized integer deaths.
+function currentPredation(state) {
+  const species = new Map(state.species.map(record => [record.id, record]));
+  const communities = new Map();
+  for (const row of state.populations) {
+    const key = `${row.hexId}|${row.habitat}`;
+    if (!communities.has(key)) communities.set(key, []);
+    communities.get(key).push(row);
+  }
+  let foodEnergyPerTurn = 0;
+  let expectedPreyRemovalsPerTurn = 0;
+  const huntedHexes = new Set();
+  for (const residents of communities.values()) {
+    const { hexId, habitat } = residents[0];
+    const physical = world.hexes[hexId];
+    const hex = { ...physical, ...climateAt(world, physical, state.day) };
+    const scores = evaluateCommunity(hex, habitat, residents.map(row => ({
+      speciesId: row.speciesId, population: row.count, habitat,
+      genome: species.get(row.speciesId).genome,
+    })));
+    scores.forEach((score, index) => {
+      const population = residents[index].count;
+      foodEnergyPerTurn += population * score.predationFood;
+      expectedPreyRemovalsPerTurn += population * score.predationLoss;
+      if (score.predationFood > 0) huntedHexes.add(hexId);
+    });
+  }
+  return { diagnostic: 'completed-day-expected-allocation-per-biological-turn',
+    foodEnergyPerTurn, expectedPreyRemovalsPerTurn, huntedHexes: huntedHexes.size };
+}
+
 for (let elapsed = Math.min(interval, days); ; elapsed = Math.min(elapsed + interval, days)) {
   life.advanceTo(world.day + elapsed);
   const state = life.exportState();
@@ -52,6 +86,15 @@ for (let elapsed = Math.min(interval, days); ; elapsed = Math.min(elapsed + inte
   const living = state.species.filter(row => totals.has(row.id));
   const organisms = state.populations.reduce((sum, row) => sum + row.count, 0);
   const count = predicate => living.filter(record => predicate(record.genome)).length;
+  const animalFeeders = living.filter(record => record.genome.animalFeeding > 0);
+  const animalFeedingPopulation = animalFeeders.reduce((sum, record) => sum + totals.get(record.id), 0);
+  const animalFeedingBiomass = animalFeeders.reduce((sum, record) =>
+    sum + deriveGenome(record.genome).cells * totals.get(record.id), 0);
+  const aquaticAnimalBiomassBySize = Array.from({ length: 10 }, (_, index) =>
+    animalFeeders.filter(record => record.genome.size === index + 1).reduce((sum, record) =>
+      sum + deriveGenome(record.genome).cells * state.populations
+        .filter(row => row.speciesId === record.id && row.habitat === 'water')
+        .reduce((population, row) => population + row.count, 0), 0));
   const sexualOrganisms = living.filter(record => record.genome.sexualReproduction)
     .reduce((sum, record) => sum + totals.get(record.id), 0);
   const pure = (genome, role) => genome.photosynthesis + genome.plantFeeding + genome.animalFeeding === 1
@@ -85,6 +128,10 @@ for (let elapsed = Math.min(interval, days); ; elapsed = Math.min(elapsed + inte
     pureGrazers: count(genome => pure(genome, 'grazer')),
     purePredators: count(genome => pure(genome, 'predator')),
     mixedFeeding: count(genome => genome.photosynthesis + genome.plantFeeding + genome.animalFeeding > 1),
+    animalFeedingSpecies: animalFeeders.length, animalFeedingPopulation, animalFeedingBiomass,
+    aquaticAnimalBiomassBySize, currentPredation: currentPredation(state),
+    // Cumulative model counter floors each local expectation, undercounting
+    // fractional removals; use currentPredation to inspect present food uptake.
     predationDeaths: state.stats.predationDeaths, sexualBirths: state.stats.sexualBirths,
     phenotypeSpecies, sizesByHabitat, grazerBiomassBySize })}\n`);
   if (elapsed === days) break;

@@ -8,7 +8,7 @@ import { chooseTheme } from './ui-helpers.js';
 const newGenes = ['leafArea', 'shadeTolerance', 'deepRoots', 'waxyCuticle', 'buoyancy',
   'propaguleDispersal', 'camouflage', 'warningSignals', 'ambush', 'cooperativeHunting',
   'herding', 'burrowing', 'filterFeeding', 'dormancy', 'insulation', 'offspringInvestment',
-  'mateAttraction', 'clonalGrowth', 'treeClimbing', 'fallenForaging', 'branchPulling', 'longReach'];
+  'mateAttraction', 'clonalGrowth', 'treeClimbing', 'fallenForaging', 'branchPulling', 'longReach', 'streamlining'];
 
 test('V5 genes have notebook labels and usable localized tree explanations', async ({ page }, testInfo) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -32,7 +32,7 @@ test('V5 genes have notebook labels and usable localized tree explanations', asy
     }
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
-      await page.locator('.gene-row[data-gene="longReach"]').scrollIntoViewIfNeeded();
+      await page.locator('.gene-row[data-gene="streamlining"]').scrollIntoViewIfNeeded();
       expect(await page.locator('.notebook').evaluate(node => node.scrollWidth > node.clientWidth)).toBe(false);
       await page.screenshot({ path: testInfo.outputPath(`v5-notebook-${locale}-${theme}.png`) });
     }
@@ -50,12 +50,20 @@ test('V5 genes have notebook labels and usable localized tree explanations', asy
     }
     for (const theme of ['light', 'dark']) {
       await chooseTheme(page, theme);
-      const gene = page.locator('.tree-gene[data-gene="treeClimbing"]');
+      const gene = page.locator('.tree-gene[data-gene="streamlining"]');
       await gene.scrollIntoViewIfNeeded(); await gene.focus(); await page.keyboard.press('Enter');
       await expect(gene).toBeFocused();
       await expect(gene).toHaveCSS('outline-style', 'solid');
       expect(await page.locator('#tree-of-life').evaluate(node => node.scrollWidth > node.clientWidth)).toBe(false);
+      // The worker reply replaces the help paragraph; wait for the completed
+      // trace before scrolling or capturing that section.
+      await expect(page.locator('.tree-history-open')).toBeVisible();
+      await page.locator('.tree-trace > .field-note').first().scrollIntoViewIfNeeded();
       await page.screenshot({ path: testInfo.outputPath(`v5-genes-${locale}-${theme}.png`) });
+      await page.locator('.tree-gene[data-gene="filterFeeding"]').click();
+      await expect(page.locator('.tree-history-open')).toBeVisible();
+      await page.locator('.tree-trace > .field-note').first().scrollIntoViewIfNeeded();
+      await page.screenshot({ path: testInfo.outputPath(`v5-filter-feeding-${locale}-${theme}.png`) });
     }
   }
   expect(errors).toEqual([]);

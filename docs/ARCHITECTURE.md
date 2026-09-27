@@ -2,9 +2,13 @@
 
 ## Status
 
-**Current: V5 browsing refuges and size selection — 2026-09-27.** Decision 085
-activates an independent 44-gene model, retaining scarce food for small browsers
-and paid, capped alternatives while favoring full reach through body growth.
+**Current: V5 predator establishment and aquatic hunting — 2026-09-27.**
+Decision 086 retains V5, adds paid streamlining as its 45th gene, extends animal
+filter feeding and eases resource-funded predator establishment.
+
+**V5 browsing refuges and size selection — 2026-09-27.** Decision 085
+activated the independent 44-gene model; revision identity and hunting/founding
+rules are superseded by 086, while its browsing rules remain.
 
 **Plain terrain with shore accents — 2026-09-26.** Decision 084 removes
 surface textures, retains decorative shores and restores local frost/ice repainting.
@@ -4449,3 +4453,93 @@ controls, with no overflow or focus issues found. Scope/dependency review and
 Browser verification is limited to Chromium. Seeded samples and controlled
 communities cannot establish universal coexistence, evolutionary trajectories
 or empirical biological accuracy.
+
+
+## 086 — V5 predator establishment and aquatic hunting — 2026-09-27
+
+The user observed diverse, persistent V5 communities with little predator
+pressure and asked for modest predator help and evolutionary opportunities for
+large aquatic animal eaters, explicitly retaining V5. This supersedes 085's
+rules revision and complete gene count, not its browsing decisions. V1–V4,
+shared world/climate/calendar, playback and rendering remain unchanged.
+
+Two concrete barriers motivated the change. Hunting income falls as existing
+prey acquire movement and defenses; founding previously required 20 transferred
+organisms even when finite prey supports far fewer predators. Hunting effort
+increases from 3.6 to 4.2, a 16.7% increase in attempted effort. Prey size
+eligibility, capture defenses, the shared 12% per-turn prey withdrawal limit,
+60% conversion and paid hunting traits remain. This helps intake only where
+prey is available and demand, rather than finite supply, is limiting.
+
+Animal-feeding branches retain the existing fractional transfer attempts and
+can additionally test one founder at a source, retaining a local parent and
+the existing frontier allowance. A branch can start with six rather than 20
+founders only if every final projected destination has positive actual animal
+intake. Each destination still passes its real finite-community net score;
+at least 20 parent organisms must support the branch. Unused animal-feeding
+genes cannot relax the ordinary 20-founder requirement. Founders are transferred
+from parents; persistence, ecological novelty, competition and extinction remain.
+No predators, species quotas or protected survival periods are introduced.
+
+The new reversible 0–3 `streamlining` locus costs 0.012 per level in per-cell
+trait upkeep plus 0.025 extra construction (alongside the normal 1.3×trait-cost
+construction). A moving water hunter's collection multiplier is
+`1+0.12×streamlining×(size−1)/9`, capped by gene/body ranges at 1.36. It represents
+sustained swimming/search efficiency. It changes neither geographic movement
+nor capture defenses and grants no benefit on land, without movement, without
+animal feeding or at size 1; expression still costs energy.
+
+Existing filter feeding retains plant effects and cost. Moving water animal
+eaters collecting smaller size-1–3 animal prey receive collection multiplier
+`1+0.30×filterFeeding×(hunterSize−preySize)/9`, at most 1.90. Other hunting gets
+`1/(1+0.15×filterFeeding)`, so specialization has a foraging tradeoff. Both
+multipliers operate on the same finite hunting effort and existing prey tissue;
+withdrawal spends effort divided by capture and collection. Splitting prey
+labels does not supply free attempts. No plankton pool, whale species, metabolism
+subsidy or scripted body-size trajectory is added. Food-rich contexts can select
+larger hunters, while food scarcity and full body costs can eliminate them.
+
+The model remains `v5`; its internal rules identity becomes `v5-populations-2`
+with the existing checkpoint container format. All 45 loci must validate in
+accepted, candidate and historical genomes. Earlier V5 rules are rejected
+rather than silently padded or resumed under different biology; these rules
+require a new run. The read-only observation contract and existing notebook/tree
+paths describe streamlining and extended filter feeding in English and Polish.
+UI does not inspect genomes or calculate feeding; no styles, palettes, runtime
+dependencies or new commands are added.
+
+The existing balance harness additionally reports animal-feeding populations,
+biomass by aquatic body size, and current expected prey removal/food allocation
+from a detached completed-day evaluation. These are explicitly current per-turn
+diagnostics, not accumulated kills. The existing cumulative `predationDeaths`
+counter floors local expectations and can undercount small-population hunting;
+its historical meaning is retained.
+
+Validation: `npm run build` and `npm test` passed with 238 headless/rendering
+checks and 157 Chromium checks; one existing duplicate desktop touch check stays
+skipped. Eleven new focused checks cover hunting, conditional body-size gains,
+paid specializations, defensive response, food/effort conservation, predator
+founding and its resource/support guards. Existing continuation, asynchronous
+helper scoring, saving and gene-history checks include the new locus and strict
+revision identity. All 24 changed notebook/help screenshots were inspected in
+both themes and languages at desktop and phone widths, including focus, wrapping,
+selected states and assets, with no clipping. A test-only history-reply race and
+an old trait-count assertion were corrected before the passing final suite.
+Scope/dependency review and `git diff --check` passed. Browser validation remains
+limited to Chromium.
+
+Paired 15,000-day Small-world samples use world seed `emergence` and biological
+seed `emergence:life-v5`. Water introduction ends with four pure predator species
+versus one in revision 1, and current expected animal intake 347.83 versus 267.47
+energy per turn. However, animal-feeding biomass falls from 774 to 592 body cells,
+and aquatic animal eaters remain sizes 1–2; no whale-like lineage emerges.
+The dry-land sample retains only producers, versus two grazers before. Mutation
+catalogue changes alter the seeded trajectory, so these are observations rather
+than isolated causal evidence. Commands, exact census measures and the deliberately
+prey-rich size-selection fixture are recorded in
+[V5 validation](../src/simulation/life/v5/docs/VALIDATION.md).
+
+The new coefficients are experimental simulation choices. Conditional score
+advantages and a small set of seeds cannot demonstrate universal predator
+coexistence or sustained whale-like evolution. Per-hex food budgets and the
+integer census remain material constraints on very large, sparse hunters.

@@ -388,6 +388,9 @@ silently interpreted as a 40-gene genome.
 
 ## V5 browsing observations and continuation — 2026-09-27
 
+The revision-1 catalogue and continuation identity below are superseded by the
+revision-2 extension following this section; observation meanings remain valid.
+
 V5 retains V4's census, established-species, candidate, trait, local-light,
 morphology, compact-inspection and gene-history meanings. Its 44-trait catalogue
 adds `treeClimbing`, `fallenForaging`, `branchPulling` and `longReach`, each with
@@ -404,3 +407,15 @@ its helper workers use V5 consistently. V1–V4 checkpoints are incompatible;
 missing genes are never filled and an old biological random stream is never
 silently resumed under new rules. The shared browser save envelope retains its
 transport meaning while validating the model-specific version before replacement.
+
+
+## V5 aquatic hunting revision — 2026-09-27
+
+The active model remains `v5`, with `rulesRevision: v5-populations-2` and the same
+checkpoint container format. Its 45-trait catalogue additionally describes
+`streamlining` at levels 0–3; filter feeding now also affects collection of small
+animal prey in the model. Read-only traits, estimated directions and gene histories
+carry these expressions through existing observation semantics. All 45 genes
+are mandatory in current, historical and candidate genomes. Revision-1 V5 saves
+are rejected, not padded or resumed with changed biology. Count meanings,
+commands, shared physical conditions, rendering and UI ownership do not change.

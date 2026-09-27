@@ -99,7 +99,7 @@ src/
       v2/                Preserved cohort life model and its research
       v3/                Preserved population model with 22 genes
       v4/                Preserved population model with 40 genes
-      v5/                Active population model with 44 genes and limited browsing refuges
+      v5/                Active population model with 45 genes, browsing refuges and aquatic hunting
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -393,19 +393,26 @@ if (result.ok) {
 locations. Checkpoints retain the complete biological PRNG, population reserves,
 candidate directions and their persistence; a world seed alone cannot resume a
 run. The browser save file wraps this checkpoint with world settings and view
-state. V5 checkpoints are independent of V1–V4; there is no automatic conversion
-or model-selection control. Start a new world for V5. Older saves remain usable
-with their preserved model implementation, not in the active V5 browser.
+state. Current V5 rules (`v5-populations-2`) reject earlier V5 checkpoints as well
+as V1–V4; there is no automatic conversion or model-selection control. Start a
+new run for these rules. V1–V4 saves require their preserved implementations;
+earlier V5 saves require the earlier project revision.
 
 V5 retains V4's population model, 40 genes, sexual recruitment, finite-resource
-competition, food-directed movement and ecological branching. It adds four genes
-(**44 total**): tree climbing, fallen-food foraging, branch pulling and extended
-reach. Small plant eaters retain limited access to tall plants, with strong
-quantity and collection penalties that improve with size and disappear at full
+competition, food-directed movement and ecological branching. It adds five genes
+(**45 total**): tree climbing, fallen-food foraging, branch pulling, extended
+reach and streamlining. Small plant eaters retain limited access to tall plants,
+with strong quantity and collection penalties that improve with size and disappear at full
 reach. Climbing recovers at most 15% of otherwise inaccessible food; all four
 alternatives combined recover at most 25%. All draw from existing plant
 production and pay upkeep/construction. Larger bodies can reach substantially
 more food; survival and eventual size are ecological outcomes, not guarantees.
+
+V5 revision 2 modestly increases hunting effort and allows smaller, viable
+predator founding groups funded by actual prey. Streamlining and the extended
+filter-feeding trait can reward large aquatic animal eaters when smaller prey
+are plentiful. Both retain paid costs and finite food; no whale species or
+predator population is seeded or guaranteed. Start a new run for these rules.
 
 See [V5 rules](src/simulation/life/v5/docs/RULES.md), the
 [gene catalogue](src/simulation/life/v5/genes/docs/GENES.md), and
@@ -413,7 +420,7 @@ See [V5 rules](src/simulation/life/v5/docs/RULES.md), the
 checks and measured limits. Historical V4 diversity targets and measurements are
 preserved in [V4 validation](src/simulation/life/v4/docs/VALIDATION.md); they are
 not assumed to describe V5. A reproducible panel reports populations, diet/body
-size distributions and uptake of the four browsing traits:
+size distributions, animal intake and expressed traits:
 
 ```sh
 node scripts/check-life-v5-balance.js 15000 small emergence land v5 emergence:life-v5 3000

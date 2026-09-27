@@ -1,14 +1,15 @@
 # V5 representative genes and ecological costs
 
-V5 has 44 heritable trait coordinates: V4's 40 plus four browsing loci.
+V5 revision 2 has 45 heritable trait coordinates: V4's 40, four browsing loci
+and streamlining.
 One accepted genome describes each species; bounded evolutionary directions are
 hypotheses, not additional populations of genotype carriers. No trait grants
 free organisms, food, guaranteed survival or a scheduled species. The coefficients
 below are experimental simulation choices, not empirical biological constants.
 Implementation: [genome.js](../genome.js) and [ecology.js](../../ecology.js).
 
-The 40 earlier loci retain V4 costs and interactions. Historical V3 revision
-references identify the inherited foundation; V5's browsing section supersedes
+The 40 earlier loci retain V4 costs; revision 2 extends filter feeding to animal
+prey. Historical V3 revision references identify the inherited foundation; V5's browsing section supersedes
 V3/V4 canopy-access and effort equations. Original research, tuning history and
 measured V4 trajectories remain in the preserved [V4 catalogue](../../../v4/genes/docs/GENES.md)
 and [validation](../../../v4/docs/VALIDATION.md); they are not V5 balance evidence.
@@ -22,7 +23,8 @@ is `C × [0.42 + 0.016(s−1) + T]`. Construction cost is
 + 0.035trunk + 0.035paidMovement + 0.035armor + 0.07flight
 + 0.30max(0,n−1) + 0.30PG + 0.06deepRoots + 0.07propaguleDispersal
 + 0.14offspringInvestment + 0.04dormancy
-+ 0.018treeClimbing + 0.010fallenForaging + 0.015branchPulling + 0.020longReach]`. Here `n` counts acquisition systems, and `P/G`
++ 0.018treeClimbing + 0.010fallenForaging + 0.015branchPulling + 0.020longReach
++ 0.025streamlining]`. Here `n` counts acquisition systems, and `P/G`
 indicate photosynthesis/plant feeding. As inherited from V3 revision 4, `paidMovement` is
 `max(0, movement−1)` for non-photosynthetic consumers, otherwise `movement`.
 This is an explicit basic-locomotion subsidy after losing photosynthesis; the
@@ -171,16 +173,16 @@ use the unchanged parent as a possible food source; that advantage must not be
 applied as a whole-parent replacement.
 
 For each eligible prey source, successful hunting effort is limited to
-`remainingPredationDemand / preyTissue × captureProbability`, where prey tissue
+`remainingPredationDemand / preyTissue × captureProbability × collection`, where prey tissue
 is `1.4×preyCells`. All predators share the same 12%-of-prey withdrawal budget.
-Hunting retains V4's coefficient 3.6 on
+Hunting uses coefficient 4.2 (revision 1 inherited 3.6) on
 `population×cells×predationShare×environment×activity`.
 Grazing effort multiplies its existing 2.2 factor by
 `1 + 0.7speed/(1+speed)`: moving grazers encounter more real production, with
 diminishing returns. Stationary feeding remains possible. These efforts do not create prey or food.
 Capture therefore scales population-proportional effort; splitting unchanged
 hunters into more species cannot multiply their source access allowance.
-After a withdrawal, attempted effort `eaten×preyTissue/captureProbability` is
+After a withdrawal, attempted effort `eaten×preyTissue/(captureProbability×collection)` is
 deducted, including failed captures. Splitting otherwise identical prey into
 more source species therefore does not provide repeated free attempts.
 Additional predator identities can create actual interspecific prey links
@@ -223,7 +225,7 @@ None creates a food pool, a new physical field, a species, or a guaranteed outco
 | `cooperativeHunting` | `0.022x` | Conspecific companions improve capture and accessible prey size. Solitary hunters retain its costs without its benefit. Companions are not extra prey or free food. |
 | `herding` | `0.014x` | Conspecific companions reduce capture. A solitary animal gains no protection and still pays for the strategy. |
 | `burrowing` | `0.022x` | Land shelters reduce outside-range thermal distance and capture. Adds `0.20x` to speed and `0.04x` to photosynthetic denominators. Water provides no shelter benefit. |
-| `filterFeeding` | `0.020x` | Raises foraging effort on existing water photosynthesizers of size 1–3. Feeding on larger plants or land plants is slower; it requires plant feeding and creates no plankton/detritus resource. |
+| `filterFeeding` | `0.020x` | Raises foraging effort on existing water photosynthesizers of size 1–3. Feeding on larger plants or land plants is slower; plant intake requires plant feeding. Revision 2 also permits collection of existing small animal prey with animal feeding, as described below; no plankton/detritus resource is created. |
 | `dormancy` | `0.018x` | Under environmental stress it reduces upkeep more than activity; starvation mortality is also reduced. Less activity produces less food in favorable parts of a stressful site. Extra construction is `0.04x`. No seed bank, hidden organisms or stored-energy withdrawal exists. |
 | `insulation` | `0.018x` | Divides cold stress by `1+0.5x` but multiplies heat stress by `1+0.18x`; adds `0.06x` to the speed denominator. |
 | `offspringInvestment` | `0.008x` | Multiplies funded recruitment under climatic or predation stress by `1+0.32x×stress`; extra construction `0.14x` reduces benign-condition reproduction. There is no age-structured population. |
@@ -252,15 +254,15 @@ Offspring stress is `clamp(1−E+predationLoss/0.12, 0, 1)`.
 
 These interactions retain V4's implementation, except that V5 applies leaf-area
 and filter effects to its new canopy access and collection efficiency as specified
-above. Matching simple formulas earlier in this catalogue include these modifiers.
+above, and revision 2 adds aquatic hunting collection as described below. Matching simple formulas earlier in this catalogue include these modifiers.
 
 - Land thermal distance is divided by `1+0.20burrowing`. Insulation multiplies
   cold distance by `1/(1+0.50insulation)`, hot distance by `1+0.18insulation`.
   Distances are still relative to the existing preferred temperature interval.
 - Light merit combines canopy, shade, water buoyancy and clonal crowding factors.
   Weight is `demand×merit^1.2×environment^0.2`; individual caps are unchanged.
-  Grazing merit `(access×filterFactor)^1.2` and hunting merit `capture^1.2` also
-  sharpen contested allocation. Population always stays linear. Abundant pools
+  Grazing merit `(access×filterFactor)^1.2` and hunting merit
+  `(capture×collection)^1.2` also sharpen contested allocation. Population always stays linear. Abundant pools
   satisfy the same caps, while weaker competitors lose scarce food/light sooner.
   V3's 2,400/2,000 light budgets and baseline/starvation mortality are retained.
 - Plant defense adds `0.12warningSignals×min(2,unmatchedPoison+unmatchedSpines)`.
@@ -298,6 +300,30 @@ local predator.
 
 No defenses create invulnerability. Source limits and failed-attempt spending
 still apply, and splitting sources does not reset the available hunting effort.
+
+## Aquatic hunting in V5 revision 2
+
+`streamlining` is a reversible integer locus **0–3**, costing `0.012x` in `T`
+and `0.025x` extra construction (in addition to `1.3T`). A moving animal eater
+in water multiplies hunting collection by `S = 1+0.12x(size−1)/9`, at most 1.36.
+At size 1, without movement, outside water or without animal feeding, the trait
+still costs energy but provides no feeding benefit. It changes sustained search
+and collection efficiency; speed, capture defenses and inter-hex routes retain
+their existing meanings.
+
+Existing `filterFeeding` retains its `0.020x` upkeep contribution and existing
+plant effects. Moving water animal eaters obtain
+`F = 1+0.30x(hunterSize−preySize)/9` against smaller size-1–3 animal prey, at most
+1.90. Other hunting receives `F = 1/(1+0.15x)`. Expression costs are always paid.
+The combined hunting collection multiplier above is `S×F`. Small animal sources
+still require a consumer feeding system and a distinct species identity; no
+unobserved plankton, passive energy, guaranteed catch or special whale species
+is introduced. Capture, prey eligibility, finite attempted effort and the shared
+12% withdrawal limit remain effective.
+
+These traits create conditional selection for greater body size. Larger bodies
+continue to pay their full upkeep and construction. Food-limited water can favor
+smaller hunters or support no predator, regardless of maximum specialization.
 
 ## Four browsing loci introduced in V5
 

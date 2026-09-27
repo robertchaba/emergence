@@ -7,7 +7,8 @@ export const ECOLOGY_RULES = Object.freeze({ lightBudget: 2400, waterLightBudget
   photosynthesisRate: 1.6, grazingFraction: 0.45, preyFraction: 0.12,
   conversion: 0.6, backgroundMortality: 0.008, starvationMortality: 0.14, reproductionRate: 0.18,
   competitionExponent: 1.2,
-  huntingEffort: 3.6, captureBase: 0.5, captureSpeed: 0.14,
+  huntingEffort: 4.2, captureBase: 0.5, captureSpeed: 0.14,
+  streamlinedHunting: 0.12, animalFilterCollection: 0.3, animalFilterPenalty: 0.15,
   stationaryForaging: 1, movementForaging: 0.7,
   minimumCanopyAccess: 0.04, minimumBrowsingEfficiency: 0.4,
   climbingAccess: 0.15, fallenAccess: 0.08, pullingAccess: 0.10, extendedAccess: 0.10,
@@ -170,6 +171,21 @@ function defendedAccess(consumerGenome, plantGenome, plant, reachAccess) {
     / (1 + 0.8 * poison + 0.6 * spines + 0.15 * plant.armorProtection + warning));
 }
 
+/** Paid aquatic collection specializations use the same prey and attempt pool.
+ * Streamlining represents efficient sustained search by larger moving hunters;
+ * it changes neither geographic movement nor an opponent's capture defenses.
+ * Filtering rewards size difference only for existing small animal prey. */
+function huntingCollection(predatorGenome, preyGenome, habitat) {
+  const swimming = habitat === 'water' && predatorGenome.movement > 0;
+  const streamlined = swimming ? 1 + ECOLOGY_RULES.streamlinedHunting
+    * predatorGenome.streamlining * (predatorGenome.size - 1) / 9 : 1;
+  const filtering = swimming && preyGenome.size <= 3 && preyGenome.size < predatorGenome.size
+    ? 1 + ECOLOGY_RULES.animalFilterCollection * predatorGenome.filterFeeding
+      * (predatorGenome.size - preyGenome.size) / 9
+    : 1 / (1 + ECOLOGY_RULES.animalFilterPenalty * predatorGenome.filterFeeding);
+  return streamlined * filtering;
+}
+
 export function grazingAccess(consumerGenome, plantGenome, consumer = deriveGenome(consumerGenome), plant = deriveGenome(plantGenome), habitat = 'land') {
   return defendedAccess(consumerGenome, plantGenome, plant,
     browsingProfile(consumerGenome, plantGenome, consumer, plant, habitat).access);
@@ -275,17 +291,20 @@ export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
       if (!(predationDemand[index] > 0) || index === source || (predator.speciesId != null && predator.speciesId === prey.speciesId)) return { cap: 0, weight: 0, capture: 0 };
       const capture = captureProbability(predator.genome, prey.genome, predator.derived, prey.derived,
         { habitat, predatorSupport: predator.support, preySupport: prey.support });
+      const collection = huntingCollection(predator.genome, prey.genome, habitat);
       // Successful effort is extensive in hunter population. A per-species
       // available*capture cap would create extra kills merely by adding names.
-      return { cap: predationDemand[index] / tissue * capture,
-        weight: predationDemand[index] * capture ** ECOLOGY_RULES.competitionExponent, capture };
+      return { cap: predationDemand[index] / tissue * capture * collection,
+        weight: predationDemand[index] * (capture * collection) ** ECOLOGY_RULES.competitionExponent,
+        capture, collection };
     });
     const eaten = allocate(demands, available);
     for (let predator = 0; predator < rows.length; predator += 1) {
       preyLoss[source] += eaten[predator];
       // Charge attempted effort, including failed captures. Otherwise identical
       // prey split into more source labels would offer repeated free attempts.
-      const effort = demands[predator].capture > 0 ? eaten[predator] * tissue / demands[predator].capture : 0;
+      const effort = demands[predator].capture > 0
+        ? eaten[predator] * tissue / (demands[predator].capture * demands[predator].collection) : 0;
       predationDemand[predator] = Math.max(0, predationDemand[predator] - effort);
       food[predator] += eaten[predator] * tissue * ECOLOGY_RULES.conversion;
       predationFood[predator] += eaten[predator] * tissue * ECOLOGY_RULES.conversion;
