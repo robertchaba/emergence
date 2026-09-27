@@ -2,7 +2,11 @@
 
 ## Status
 
-**Current: Plain terrain with shore accents — 2026-09-26.** Decision 084 removes
+**Current: V5 browsing refuges and size selection — 2026-09-27.** Decision 085
+activates an independent 44-gene model, retaining scarce food for small browsers
+and paid, capped alternatives while favoring full reach through body growth.
+
+**Plain terrain with shore accents — 2026-09-26.** Decision 084 removes
 surface textures, retains decorative shores and restores local frost/ice repainting.
 
 **Plain land and quieter water engraving — 2026-09-26.** Decision 083
@@ -4362,3 +4366,86 @@ interface controls, assets and usage are unchanged. The rendering README records
 the plain surfaces and restored repaint behavior.
 
 Validation is recorded after the build, tests and visual checks finish.
+
+
+## 085 — V5 browsing refuges and size selection — 2026-09-27
+
+Supersedes 078's active-model choice and the inherited V3/V4 canopy-browsing
+formulas for the active browser. The user observed small plant eaters disappearing
+when larger plants dominate and requested a separate V5 model with limited food
+access, relief through paid alternative strategies, and strong selection for
+increased size. V1–V4 source and historical documentation remain preserved.
+V5 lives entirely in `src/simulation/life/v5/`; shared world, weather, calendar,
+playback speed and renderer meanings remain unchanged. It imports no older life
+implementation and adds no predefined species or guaranteed ecological outcome.
+
+V5 separates the quantity of reachable plant food from the speed of collecting
+it. For ordinary reach ratio `r = min(1, reach/height)`, direct access is
+`0.04+0.96r²` and unassisted collection efficiency is `0.40+0.60r`. The 4%
+quantity floor describes scarce low/shed production, shared competitively; it
+is not a guaranteed ration, temporary invulnerability or additional food pool.
+Size improves both constraints. At full ordinary reach both height penalties
+vanish, while tissue defenses and other feeding constraints still apply.
+
+Four reversible 0–3 loci extend the genome from 40 to 44: tree climbing,
+fallen-food foraging, branch pulling and extended reach. Climbing can recover
+at most 15% of the otherwise inaccessible portion on trunk-bearing plants;
+fallen-food foraging contributes at most 8%; pulling at most 10%, further
+reduced with distance; extended reach at most 10%. The first three require
+land and movement, and pulling also requires a trunk and bite force. Extended
+reach works in either habitat. Combined relief `a` is capped at 25%, giving
+access `d+(1−d)a` and collection efficiency `0.40+0.60[r+(1−r)a]`. All loci pay
+maintenance and construction, including outside useful contexts and after full
+reach. Costs and caps are explicit experimental balance choices, not measured
+biological constants.
+
+The routes overlap within existing production and nested accessibility bands.
+They do not create four independent food budgets, a detritus store or extra
+attempts when identical sources are split. Leaf exposure can offset defenses
+but cannot expand the canopy-route cap. Ordinary grazing still removes at most
+45% of plant production and converts it at 60%. Alternative traits can support
+small specialists, but full reach retains substantially more food and collection
+potential. Dominance is assessed through fitness, food and biomass as well as
+headcount: smaller bodies can be more numerous without controlling most food.
+No ranking is scripted or universally guaranteed.
+
+V5 retains V4 population representation, bounded evolutionary search, recruitment,
+dispersal and the read-only observation contract. Accepted genomes, candidates,
+founders and history require all 44 genes. Browser coordinator, helper workers,
+saves, benchmarks and active fixtures select V5 explicitly. The rules identity
+is `v5-populations-1` and checkpoint format is `emergence-life-v5-checkpoint-1`.
+V4 checkpoints are not migrated or padded with absent genes; older model saves
+are rejected by the active browser without replacing the current world. New
+V5 runs start from explicit introduction. The shared save envelope remains a UI
+transport format, with biological validation owned by the model.
+
+The new traits use existing notebook/tree observations and localized English/
+Polish descriptions; UI and rendering never calculate food access or inspect
+private genomes. No new visual anatomy, palettes, runtime dependencies, commands
+or model-selection UI are added. Root and life documentation explain V5 usage
+and compatibility. Copied rule documentation now identifies the inherited V4
+foundation, replaces canopy formulas and links historical balance evidence to
+its original model instead of relabeling that evidence as V5.
+
+Initial seeded evidence: in the Small `emergence` world, land site 173 and
+biological seed `emergence:life-v5`, V5 retains two grazer species at day 15,000
+beside size-10 plants; sampled grazer sizes progress from 2 to 4 and then 7.
+V4 with the same input seed ends with three size-10 producers and no grazers.
+The additional loci change mutation sampling and subsequent random history, so
+this paired panel is observational evidence rather than an isolated causal test.
+The model's [validation record](../src/simulation/life/v5/docs/VALIDATION.md)
+records exact commands, final measurements and limitations.
+
+Validation: `npm run build` and `npm test` passed with 227 headless/rendering
+checks and 157 Chromium checks; one existing duplicate desktop touch check remains
+skipped. These include eight focused V5 gene/ecology checks and five V5 model
+checks, save restoration, deterministic worker/headless agreement, both locales,
+and development/source/debug startup. Browser introduction now checks the exact
+same-day headless V5 result instead of assuming first-turn population growth for
+a changed seed trajectory. Light/dark desktop and phone views were inspected,
+including numerical route-limit help, wrapping, focus, assets and disabled
+controls, with no overflow or focus issues found. Scope/dependency review and
+`git diff --check` passed; V1–V4 engine implementations and renderers are unchanged.
+Browser verification is limited to Chromium. Seeded samples and controlled
+communities cannot establish universal coexistence, evolutionary trajectories
+or empirical biological accuracy.

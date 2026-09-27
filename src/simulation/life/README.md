@@ -1,8 +1,8 @@
 # Versioned life models
 
-This directory holds alternative life/evolution models: `v1/`, `v2/`, `v3/`, `v4/`, and
-so on. **V4 is active; V1, V2 and V3 are preserved.** The browser worker
-imports V4 explicitly against the shared physical atlas. Model-selection UI remains
+This directory holds alternative life/evolution models: `v1/`, `v2/`, `v3/`, `v4/`, `v5/`,
+and so on. **V5 is active; V1–V4 are preserved.** The browser worker
+imports V5 explicitly against the shared physical atlas. Model-selection UI remains
 future work; each model keeps its own implementation and documentation.
 
 ## Ownership
@@ -59,8 +59,9 @@ the common observation-contract version.
 Keep alternative rules and their supporting notes together inside their version.
 Do not move v1-specific formulas into a shared helper merely to make v2 reuse
 them. Shared code requires an explicitly shared meaning, not similar code alone.
-The [V4 index](v4/README.md) documents active rules and validation.
-The [V3 index](v3/README.md) preserves the previous population model. The
+The [V5 index](v5/README.md) documents active rules and validation.
+The [V4 index](v4/README.md) preserves the previous 40-gene population model.
+The [V3 index](v3/README.md) preserves the earlier population model. The
 [V2 index](v2/README.md) and [V1 index](v1/README.md) preserve their historical
 research and implementation; their active-model statements describe their own era.
 
@@ -70,10 +71,11 @@ or PRNG state between incompatible models. Any future conversion must be designe
 and documented explicitly. Same terrain and seed do not promise identical biology
 across models. Model selection UI remains future work. Each implemented model
 exports its own incompatible versioned headless checkpoint for deterministic
-continuation. The browser now wraps the active V4 checkpoint in a downloadable
+continuation. The browser now wraps the active V5 checkpoint in a downloadable
 save file with versioned world settings and view state; restore validates it in
 a candidate worker before replacing the current run. File transport and format
-composition belong to UI; biological validation stays in V4.
+composition belong to UI; biological validation stays in V5. V4 saves are not silently converted to V5;
+start a new world to use the active model.
 
 Later implementations must validate the common inspection invariants as well as
 their own biological and approximation rules. Neither this directory layout nor
@@ -97,7 +99,8 @@ by its model version; this layout does not create a shared gene implementation.
 The v1 folders contain the implementation, gene code, and preserved research.
 
 - [Common life observations and UI commands](CONTRACT.md)
-- [Active V4 model and complete rules](v4/README.md)
+- [Active V5 model and complete rules](v5/README.md)
+- [Preserved V4 model and complete rules](v4/README.md)
 - [Preserved V3 model and complete rules](v3/README.md)
 - [Preserved V2 model and complete rules](v2/README.md)
 - [Life model v1 research and open decisions](v1/README.md)

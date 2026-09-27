@@ -73,6 +73,10 @@ export const treeMessages = {
     treeGeneHelp_offspringInvestment: 'Improves resource-funded recruitment under climatic or predation stress, but each offspring costs more to produce.',
     treeGeneHelp_mateAttraction: 'Helps sexual recruitment at lower local densities, but costs energy and makes prey more conspicuous.',
     treeGeneHelp_clonalGrowth: 'Helps sparse, stationary photosynthetic populations reproduce asexually, but weakens crowded-light competition and dispersal and adds upkeep.',
+    treeGeneHelp_treeClimbing: 'Lets mobile land browsers climb woody plants for at most 15% of otherwise unreachable food. All access traits together recover at most 25%. It costs upkeep and construction and adds nothing within ordinary reach. Larger bodies retain the main feeding advantage.',
+    treeGeneHelp_fallenForaging: 'Lets mobile land browsers gather up to 8% of otherwise unreachable plant food from fallen or low material. It costs upkeep and construction and shares the 25% limit with other access traits. It creates no extra food and adds nothing within ordinary reach.',
+    treeGeneHelp_branchPulling: 'Lets mobile land browsers with bite strength pull up to 10% of otherwise unreachable food from woody plants, with greater benefit at larger body sizes. It costs upkeep and construction, shares the 25% limit with other access traits, and adds nothing within ordinary reach.',
+    treeGeneHelp_longReach: 'Extends access to at most 10% of otherwise unreachable plant food on land or in water. It costs upkeep and construction, shares the 25% limit with other access traits, and adds nothing once ordinary body reach is sufficient.',
   },
   pl: {
     treeTitle: 'Drzewo życia', treeEyebrow: 'Kronika ewolucji', treeBack: '← Wróć do atlasu',
@@ -148,5 +152,9 @@ export const treeMessages = {
     treeGeneHelp_offspringInvestment: 'Poprawia rozród finansowany zasobami przy stresie klimatycznym lub drapieżnictwie, lecz zwiększa koszt wytworzenia każdego potomka.',
     treeGeneHelp_mateAttraction: 'Ułatwia rozród płciowy przy mniejszym lokalnym zagęszczeniu, lecz kosztuje energię i czyni ofiary bardziej widocznymi.',
     treeGeneHelp_clonalGrowth: 'Ułatwia rozród bezpłciowy nielicznym, osiadłym populacjom fotosyntetyzującym, lecz osłabia konkurencję o światło i rozprzestrzenianie oraz zwiększa koszt utrzymania.',
+    treeGeneHelp_treeClimbing: 'Pozwala ruchliwym lądowym roślinożercom wspinać się po zdrewniałych roślinach i zdobywać najwyżej 15% pokarmu poza zwykłym zasięgiem. Wszystkie cechy dostępu łącznie odzyskują najwyżej 25%. Kosztuje utrzymanie i budowę i nie pomaga w zwykłym zasięgu. Większe ciało zachowuje główną przewagę w żerowaniu.',
+    treeGeneHelp_fallenForaging: 'Pozwala ruchliwym lądowym roślinożercom zbierać do 8% pokarmu roślinnego poza zwykłym zasięgiem z opadłych lub nisko położonych fragmentów. Kosztuje utrzymanie i budowę i dzieli limit 25% z innymi cechami dostępu. Nie tworzy dodatkowego pokarmu ani nie pomaga w zwykłym zasięgu.',
+    treeGeneHelp_branchPulling: 'Pozwala ruchliwym lądowym roślinożercom o silnym ugryzieniu przyciągać do 10% pokarmu poza zwykłym zasięgiem ze zdrewniałych roślin, skuteczniej przy większym ciele. Kosztuje utrzymanie i budowę, dzieli limit 25% z innymi cechami dostępu i nie pomaga w zwykłym zasięgu.',
+    treeGeneHelp_longReach: 'Daje dostęp do najwyżej 10% pokarmu roślinnego poza zwykłym zasięgiem na lądzie lub w wodzie. Kosztuje utrzymanie i budowę i dzieli limit 25% z innymi cechami dostępu. Nie pomaga, gdy zwykły zasięg ciała już wystarcza.',
   },
 };

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateWorld, setDay } from '../../src/simulation/world.js';
-import { createLifeModel } from '../../src/simulation/life/v4/model.js';
+import { createLifeModel } from '../../src/simulation/life/v5/model.js';
+import { createLifeModel as createV4LifeModel } from '../../src/simulation/life/v4/model.js';
 import { createSave, restoreSave } from '../../src/ui/save-state.js';
 
 const world = setDay(generateWorld({ seed: 'save-continuation', size: 'small',
@@ -54,7 +55,10 @@ test('malformed and incompatible saves fail without modifying the original model
     saved => { saved.view.camera.zoom = Infinity; },
     saved => { saved.view.pinnedId = world.hexes.length; },
     saved => { saved.view.speed = 11; },
-    saved => { saved.life.rulesRevision = 'v3-populations-2'; },
+    saved => { saved.life.rulesRevision = 'v4-populations-1'; },
+    saved => { saved.life.modelId = 'v4'; },
+    saved => { saved.life.format = 'emergence-life-v4-checkpoint-1'; },
+    saved => { delete saved.life.species[0].genome.treeClimbing; },
     saved => { delete saved.life.randomState; },
     saved => { saved.life.randomState = [0, 0, 0, 0]; },
     saved => { delete saved.life.stats.births; },
@@ -71,4 +75,14 @@ test('malformed and incompatible saves fail without modifying the original model
     assert.throws(() => restoreSave(saved));
     assert.deepEqual(model.exportState(), original.life);
   }
+});
+
+test('V4 saves are incompatible with V5 and leave an existing run untouched', () => {
+  const original = createLifeModel(world);
+  original.introduce(200);
+  const before = original.exportState();
+  const older = createV4LifeModel(world);
+  older.introduce(200);
+  assert.throws(() => restoreSave(roundTrip(createSave(world, older.exportState(), view))), /Incompatible/);
+  assert.deepEqual(original.exportState(), before);
 });

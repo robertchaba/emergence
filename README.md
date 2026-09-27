@@ -42,10 +42,10 @@ hex, and observe how resources, inheritance, mutation, and seasons shape its
 descendants. Geography supplies physical conditions; ecology emerges from life.
 There are no predefined species or scripted outcomes.
 
-**Current stage: V4 population life simulation; V1, V2 and V3 preserved.** Generate
+**Current stage: V5 population life simulation; V1–V4 preserved.** Generate
 deterministic cylindrical hex worlds, introduce a locally suited plant lineage
 with seeded random traits, and observe competition, adaptation and branching.
-V4 calculates populations per species and hex, with one established genome and
+V5 calculates populations per species and hex, with one established genome and
 at most three possible adaptation directions per whole species. New lineages
 need a sustained ecological advantage; temperature, habitat, moisture, elevation,
 water depth and other species all affect success. The Field Notebook shows
@@ -98,7 +98,8 @@ src/
       v1/                Preserved first life model and historical research
       v2/                Preserved cohort life model and its research
       v3/                Preserved population model with 22 genes
-      v4/                Active population model with 40 genes
+      v4/                Preserved population model with 40 genes
+      v5/                Active population model with 44 genes and limited browsing refuges
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -209,13 +210,13 @@ paused; choose **Play** to continue. Invalid or incompatible files leave the
 current world intact. Cancel also keeps it intact and paused. File handling
 stays on your device and does not require browser storage or an account.
 Theme and language follow your current preferences. Notebook disclosures and
-trait highlights reset. Saves require compatible generator, weather and V4
+trait highlights reset. Saves require compatible generator, weather and V5
 rules versions; automatic migration from older simulation versions is not provided.
 
 A year has 360 days, beginning at the northern spring equinox. Hydrology and
 geographic regions stay fixed while temperature, land moisture, water surfaces and
 ice cover respond to seasons and bounded seeded weather. The coastline remains fixed. Once
-life is introduced, V2 executes **three biological turns per ten physical days**.
+life is introduced, V5 executes **three biological turns per ten physical days**.
 At 10×, temperature/calendar playback still targets 20 days/s while biology targets
 6 turns/s (the previous 3× biological pace). This ratio applies at every speed.
 A one-day step advances the climate; biology runs when its next turn is due.
@@ -376,7 +377,7 @@ const serialized = JSON.stringify(summer);
 Life is a separate model with its own explicit commands:
 
 ```js
-import { createLifeModel, restoreLifeModel } from './src/simulation/life/v4/model.js';
+import { createLifeModel, restoreLifeModel } from './src/simulation/life/v5/model.js';
 
 const life = createLifeModel(world);
 const result = life.introduce(selectedHexId);
@@ -392,38 +393,36 @@ if (result.ok) {
 locations. Checkpoints retain the complete biological PRNG, population reserves,
 candidate directions and their persistence; a world seed alone cannot resume a
 run. The browser save file wraps this checkpoint with world settings and view
-state. V4 checkpoints are independent of V1/V2/V3; there is no automatic
-conversion or model-selection control. Start a new world for V4; V3 saves remain
-usable with the preserved V3 implementation, not in the active V4 browser.
+state. V5 checkpoints are independent of V1–V4; there is no automatic conversion
+or model-selection control. Start a new world for V5. Older saves remain usable
+with their preserved model implementation, not in the active V5 browser.
 
-V4 retains V3's population model, canopy browsing, mixed-feeding tradeoffs,
-food-directed consumer movement and ecological branching. It adds **18 genes**
-(40 total), stronger sexual reproduction with local reproductive support,
-and sharper allocation when species compete for finite resources. The new traits include leaf area,
-shade tolerance, deep roots, waxy cuticles, buoyancy, propagule dispersal,
-camouflage, warning signals, ambush, cooperative hunting, herding, burrowing,
-filter feeding, dormancy, insulation, offspring investment, mate attraction and
-clonal growth. All have paid, context-dependent effects; map forms, patterns and
-grouping reflect model-supplied descriptions of those adaptations.
+V5 retains V4's population model, 40 genes, sexual recruitment, finite-resource
+competition, food-directed movement and ecological branching. It adds four genes
+(**44 total**): tree climbing, fallen-food foraging, branch pulling and extended
+reach. Small plant eaters retain limited access to tall plants, with strong
+quantity and collection penalties that improve with size and disappear at full
+reach. Climbing recovers at most 15% of otherwise inaccessible food; all four
+alternatives combined recover at most 25%. All draw from existing plant
+production and pay upkeep/construction. Larger bodies can reach substantially
+more food; survival and eventual size are ecological outcomes, not guarantees.
 
-See [V4 rules](src/simulation/life/v4/docs/RULES.md), the
-[gene catalogue](src/simulation/life/v4/genes/docs/GENES.md), and
-[validation](src/simulation/life/v4/docs/VALIDATION.md) for formulas and measured
-limits. The diversity aim is roughly 60–70 living species around day 15,000 in
-worlds that previously sustained about 100. This is a tuning target, never a
-species cap or guaranteed trajectory. Completed day-15,000 checks ranged from
-63 to 105 living species; the two paired V3 comparisons fell from 92 to 63 and
-95 to 90. Earlier local displacement is verified, while an earlier global
-extinct-over-living crossover has not been demonstrated. The balance panel
-reports living/extinct species, sexual reproduction and new trait uptake:
+See [V5 rules](src/simulation/life/v5/docs/RULES.md), the
+[gene catalogue](src/simulation/life/v5/genes/docs/GENES.md), and
+[validation](src/simulation/life/v5/docs/VALIDATION.md) for formulas, completed
+checks and measured limits. Historical V4 diversity targets and measurements are
+preserved in [V4 validation](src/simulation/life/v4/docs/VALIDATION.md); they are
+not assumed to describe V5. A reproducible panel reports populations, diet/body
+size distributions and uptake of the four browsing traits:
 
 ```sh
-node scripts/check-life-v4-balance.js 15000 medium emergence water v4
-node scripts/check-life-v4-balance.js 15000 medium emergence water v3
+node scripts/check-life-v5-balance.js 15000 small emergence land v5 emergence:life-v5 3000
+node scripts/check-life-v5-balance.js 15000 small emergence land v4 emergence:life-v5 3000
 ```
 
-The preserved `scripts/benchmark-life-v3.js` still compares V2/V3. Active browser
-worker and observation benchmarks use V4. These measure different ecological
+The preserved `scripts/benchmark-life-v3.js` still compares V2/V3, and
+`scripts/check-life-v4-balance.js` preserves V3/V4 comparisons. Active browser
+worker and observation benchmarks use V5. These measure different ecological
 trajectories, not identical outcomes or a universal speed guarantee.
 
 Snapshots record the generator version, settings, selected candidate, hash
@@ -453,8 +452,8 @@ original brief's `/documents` path. Life/evolution and approximation research is
 now under **`src/simulation/life/v1/docs/`**, with gene descriptions in
 **`src/simulation/life/v1/genes/docs/`** and gene code in the enclosing
 **`genes/`** directory. V2 research remains in its own sibling directory.
-Active V4 has rules in **`src/simulation/life/v4/docs/`** and its gene catalogue
-in **`src/simulation/life/v4/genes/docs/GENES.md`**, while keeping the same physical
+Active V5 has rules in **`src/simulation/life/v5/docs/`** and its gene catalogue
+in **`src/simulation/life/v5/genes/docs/GENES.md`**, while keeping the same physical
 world and common UI data contract.
 Research filename suffixes retain their original revisions; they are separate
 from the enclosing life-model version.
@@ -464,7 +463,11 @@ from the enclosing life-model version.
 - [Shared world, climate, and playback rules](docs/evolution_simulation_summary_v6.md)
 - [Life-model ownership and versioning](src/simulation/life/README.md)
 - [Universal life observations and UI commands](src/simulation/life/CONTRACT.md)
-- [Active V4 model](src/simulation/life/v4/README.md)
+- [Active V5 model](src/simulation/life/v5/README.md)
+- [V5 rules](src/simulation/life/v5/docs/RULES.md)
+- [V5 genes](src/simulation/life/v5/genes/docs/GENES.md)
+- [V5 validation](src/simulation/life/v5/docs/VALIDATION.md)
+- [Preserved V4 model](src/simulation/life/v4/README.md)
 - [V4 rules](src/simulation/life/v4/docs/RULES.md)
 - [V4 genes](src/simulation/life/v4/genes/docs/GENES.md)
 - [V4 validation](src/simulation/life/v4/docs/VALIDATION.md)
@@ -487,7 +490,7 @@ from the enclosing life-model version.
 
 The combined v6 summary has been split by ownership, retaining original section
 numbers for traceability. The architecture record identifies adopted physical and integration
-rules; V2's rules and validation record describe current biological defaults and limits.
-V1's `DECISIONS.md` and implementation remain preserved unchanged by the V2 step.
+rules; V5's rules and validation record describe current biological defaults and limits.
+V1–V4 research, decisions and implementations remain preserved.
 The original research remains preserved. The common contract defines consistent
 world/species/hex counts without fixing another model's biology.

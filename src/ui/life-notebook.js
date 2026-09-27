@@ -27,6 +27,8 @@ const geneKeys = {
   cooperativeHunting: 'geneCooperativeHunting', herding: 'geneHerding', burrowing: 'geneBurrowing',
   filterFeeding: 'geneFilterFeeding', dormancy: 'geneDormancy', insulation: 'geneInsulation',
   offspringInvestment: 'geneOffspringInvestment', mateAttraction: 'geneMateAttraction', clonalGrowth: 'geneClonalGrowth',
+  treeClimbing: 'geneTreeClimbing', fallenForaging: 'geneFallenForaging',
+  branchPulling: 'geneBranchPulling', longReach: 'geneLongReach',
 };
 const rejectionKeys = {
   'already-introduced': 'lifeAlreadyIntroduced', 'unknown-hex': 'lifeUnknownHex',

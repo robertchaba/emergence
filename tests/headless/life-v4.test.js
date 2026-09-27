@@ -222,7 +222,7 @@ test('V4 propagules and roots affect actual dispersal, crossing remains rare and
 });
 
 test('V4 parallel observation scoring agrees with serial scoring and cannot mutate continuation', async () => {
-  const { world, checkpoint } = workerFixture();
+  const { world, checkpoint } = workerFixture({ createModel: createLifeModel });
   const serial = restoreLifeModel(world, checkpoint);
   const parallel = restoreLifeModel(world, checkpoint);
   let dispatched = false;

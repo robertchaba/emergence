@@ -1,11 +1,11 @@
 import { generateWorld } from '../../src/simulation/world.js';
-import { createLifeModel } from '../../src/simulation/life/v4/model.js';
+import { createLifeModel } from '../../src/simulation/life/v5/model.js';
 
 // A busy mixed-community execution fixture, not an evolved/balanced ecosystem.
-export function workerFixture({ speciesCount = 12 } = {}) {
+export function workerFixture({ speciesCount = 12, createModel = createLifeModel } = {}) {
   const world = generateWorld({ seed: 'life-worker-pool', size: 'small' });
   const sites = world.hexes.filter(hex => hex.waterType !== 'none' && !hex.permanentIce);
-  const life = createLifeModel(world);
+  const life = createModel(world);
   life.introduce(sites[0].id);
   const checkpoint = life.exportState();
   const original = checkpoint.species[0];

@@ -3,9 +3,9 @@
 This is the semantic contract `life/vN/` implementations must expose to UI
 and rendering. It defines meanings and required queries, not JavaScript function
 signatures, private state layouts, a worker protocol or a save-file schema.
-V1, V2, V3 and V4 implement these semantics; the active API is documented in
-[v4/README.md](v4/README.md), with preserved implementations in
-[V3](v3/README.md), [V2](v2/README.md) and [V1](v1/README.md). The [ownership rules](README.md) apply to every version.
+V1–V5 implement these semantics; the active API is documented in
+[v5/README.md](v5/README.md), with preserved implementations in
+[V4](v4/README.md), [V3](v3/README.md), [V2](v2/README.md) and [V1](v1/README.md). The [ownership rules](README.md) apply to every version.
 
 ## Commands and simulated time
 
@@ -384,3 +384,23 @@ renderer fallback. Descriptions take part in display grouping and cache identity
 so an accepted expression change becomes visible at the completed revision.
 V4 saves require their own model/rules/checkpoint identity; V3 data is never
 silently interpreted as a 40-gene genome.
+
+
+## V5 browsing observations and continuation — 2026-09-27
+
+V5 retains V4's census, established-species, candidate, trait, local-light,
+morphology, compact-inspection and gene-history meanings. Its 44-trait catalogue
+adds `treeClimbing`, `fallenForaging`, `branchPulling` and `longReach`, each with
+model-described values 0–3. Their costs, habitat restrictions, capped browsing
+access and selection consequences belong exclusively to V5. These are gene
+observations, not new shared physical conditions or UI-derived feeding rules.
+Existing consumers translate their descriptions and can show their histories
+without importing genomes. No command or common count meaning changes.
+
+V5 identifies itself as `modelId: v5`, `rulesRevision: v5-populations-1` and
+checkpoint format `emergence-life-v5-checkpoint-1`. All 44 genes are mandatory in
+current, historical and candidate genomes where present. The active browser and
+its helper workers use V5 consistently. V1–V4 checkpoints are incompatible;
+missing genes are never filled and an old biological random stream is never
+silently resumed under new rules. The shared browser save envelope retains its
+transport meaning while validating the model-specific version before replacement.

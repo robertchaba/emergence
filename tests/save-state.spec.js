@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { generateWorld, setDay } from '../src/simulation/world.js';
-import { createLifeModel } from '../src/simulation/life/v4/model.js';
+import { createLifeModel } from '../src/simulation/life/v5/model.js';
+import { createLifeModel as createV4LifeModel } from '../src/simulation/life/v4/model.js';
 import { createSave, restoreSave } from '../src/ui/save-state.js';
 import { chooseTheme } from './ui-helpers.js';
 
@@ -91,6 +92,7 @@ test('landing restore and menu downloads preserve life, map view and exact conti
   await expect(page.locator('#world-map')).toHaveAttribute('data-zoom', '2');
   const initial = await save(page);
   expect(initial).toEqual(fixture);
+  expect(initial.life.modelId).toBe('v5');
 
   // Queue an advance and a save in the same browser turn, before its reply.
   const pending = await save(page, () => page.evaluate(() => {
@@ -141,6 +143,13 @@ test('invalid uploads and cancellation preserve the current run; controls wrap i
   await menu(page);
   await page.locator('#restore-state').click();
   await upload(page, JSON.stringify({ ...fixture, generatorVersion: 'old-world' }));
+  await expect(page.locator('#restore-status')).toContainText('Nie udało się');
+  await page.locator('#restore-dialog [type="button"]').click();
+  expect(await save(page)).toEqual(fixture);
+  const older = createV4LifeModel(world);
+  older.introduce(site.id);
+  await page.locator('#restore-state').click();
+  await upload(page, JSON.stringify(createSave(world, older.exportState(), fixture.view)));
   await expect(page.locator('#restore-status')).toContainText('Nie udało się');
   await page.locator('#restore-dialog [type="button"]').click();
   expect(await save(page)).toEqual(fixture);

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { generateWorld, setDay } from '../src/simulation/world.js';
 import { createLifeModel, restoreLifeModel } from '../src/simulation/life/v2/model.js';
-import { createLifeModel as createActiveLifeModel, restoreLifeModel as restoreActiveLifeModel } from '../src/simulation/life/v4/model.js';
+import { createLifeModel as createActiveLifeModel, restoreLifeModel as restoreActiveLifeModel } from '../src/simulation/life/v5/model.js';
 import { chooseTheme } from './ui-helpers.js';
 
 const settings = { seed: 'life-browser-check', size: 'small' };
@@ -212,7 +212,7 @@ test('population counts ease towards observations, retarget smoothly and respect
   await expect(population).toHaveText('Łączna populacja: 50');
 });
 
-test('V4 distinguishes estimated adaptation ranges from inherited traits in both languages and themes', async ({ page }, testInfo) => {
+test('V5 distinguishes estimated adaptation ranges from inherited traits in both languages and themes', async ({ page }, testInfo) => {
   const world = setDay(generateWorld(settings), 1);
   const site = suitable(world);
   const model = createActiveLifeModel(world);
@@ -221,14 +221,14 @@ test('V4 distinguishes estimated adaptation ranges from inherited traits in both
   const species = saved.species[0];
   Object.assign(species.genome, { elevationTolerance: 1, depthTolerance: 1 });
   delete species.genomeHistory; // Synthetic genome has no recorded evolutionary past.
-  // Controlled ecological mismatch, inspected through the real V4 observer.
+  // Controlled ecological mismatch, inspected through the real V5 observer.
   // Candidates are prospective directions and have no carrier population.
   species.candidates = [
     { id: 'depth-direction', genome: { ...species.genome, depthTolerance: 3 } },
     { id: 'unfavoured-direction', genome: { ...species.genome, elevationTolerance: 2 } },
   ].map(candidate => ({ ...candidate, originDay: 1, lastEvaluation: 1, age: 0, steps: 1, support: 0, advantage: 0 }));
   const snapshot = restoreActiveLifeModel(world, saved).observe();
-  expect(snapshot.modelId).toBe('v4');
+  expect(snapshot.modelId).toBe('v5');
   expect(snapshot.species[0].tendencies[0].locations).toEqual([{ hexId: site.id }]);
   await page.route('**/assets/life-worker-*.js', route => route.fulfill({ contentType: 'text/javascript',
     body: `self.onmessage = ({data}) => self.postMessage({command: data.command, observation: ${JSON.stringify(snapshot)}});`,
@@ -273,7 +273,7 @@ test('V4 distinguishes estimated adaptation ranges from inherited traits in both
       await expect(page.locator('.species-population')).toHaveAttribute('data-count', '20');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth
         && document.querySelector('.notebook').scrollWidth <= document.querySelector('.notebook').clientWidth + 1)).toBe(true);
-      await page.screenshot({ path: testInfo.outputPath(`v4-tendencies-${locale}-${theme}.png`) });
+      await page.screenshot({ path: testInfo.outputPath(`v5-tendencies-${locale}-${theme}.png`) });
     }
   }
   await disclosure.click();
@@ -375,11 +375,18 @@ test('plant introduction advances completed biology and prevents resetting livin
   await expect(page.locator('.notebook')).not.toContainText(/Life introduced|Life is present|approximated|upkeep cost/);
   await expect(page.locator('#species-detail')).toContainText('Photosynthesis');
   const day = Number(await page.locator('#world-day').getAttribute('data-day'));
-  for (let offset = 1; offset <= 4; offset += 1) {
+  // Early seeded rounding can leave the first turns at 20 organisms. Complete
+  // a full ten-day cycle and compare with the active engine at the same day.
+  for (let offset = 1; offset <= 10; offset += 1) {
     await page.locator('#step-world').click();
     await expect(page.locator('#world-day')).toHaveAttribute('data-day', String(day + offset));
   }
-  await expect.poll(async () => Number((await page.locator('.species-population').textContent()).replace(/\D/g, ''))).toBeGreaterThan(20);
+  const reference = createActiveLifeModel(world);
+  reference.introduce(site.id);
+  reference.advanceTo(day + 10);
+  expect(reference.exportState().stats.births).toBeGreaterThan(0);
+  await expect(page.locator('.species-population')).toHaveAttribute('data-count',
+    String(reference.observe().species.find(species => species.id === 'species-1').population));
   await expect(page.locator('#life-census-day')).toHaveCount(0);
   await expect(page.locator('#world-map')).toHaveAttribute('data-pinned-id', String(site.id));
   await expect(page.locator('#reset-life')).toHaveCount(0);
@@ -483,7 +490,7 @@ test('worker playback matches headless biology at the same completed day despite
 
 test('plants adapt to a land site and a new introduction is available only after extinction', async ({ page }) => {
   const world = await openLifeWorld(page);
-  // A real V4 cold-land shortage, without injecting or deleting organisms.
+  // A real V5 cold-land shortage, without injecting or deleting organisms.
   const site = world.hexes.find(hex => {
     if (hex.waterType !== 'none' || hex.runoff || hex.permanentIce || hex.humidity <= 0
       || hex.temperature >= 0 || hex.row < world.height / 2) return false;
