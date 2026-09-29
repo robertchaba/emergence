@@ -99,7 +99,7 @@ src/
       v2/                Preserved cohort life model and its research
       v3/                Preserved population model with 22 genes
       v4/                Preserved population model with 40 genes
-      v5/                Active population model with 45 genes, browsing refuges and aquatic hunting
+      v5/                Active population model with 90 genes and conditional evolutionary tradeoffs
   rendering/             Canvas map and read-only geometry/hit testing
   ui/                    Browser composition, map input, theme controls, CSS tokens
 tests/                   Node invariants and Playwright real-browser checks
@@ -393,15 +393,21 @@ if (result.ok) {
 locations. Checkpoints retain the complete biological PRNG, population reserves,
 candidate directions and their persistence; a world seed alone cannot resume a
 run. The browser save file wraps this checkpoint with world settings and view
-state. Current V5 rules (`v5-populations-2`) reject earlier V5 checkpoints as well
+state. Current V5 rules (`v5-populations-3`) reject earlier V5 checkpoints as well
 as V1–V4; there is no automatic conversion or model-selection control. Start a
 new run for these rules. V1–V4 saves require their preserved implementations;
 earlier V5 saves require the earlier project revision.
 
-V5 retains V4's population model, 40 genes, sexual recruitment, finite-resource
-competition, food-directed movement and ecological branching. It adds five genes
-(**45 total**): tree climbing, fallen-food foraging, branch pulling, extended
-reach and streamlining. Small plant eaters retain limited access to tall plants,
+V5 retains V4's population model, sexual recruitment, finite-resource
+competition, food-directed movement and ecological branching. Revision 3 has
+**90 heritable genes**, including the earlier browsing and aquatic hunting
+strategies and 45 new conditional adaptations. Water conservation competes with
+light capture; specialized feeding competes with broad diets; escape structures
+and sensory organs compete with their energy and construction costs. The
+[gene catalogue](src/simulation/life/v5/genes/docs/GENES.md) documents every effect
+and approximation. These are experimental rules rather than measured constants.
+
+The earlier browsing rules remain. Small plant eaters retain limited access to tall plants,
 with strong quantity and collection penalties that improve with size and disappear at full
 reach. Climbing recovers at most 15% of otherwise inaccessible food; all four
 alternatives combined recover at most 25%. All draw from existing plant
@@ -412,7 +418,11 @@ V5 revision 2 modestly increases hunting effort and allows smaller, viable
 predator founding groups funded by actual prey. Streamlining and the extended
 filter-feeding trait can reward large aquatic animal eaters when smaller prey
 are plentiful. Both retain paid costs and finite food; no whale species or
-predator population is seeded or guaranteed. Start a new run for these rules.
+predator population is seeded or guaranteed. Revision 3 retains these rules.
+
+Mobile map organisms now step and pause on land, while aquatic occupants glide
+and swim. River hexes show both styles according to each group's habitat.
+Animation is cosmetic and never changes biological movement or evolution.
 
 See [V5 rules](src/simulation/life/v5/docs/RULES.md), the
 [gene catalogue](src/simulation/life/v5/genes/docs/GENES.md), and

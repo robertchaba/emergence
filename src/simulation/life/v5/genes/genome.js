@@ -1,4 +1,6 @@
 /** V5's representative species genome. All costs are experimental model choices. */
+import { ADAPTATIONS, adaptationCosts, adaptationStructure } from './adaptations.js';
+
 export const TRAITS = Object.freeze([
   ['size', 1, 10], ['photosynthesis', 0, 1], ['trunk', 0, 10],
   ['temperatureTolerance', -2, 2], ['landAdaptation', 0, 3], ['movement', 0, 4],
@@ -15,6 +17,7 @@ export const TRAITS = Object.freeze([
   ['offspringInvestment', 0, 3], ['mateAttraction', 0, 3], ['clonalGrowth', 0, 3],
   ['treeClimbing', 0, 3], ['fallenForaging', 0, 3], ['branchPulling', 0, 3], ['longReach', 0, 3],
   ['streamlining', 0, 3],
+  ...ADAPTATIONS.map(({ key, min, max }) => [key, min, max]),
 ].map(([key, min, max]) => Object.freeze({ key, min, max })));
 
 export const GENE_RULES = Object.freeze({ mixedSystemPenalty: 0.08,
@@ -93,6 +96,8 @@ export function geneticDistance(a, b) {
 }
 
 export function deriveGenome(g) {
+  const adaptations = adaptationCosts(g);
+  const specialized = adaptationStructure(g);
   const cells = 1 + 3 * g.size * (g.size - 1);
   const structure = structures[g.skeleton];
   const covering = coverings[g.armorType];
@@ -120,7 +125,7 @@ export function deriveGenome(g) {
     + 0.02 * g.filterFeeding + 0.018 * g.dormancy + 0.018 * g.insulation
     + 0.008 * g.offspringInvestment + 0.012 * g.mateAttraction + 0.025 * g.clonalGrowth
     + 0.009 * g.treeClimbing + 0.005 * g.fallenForaging + 0.007 * g.branchPulling + 0.008 * g.longReach
-    + 0.012 * g.streamlining;
+    + 0.012 * g.streamlining + adaptations.upkeep;
   const construction = 1 + 0.08 * (g.size - 1) + 1.3 * traitCost
     + GENE_RULES.additionalSystemConstructionCost * Math.max(0, systems - 1)
     + GENE_RULES.photosyntheticGrazingConstructionCost * g.photosynthesis * g.plantFeeding
@@ -129,10 +134,10 @@ export function deriveGenome(g) {
     + 0.06 * g.deepRoots + 0.07 * g.propaguleDispersal
     + 0.14 * g.offspringInvestment + 0.04 * g.dormancy
     + 0.018 * g.treeClimbing + 0.01 * g.fallenForaging + 0.015 * g.branchPulling + 0.02 * g.longReach
-    + 0.025 * g.streamlining;
+    + 0.025 * g.streamlining + adaptations.construction;
   const flightEfficiency = g.movement ? g.flight * structure.flight
     / (1 + 0.12 * (g.size - 1) + covering.drag * g.armor + 0.15 * g.trunk) : 0;
-  const speed = g.movement * (1 + structure.speed) * (1 + 0.2 * flightEfficiency)
+  const speed = g.movement * (1 + structure.speed) * (1 + 0.2 * flightEfficiency) * specialized.speed
     / (1 + 0.18 * g.trunk + covering.drag * g.armor + 0.05 * (g.size - 1)
       + 0.18 * g.ambush + 0.2 * g.burrowing + 0.06 * g.insulation);
   const senses = 0.24 * g.eyesight + 0.28 * g.echolocation + 0.2 * g.thermalSensing;
@@ -144,11 +149,11 @@ export function deriveGenome(g) {
     elevationRange: [...elevationRanges[g.elevationTolerance]], depthRange: [...depthRanges[g.depthTolerance]],
     upkeep: cells * (0.42 + 0.016 * (g.size - 1) + traitCost),
     reproductionCost: cells * construction,
-    photosynthesisShare: g.photosynthesis * allocation * (1 + 0.16 * g.leafArea)
+    photosynthesisShare: g.photosynthesis * allocation * (1 + 0.16 * g.leafArea) * specialized.photosynthesis
       / (1 + GENE_RULES.movementPhotosynthesisPenalty * g.movement + GENE_RULES.flightPhotosynthesisPenalty * g.flight
         + 0.05 * g.shadeTolerance + 0.04 * g.waxyCuticle + 0.04 * g.burrowing),
     grazingShare: g.plantFeeding * allocation, predationShare: g.animalFeeding * allocation,
-    landCompetition: (1 + 0.12 * g.size * g.trunk) * (1 + 0.012 * g.eyesight),
+    landCompetition: (1 + 0.12 * g.size * g.trunk) * (1 + 0.012 * g.eyesight) * specialized.competition,
     habitats: g.landAdaptation === 0 ? ['water'] : g.landAdaptation <= 2 ? ['water', 'land'] : ['land'],
     role: systems > 1 ? 'mixed' : g.photosynthesis ? 'producer' : g.plantFeeding ? 'grazer' : g.animalFeeding ? 'predator' : 'other',
     speed, senses, sensoryReach: 1 + senses, flightEfficiency,
@@ -156,15 +161,18 @@ export function deriveGenome(g) {
     armorProtection: g.armor * covering.protection, handling: 0.7 * g.biteForce + structure.handling,
     height: g.size * (1 + 0.12 * g.trunk), grazingEfficiency: 0.6, predationEfficiency: 0.6,
     sexual: !!g.sexualReproduction,
-    dispersalMultiplier: (1 + 0.45 * g.propaguleDispersal) / (1 + 0.3 * g.clonalGrowth + 0.16 * g.deepRoots),
+    dispersalMultiplier: (1 + 0.45 * g.propaguleDispersal) * specialized.dispersal / (1 + 0.3 * g.clonalGrowth + 0.16 * g.deepRoots),
     crossingMultiplier: 1 + 0.3 * g.propaguleDispersal + 0.12 * g.buoyancy,
     morphology: {
       form: g.photosynthesis && !g.plantFeeding && !g.animalFeeding
-        ? g.buoyancy ? 'floating' : g.clonalGrowth ? 'beaded' : g.propaguleDispersal >= 2 ? 'plume'
+        ? g.succulentTissue >= 2 ? 'succulent' : g.submergedLeaves >= 2 ? 'ribbon'
+          : g.buoyancy ? 'floating' : g.clonalGrowth ? 'beaded' : g.propaguleDispersal >= 2 ? 'plume'
           : g.waxyCuticle >= 2 ? 'needleleaf' : g.leafArea ? 'broadleaf' : 'rosette'
-        : g.filterFeeding ? 'filter' : g.burrowing ? 'burrower' : g.ambush ? 'ambush' : g.buoyancy ? 'sail' : 'general',
+        : g.rollingDefense >= 2 && g.armor ? 'plated' : g.mucusNet >= 2 ? 'tentacled'
+          : g.webbing >= 2 ? 'paddle' : g.jetPropulsion >= 2 ? 'jet'
+            : g.filterFeeding ? 'filter' : g.burrowing ? 'burrower' : g.ambush ? 'ambush' : g.buoyancy ? 'sail' : 'general',
       pattern: g.warningSignals ? 'banded' : g.camouflage ? 'mottled' : 'plain',
-      social: g.herding || g.cooperativeHunting || g.clonalGrowth ? 'clustered' : 'solitary',
+      social: g.herding || g.cooperativeHunting || g.clonalGrowth || g.alarmCalls ? 'clustered' : 'solitary',
     },
   };
 }

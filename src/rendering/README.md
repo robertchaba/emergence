@@ -22,8 +22,13 @@ animate, and stationary-only hexes need no cosmetic-clock repaint.
 `life-shapes.js` supplies 28 silhouette families: six plant and eight consumer
 forms for each of land and water. Observed habitat selects separate foliage,
 bodies and appendages. Larger animals have larger size-dependent caps and slower
-cosmetic movement and gait. Optional `energySources` observations distinguish
-three two-source feeding combinations; unavailable detail and all-three feeding
+cosmetic movement and gait. Land groups take short strides with planted rests and
+turns; water groups glide on continuous curves. River hexes retain both motions
+according to each group's supplied habitat. Optional `morphology` descriptors add
+specialist forms, including succulent/ribbon plants and plated/tentacled/paddle/jet
+consumers, alongside surface patterns and clustered spacing. Optional
+`energySources` observations distinguish three two-source feeding combinations;
+unavailable detail and all-three feeding
 retain the mixed colour. These are token selections, not new ecological roles.
 It reads no genes and consumes no biological randomness; anatomy is illustrative.
 

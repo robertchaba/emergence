@@ -7,6 +7,7 @@ export const LIFE_CONSUMER_MARKER_LIMIT = 30;
 export const LIFE_MARKER_LIMIT = LIFE_PLANT_MARKER_LIMIT + LIFE_CONSUMER_MARKER_LIMIT;
 const TAU = Math.PI * 2;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const ease = value => value * value * (3 - 2 * value);
 
 function markerPoint(seed, step) {
   const hash = salt => {
@@ -50,6 +51,39 @@ function solitaryPose(marker, slot, time) {
   const size = clamp(Number(marker.size) || 0, 0, 1);
   const pace = 0.85 + 2.2 * size * size;
   const clock = (time / pace + slot.offset) / 3.5;
+  if (marker.habitat === 'land') return landPose(slot, clock);
+  // Water keeps a continuous glide. Observations without a habitat retain
+  // their legacy path; the map supplies land/water for every display group.
+  return swimmingPose(slot, clock, time * 5 / pace + slot.offset);
+}
+
+function landPose(slot, clock) {
+  const step = Math.floor(clock);
+  const progress = clock - step;
+  const point = markerPoint(slot.seed, step);
+  const previous = markerPoint(slot.seed, step - 1);
+  const next = markerPoint(slot.seed, step + 1);
+  const incoming = Math.atan2(point.y - previous.y, point.x - previous.x);
+  const outgoing = Math.atan2(next.y - point.y, next.x - point.x);
+  const turn = Math.atan2(Math.sin(outgoing - incoming), Math.cos(outgoing - incoming));
+  // Plant the feet and turn before walking. Six short strides then alternate
+  // grounded rests with eased steps; limb phase advances only with a step.
+  // Linear interpolation keeps every centre in the same bounded disk as water.
+  const strides = 6;
+  const strideClock = clamp((progress - 0.22) / 0.78, 0, 1) * strides;
+  const stride = Math.floor(strideClock);
+  const fraction = strideClock - stride;
+  const travel = (stride + ease(clamp((fraction - 0.2) / 0.8, 0, 1))) / strides;
+  return {
+    x: point.x + (next.x - point.x) * travel,
+    y: point.y + (next.y - point.y) * travel,
+    heading: incoming + turn * ease(clamp(progress / 0.22, 0, 1)),
+    phase: (step + travel) * strides * TAU + slot.offset,
+    opacity: 1,
+  };
+}
+
+function swimmingPose(slot, clock, phase) {
   const step = Math.floor(clock);
   const progress = clock - step;
   const point = markerPoint(slot.seed, step);
@@ -65,7 +99,7 @@ function solitaryPose(marker, slot, time) {
   return {
     x: rest * rest * from.x + 2 * rest * progress * point.x + progress * progress * to.x,
     y: rest * rest * from.y + 2 * rest * progress * point.y + progress * progress * to.y,
-    heading: Math.atan2(dy, dx), phase: time * 5 / pace + slot.offset, opacity: 1,
+    heading: Math.atan2(dy, dx), phase, opacity: 1,
   };
 }
 

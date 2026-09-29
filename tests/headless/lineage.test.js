@@ -18,7 +18,7 @@ test('tree observations retain extinct descriptions, separate introductions and 
   assert.equal(records.length, 4);
   assert.equal(records.filter(row => row.extinctDay !== null).length, 2);
   assert.equal(records[0].population, 0);
-  assert.equal(records[0].traits.length, 45);
+  assert.equal(records[0].traits.length, 90);
   assert.equal(records[2].parentId, records[1].id);
   assert.equal(records[2].population, 200);
   const trace = model.inspectGeneHistory(state.runId, 'species-3', 'movement');

@@ -1,5 +1,47 @@
 # Life rendering
 
+## Grounded strides, aquatic glides and new expression forms — 2026-09-29
+
+This supersedes the shared land/water cosmetic path described in decisions 052,
+068 and 078. Mobile land representatives now pause with planted limbs, turn in
+place, then cover a straight local segment in six short eased strides. Each
+stride has a brief rest, and limb phase follows travelled progress rather than
+continuing to cycle while the feet are planted. Water representatives retain
+continuous tangent-following quadratic glides and a steady tail/fin beat.
+Large bodies retain the slower size-derived path and gait timing.
+
+The model-supplied display habitat determines the motion. A river hex can contain
+both land walkers and water swimmers simultaneously; no terrain-wide switch
+reclassifies its occupants. The renderer reads no genes and invents no river
+channel positions, biological velocity, journeys or movement capability. Mobile
+clustered groups share the appropriate habitat path; stationary organisms stay
+fixed. Pause, hidden-page and reduced-motion gating continue to freeze the UI's
+existing cosmetic clock.
+
+V5's optional common morphology vocabulary adds rounded `succulent` rosettes and
+flowing `ribbon` foliage, plus `plated`, `tentacled`, `paddle` and `jet` consumer
+forms. Plated bodies use curved shell divisions at close zoom. Existing surface
+patterns, role colours, habitat fallbacks, size bands and aggregation retain their
+meanings. All colours use existing resolved theme tokens. These are schematic
+population symbols derived from model-supplied expression, not claims about the
+actual anatomy of evolved organisms.
+
+Paths are deterministic, continuous, and contained in the existing 0.66-radius
+placement disk. New plant silhouettes fit radius 1.25, consumers fit radius 2,
+and all stay within the existing per-mark path budget. Neither population budgets
+nor repaint/cache keys need expansion; form descriptors already participate in
+aggregation and invalidation. No simulation state, commands or randomness enter
+rendering.
+
+Focused checks exercise planted turns, all six stride rests, continuous movement
+and headings, bounded solitary/clustered paths, stationary poses, every new
+form/pattern at four gait phases, and the existing renderer suite. Browser
+fixtures verify different land/water trajectories within the same river hex,
+immutable observations, paused frames, theme/phone layouts and new-form galleries.
+Existing browser fixtures check local damage repaint against full frames. These
+are presentation checks; they do not establish ecological balance or literal
+sub-hex animal locations.
+
 ## V4 inherited morphology — 2026-09-25
 
 V4 optionally supplies `display[].morphology` with `form`, `pattern` and `social`

@@ -1,4 +1,4 @@
-# V5 population rules — 2026-09-27
+# V5 population rules — revision 3, 2026-09-29
 
 V5 preserves V4's population representation, demographic rates, bounded
 selection, defenses and dispersal. Revision 2 adds modest hunting help, smaller
@@ -9,7 +9,23 @@ favors greater reach. Alternative strategies relieve only part of the mismatch;
 no body size, species, survival period or ecological outcome is guaranteed.
 All coefficients are experimental game rules.
 
-Identifiers: `modelId: v5`, `rulesRevision: v5-populations-2`, checkpoint format
+Revision 3 retains those earlier changes and adds 45 paid conditional loci for
+90 genes total. Their model-owned factors modify environmental performance,
+finite light allocation, feeding/capture, mortality and resource-funded
+recruitment. The [gene catalogue](../genes/docs/GENES.md) specifies the complete
+new factors and their limits. Zero expression of all 45 additions retains the
+previous ecological formulas; expanding mutation choices changes seeded
+trajectories. All 90 loci are mandatory in current, candidate and historical
+genomes, and revision-1/2 checkpoints are rejected.
+
+Water storage, oxygen binding, shelter and other trait names are aggregate
+physiological approximations. They do not create persistent water/oxygen pools,
+individual journeys, shelters, offspring age classes or new shared-world fields.
+Temperature, humidity, water depth and existing habitats supply the available
+physical context. Creative combinations describe hypothetical organisms, not
+predefined species or empirical biological predictions.
+
+Identifiers: `modelId: v5`, `rulesRevision: v5-populations-3`, checkpoint format
 `emergence-life-v5-checkpoint-1`, common contract `life-observations-1`.
 V1–V4 implementations and research are preserved. Shared geography, climate,
 calendar and speed meanings do not change. The rules below explicitly retain

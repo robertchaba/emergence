@@ -4543,3 +4543,90 @@ The new coefficients are experimental simulation choices. Conditional score
 advantages and a small set of seeds cannot demonstrate universal predator
 coexistence or sustained whale-like evolution. Per-hex food budgets and the
 integer census remain material constraints on very large, sparse hunters.
+
+## 087 — Ninety heritable traits and habitat-specific cosmetic movement — 2026-09-29
+
+The user requested doubling the active gene count from 45 to 90, with creative
+conditional evolutionary tradeoffs and corresponding visualization updates. This
+supersedes decision 086's gene count and rules revision, while retaining V5 and
+its population representation, finite resources, browsing limits and predator
+founding rules. V1–V4 implementations and historical research remain preserved.
+No predefined species, assigned biomes or guaranteed evolutionary destinations
+are added.
+
+The 45 additional reversible 0–3 loci comprise 15 environmental physiology
+traits, five light-capture traits, five locomotor specializations, ten feeding
+and sensing traits, and ten defenses or reproductive-investment traits. Each pays upkeep and construction even outside its useful context.
+The model-owned [catalogue](../src/simulation/life/v5/genes/docs/GENES.md) records
+individual conditions, counter-effects, coefficients and limits. Examples include
+water-conserving tissue with reduced light capture, hot-weather cooling with
+moisture demand, specialized feeding tools with poor performance on other food,
+escape defenses that sacrifice performance, and offspring protection competing
+with construction costs. Unusual combinations can describe speculative organisms;
+none bypasses the shared light, plant-production or prey-withdrawal budgets.
+
+New physiology uses the physical inputs already provided to V5. Trait names such
+as water storage, oxygen binding, nursery shelter and brood pouch describe
+aggregate rate modifiers, not new stored resource pools, constructed objects,
+juvenile agents, day/night schedules or measured microscopic anatomy. The existing `waterExposure` value retains its reduced-wet-habitat meaning;
+anchorage and flexible growth are tolerance approximations for drawdown, not
+interpretations of an unmodeled wave/current field. Costs are
+experimental simulation coefficients. Empirical inspiration does not establish
+biological calibration or universal coexistence.
+
+Gene definitions, phenotype calculations and all ecological factors remain under
+`life/v5/`. Observation consumers receive complete trait keys, values and model-selected
+morphology. UI translates the supplied keys; consumers never read private
+genomes or infer ecological rules. The additional morphology forms are succulent, ribbon, plated, tentacled,
+paddle and jet; existing patterns, grouping and census semantics remain. All new
+names and tradeoff help are available in English and Polish in the notebook and
+tree. Shared physics, calendar, simulation speed and browser pacing retain their
+meanings.
+
+The rules identity is now `v5-populations-3`; the checkpoint container stays
+`emergence-life-v5-checkpoint-1`. All 90 loci must be present and valid in current,
+candidate and historical genomes. Earlier V5 rules are rejected before replacing
+a current run; no missing loci are padded and no earlier random stream is resumed
+under new biology. These rules require a new run. The bounded mutation search
+retains eight trial slots, including two compound trials. Doubling the search
+space can slow discovery of any one strategy; no gene is forced into founders
+or guaranteed to emerge. The larger catalogue changes seeded trajectories even
+when all new loci initially have zero expression.
+
+For the secondary request, mobile land illustrations now use short grounded
+strides, planted rests and turns; water illustrations retain continuous swimming.
+Each group already supplies its actual habitat, so rivers show stepping land
+occupants and swimming aquatic occupants in the same hex. Paths remain contained
+cosmetic presentation, with no effect on dispersal, counts, PRNG state or time.
+Stationary organisms retain fixed positions and the existing pause/reduced-motion
+controls still govern cosmetic animation. Canvas geometry consumes the existing
+theme tokens; no runtime dependencies or parallel palettes are added.
+
+Validation: `npm run build` and `npm test` passed with 246 headless/rendering
+checks and 161 Chromium checks; the existing duplicate desktop touch check stays
+skipped. Every added locus has a reversible paid range, a controlled one-step
+net-score advantage above 0.005 and a costly unfavorable context. Combined
+expressions preserve finite light, prey and transfer budgets. Strict checkpoints,
+archived genomes, gene histories, deterministic replay and asynchronous scoring
+are checked with the complete 90-locus catalogue. An independent 1,000-fixture
+comparison found exact agreement with revision 2 at zero new expression. Review
+caught and corrected electrical sensing countering mimicry on land; its habitat
+gate now has a regression assertion.
+
+All 90 labels/help paths pass in English and Polish. Light/dark desktop/phone
+views, six new forms, simultaneous river habitats, keyboard focus, wrapping,
+assets and disabled controls were checked, with no overflow or clipping found.
+Trajectory checks cover planted land rests, continuous turns, swimming, bounds,
+stationary organisms and pause. Scope/dependency review and `git diff --check`
+passed. Browser checks remain limited to Chromium.
+
+Two Small-world samples at 15,000 elapsed days use world seed `emergence` and
+biological seed `emergence:life-v5`. Water introduction finishes with 38,362
+organisms and 44 living species (seven pure grazers, two mixed feeders); land
+finishes with 247 organisms and four producer species. Neither sample retains
+animal feeding, whereas revision 2's water sample retained four pure predators.
+This is a material balance limitation: controlled trait advantages are not proof
+of natural predator persistence, and catalogue changes alter random trajectories.
+The [validation record](../src/simulation/life/v5/docs/VALIDATION.md) records
+commands, census details and interpretation. No universal biodiversity, stable
+coexistence or empirical biological accuracy is claimed.

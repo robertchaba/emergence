@@ -10,7 +10,7 @@ import { detachObservationJobs } from './observation-jobs.js';
 import { traceCalls } from './diagnostics.js';
 
 export const MODEL_ID = 'v5';
-export const RULES_REVISION = 'v5-populations-2';
+export const RULES_REVISION = 'v5-populations-3';
 export const CONTRACT_VERSION = 'life-observations-1';
 const FORMAT = 'emergence-life-v5-checkpoint-1';
 export const EVOLUTION_RULES = Object.freeze({ maximumCandidates: 3, assessmentTurns: 12,

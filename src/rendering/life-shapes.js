@@ -56,6 +56,20 @@ function plantForm(c, form, water) {
       oval(c, -0.52 + i * 0.49, side * (0.22 + i * 0.02), 0.46, 0.28, side * (0.75 - i * 0.2));
     }
     oval(c, 0.68, 0, 0.4, 0.25);
+  } else if (form === 'succulent') {
+    for (let i = 0; i < 5; i += 1) {
+      const angle = i * TAU / 5;
+      oval(c, Math.cos(angle) * 0.39, Math.sin(angle) * 0.39, 0.72, 0.49, angle);
+    }
+    oval(c, 0, 0, 0.51, 0.51);
+  } else if (form === 'ribbon') {
+    for (const side of [-1, 0, 1]) {
+      const y = side * 0.24;
+      c.moveTo(-1.13, y - 0.06);
+      c.bezierCurveTo(-0.45, y - 0.55, 0.44, y + 0.4, 1.12, y - 0.06);
+      c.bezierCurveTo(0.4, y + 0.64, -0.38, y - 0.16, -1.13, y + 0.12);
+      c.closePath();
+    }
   } else return false;
   return true;
 }
@@ -106,7 +120,7 @@ export function drawPlantShape(c, variant, water, detail, morphology) {
 }
 
 function animalForm(c, form, water, mobile, gait) {
-  if (!['sail', 'burrower', 'ambush', 'filter'].includes(form)) return false;
+  if (!['sail', 'burrower', 'ambush', 'filter', 'plated', 'tentacled', 'paddle', 'jet'].includes(form)) return false;
   c.beginPath();
   if (form === 'sail') {
     oval(c, -0.15, 0, 1.12, 0.54);
@@ -129,12 +143,40 @@ function animalForm(c, form, water, mobile, gait) {
       oval(c, 0.9, side * 0.69, 0.59, 0.18, -side * (0.5 + gait * 0.08));
       oval(c, -0.65, side * 0.49, 0.61, 0.17, side * 0.3);
     }
-  } else {
+  } else if (form === 'filter') {
     oval(c, -0.42, 0, 0.9, water ? 0.64 : 0.77);
     for (let i = 0; i < 5; i += 1) {
       const angle = (i - 2) * 0.5;
       oval(c, 0.5 + Math.cos(angle) * 0.34, Math.sin(angle) * 0.67,
         0.68, 0.19, angle + gait * 0.04);
+    }
+  } else if (form === 'plated') {
+    oval(c, -0.22, 0, 1.13, 0.89);
+    oval(c, 0.94, 0, 0.43, 0.34);
+    for (const side of [-1, 1]) for (const x of [-0.65, 0.38]) {
+      oval(c, x + gait * 0.07, side * 0.82, 0.38, 0.19, -side * 0.45);
+    }
+  } else if (form === 'tentacled') {
+    oval(c, 0, 0, 0.71, 0.63);
+    for (let i = 0; i < 6; i += 1) {
+      const angle = i * TAU / 6 + gait * (i % 2 ? 0.08 : -0.08);
+      oval(c, Math.cos(angle) * 0.79, Math.sin(angle) * 0.79, 0.88, 0.16, angle);
+    }
+  } else if (form === 'paddle') {
+    oval(c, -0.2, 0, 1.04, 0.59);
+    oval(c, 0.98, 0, 0.4, 0.32);
+    oval(c, -1.3, 0, 0.53, 0.24);
+    for (const side of [-1, 1]) for (const x of [-0.67, 0.32]) {
+      oval(c, x, side * 0.72, 0.49, 0.28, -side * (0.35 + gait * 0.18));
+    }
+  } else if (form === 'jet') {
+    c.moveTo(1.45, 0);
+    c.bezierCurveTo(0.62, -0.77, -0.6, -0.68, -1.08, -0.35);
+    c.quadraticCurveTo(-0.84, 0, -1.08, 0.35);
+    c.bezierCurveTo(-0.6, 0.68, 0.62, 0.77, 1.45, 0);
+    for (const side of [-1, 1]) {
+      oval(c, 0.05, side * 0.63, 0.75, 0.25, -side * (0.45 + gait * 0.07));
+      oval(c, -1.23, side * 0.24, 0.49, 0.13, -side * 0.35);
     }
   }
   c.fill();
@@ -200,7 +242,13 @@ export function drawAnimalShape(c, variant, water, marker, phase, detail) {
   if (animalForm(c, marker.morphology?.form, water, marker.mobile, gait)) {
     if (detail && (!marker.morphology.pattern || marker.morphology.pattern === 'plain')) {
       c.strokeStyle = detail;
-      c.beginPath(); c.arc(0.53, 0, 0.13, 0, TAU); c.stroke();
+      c.beginPath();
+      if (marker.morphology.form === 'plated') {
+        for (const x of [-0.67, -0.18, 0.3]) {
+          c.moveTo(x - 0.15, -0.6); c.quadraticCurveTo(x + 0.2, 0, x - 0.15, 0.6);
+        }
+      } else c.arc(0.53, 0, 0.13, 0, TAU);
+      c.stroke();
     }
     surfacePattern(c, marker.morphology.pattern, detail);
     return;

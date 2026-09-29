@@ -1,12 +1,91 @@
-# V5 validation — 2026-09-27
+# V5 validation — 2026-09-29
 
-## Current revision 2 — predator establishment and aquatic hunting
+## Current revision 3 — ninety genes and habitat motion
+
+Rules `v5-populations-3` expand the catalogue from 45 to 90 loci. Every added
+locus is reversible, context-dependent and paid. Revision-1/2 checkpoints are
+incompatible. Existing eight-slot mutation search, finite light/food pools,
+integer population representation and common observation meanings remain.
+The renderer's land/water movement is cosmetic and cannot alter biological
+trajectories. Both habitats can be represented in river hexes.
+
+### Controlled behavior and boundaries
+
+`tests/headless/life-v5-adaptations.test.js` exercises all 45 additions: every
+locus has valid reversible 0–3 expression, positive upkeep/construction at each
+level, a named context where a one-level change improves net score by more than
+0.005, and a context where that expression lowers net score. Some stress cases
+improve a still-negative growth rate. The checks demonstrate selectable
+directions, not guaranteed establishment, universal fitness or coexistence.
+
+Combined maximal-expression communities retain finite outputs, bounded
+birth/death rates, the 12% prey withdrawal ceiling, the existing light budget,
+and exact plant/prey energy transfer. Splitting source identities cannot refresh
+browsing or mucus-net hunting effort. Habitat gates include electrical sensing
+countering mimicry only in water. A separate deterministic 1,000-fixture review
+found exact numerical agreement with revision 2 when all new loci were zero,
+and conserved transfers and immutable inputs with varied new expression.
+
+Continuation checks require all 90 loci in accepted, candidate, current-history
+and archived genomes. Same-day replay, saved continuation, asynchronous scoring,
+read-only inspection and English/Polish history navigation retain their meanings.
+The six new illustrative forms and land/water paths are checked for distinct
+geometry, bounded positions, continuous turns, immobile organisms and pause.
+River fixtures exercise simultaneous land and water occupants.
+
+### Seeded observations
+
+The final revision-3 samples use the same world and life seeds as the historical
+panels, with 15,000 elapsed days and samples every 3,000 days:
+
+```sh
+node scripts/check-life-v5-balance.js 15000 small emergence water v5 emergence:life-v5 3000
+node scripts/check-life-v5-balance.js 15000 small emergence land v5 emergence:life-v5 3000
+```
+
+| Introduction | Organisms | Living / extinct species | Occupied hexes | Pure grazers / predators / mixed |
+| --- | ---: | ---: | ---: | ---: |
+| Water, hex 168 | 38,362 | 44 / 31 | 219 | 7 / 0 / 2 |
+| Land, hex 173 | 247 | 4 / 4 | 22 | 0 / 0 / 0 |
+
+The water-start sample retains 34 of the 45 new traits somewhere in its living
+species; the land sample retains 14. Expression does not establish a current
+benefit: paid traits can persist outside their useful context. Neither sample
+retains animal feeding at the final census. The water sample therefore has no
+current predation intake, compared with four pure predators in the historical
+revision-2 sample. This is a material balance limitation, not evidence that
+predators are impossible: controlled feeding fixtures validate their conditional
+opportunities, while these two seeded runs do not establish predator persistence.
+No coefficients or seeded species were added to force a desired census.
+
+The expanded catalogue changes mutation sampling and subsequent trajectories;
+these comparisons cannot isolate the causal effect of any one trait. The
+unchanged eight-trial assessment budget also explores each locus less often.
+Earlier balance observations below remain historical.
+
+### Completed validation
+
+`npm run build` and `npm test` passed on the final reviewed implementation:
+246 headless/rendering checks and 161 Chromium checks passed, with one existing
+duplicate desktop touch check skipped. Browser checks exercise all 90 notebook
+labels and tree explanations in English and Polish, plus light/dark themes,
+desktop/phone widths, focus, wrapping, histories, saves, worker continuation and
+source/production deployment. New form galleries and river motion fixtures were
+visually inspected in both themes and viewports. No horizontal overflow or
+clipping was found. Scope/dependency review and `git diff --check` passed.
+
+Browser verification remains limited to Chromium. Controlled cases, a separate
+zero-expression audit and two seeded samples do not establish cross-browser
+numerical equivalence, empirical accuracy, long-term coexistence or universal
+evolutionary outcomes.
+
+## Historical revision 2 — predator establishment and aquatic hunting
 
 Rules `v5-populations-2` retain model V5 and its browsing rules, add streamlining
 as the 45th trait, extend animal filtering, raise hunting effort from 3.6 to 4.2,
 and permit smaller prey-funded founding groups. Earlier V5 saves require their
-earlier project revision. Historical revision-1 measurements below remain
-preserved; they do not describe the current seeded trajectory.
+earlier project revision. These revision-2 and revision-1 measurements remain
+preserved; they do not describe revision 3's seeded trajectory.
 
 ### Focused checks and interpretation
 

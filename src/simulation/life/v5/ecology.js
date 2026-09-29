@@ -1,5 +1,7 @@
 import { traceEvent } from './diagnostics.js';
 import { candidateMutations, deriveGenome, founderGenome } from './genes/genome.js';
+import { adaptationEnvironment, adaptationLight, habitatSpeed, adaptationBrowsing,
+  adaptationCapture, adaptationHunting, adaptationDemography } from './genes/adaptations.js';
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 const outside = (value, range) => Math.max(range[0] - value, value - range[1], 0);
@@ -30,20 +32,22 @@ export function supportsHabitat(genome, hex, habitat) {
 export function environmentalPerformance(genome, hex, habitat, derived = deriveGenome(genome)) {
   if (!supportsHabitat(genome, hex, habitat)) return 0;
   const currentTemperature = hex.temperature ?? 20;
+  const adaptations = adaptationEnvironment(genome, hex, habitat, derived);
   const thermalDistance = outside(currentTemperature, derived.temperatureRange);
   const insulation = currentTemperature < derived.temperatureRange[0]
     ? 1 / (1 + 0.5 * genome.insulation) : 1 + 0.18 * genome.insulation;
   const shelter = habitat === 'land' ? 1 + 0.2 * genome.burrowing : 1;
-  const temperature = Math.exp(-thermalDistance * insulation / (10 * shelter));
-  const ice = 1 - 0.8 * clamp(hex.iceCover ?? 0);
+  const temperature = Math.exp(-thermalDistance * insulation / (10 * shelter * adaptations.thermalProtection));
+  const ice = 1 - 0.8 * clamp(hex.iceCover ?? 0) / adaptations.iceProtection;
   if (habitat === 'water') {
-    const depth = Math.exp(-outside(waterDepth(hex), derived.depthRange) / 350);
+    const depth = Math.exp(-outside(waterDepth(hex), derived.depthRange) / (350 * adaptations.depthProtection));
     return temperature * depth * [1, 0.85, 0.55][genome.landAdaptation]
-      * ice * (1 - clamp((0.8 + 0.05 * genome.buoyancy) * (hex.waterExposure ?? 0)));
+      * ice * (1 - clamp((0.8 + 0.05 * genome.buoyancy) * (hex.waterExposure ?? 0)) / adaptations.exposureProtection);
   }
   const humidity = clamp((hex.humidity ?? 0.5) + (hex.runoff > 0 ? 0.2 : 0));
   const requiredMoisture = [1, 0.75, 0.45, 0.2][genome.landAdaptation]
-    * (1 + 0.14 * genome.leafArea) / (1 + 0.3 * genome.deepRoots + 0.22 * genome.waxyCuticle);
+    * (1 + 0.14 * genome.leafArea) * adaptations.moistureDemand
+    / (1 + 0.3 * genome.deepRoots + 0.22 * genome.waxyCuticle);
   const moisture = clamp(humidity / requiredMoisture);
   const elevation = Math.exp(-outside(Math.max(0, hex.bedElevation), derived.elevationRange) / 1000);
   return temperature * moisture * elevation * ice;
@@ -75,17 +79,19 @@ export function allocateLight(hex, habitat, rows) {
     / (1 + waterDepth(hex) / 180) : ECOLOGY_RULES.lightBudget);
   const demands = rows.map(row => {
     const cap = row.population * row.derived.cells * row.derived.photosynthesisShare
-      * ECOLOGY_RULES.photosynthesisRate * row.environment * activity(row);
+      * ECOLOGY_RULES.photosynthesisRate * row.environment * activity(row)
+      * adaptationLight(row.genome, habitat, waterDepth(hex), 0).collection;
     return { cap, weight: cap * (habitat === 'land' ? row.derived.landCompetition : 1) };
   });
   const demand = demands.reduce((sum, row) => sum + (row.weight > 0 ? row.cap : 0), 0);
   const crowding = clamp(demand / Math.max(1, budget) - 1);
   for (let index = 0; index < demands.length; index += 1) {
     const genome = rows[index].genome;
+    const specialized = adaptationLight(genome, habitat, waterDepth(hex), crowding);
     const merit = (habitat === 'land' ? rows[index].derived.landCompetition : 1)
       * (1 + 0.38 * genome.shadeTolerance * crowding)
       * (habitat === 'water' ? 1 + 0.4 * genome.buoyancy * waterDepth(hex) / (waterDepth(hex) + 15) : 1)
-      / (1 + 0.1 * genome.clonalGrowth * crowding);
+      * specialized.competition / (1 + 0.1 * genome.clonalGrowth * crowding);
     demands[index].weight = demands[index].cap * merit ** ECOLOGY_RULES.competitionExponent
       * rows[index].environment ** (ECOLOGY_RULES.competitionExponent - 1);
   }
@@ -106,14 +112,16 @@ function demographicRates(row, intake, predationLoss, openSpace) {
   const sexualRecruitment = row.derived.sexual ? ECOLOGY_RULES.sexualSparseRecruitment
     + ECOLOGY_RULES.sexualDenseBenefit * mates + 0.12 * (1 - row.environment) * mates : 1;
   const stress = clamp(1 - row.environment + predationLoss / ECOLOGY_RULES.preyFraction);
+  const specialized = adaptationDemography(row.genome, row.habitat, stress, starvation, row.support, openSpace);
   const parentalCare = 1 + 0.32 * row.genome.offspringInvestment * stress;
   const clonalRecruitment = !row.derived.sexual && row.genome.photosynthesis && !row.genome.movement
     ? 1 + 0.28 * row.genome.clonalGrowth * openSpace : 1;
   const propaguleRecruitment = 1 + 0.22 * row.genome.propaguleDispersal * openSpace;
   const birthRate = clamp(Math.max(0, intake - upkeep) / row.derived.reproductionCost
-    * ECOLOGY_RULES.reproductionRate * sexualRecruitment * parentalCare * clonalRecruitment * propaguleRecruitment, 0, 0.3);
-  const deathRate = clamp(ECOLOGY_RULES.backgroundMortality
-    + starvation * ECOLOGY_RULES.starvationMortality / (1 + 0.3 * row.genome.dormancy * starvation)
+    * ECOLOGY_RULES.reproductionRate * sexualRecruitment * parentalCare * clonalRecruitment * propaguleRecruitment
+    * specialized.recruitment, 0, 0.3);
+  const deathRate = clamp(ECOLOGY_RULES.backgroundMortality * specialized.backgroundMortality
+    + starvation * ECOLOGY_RULES.starvationMortality * specialized.starvationMortality / (1 + 0.3 * row.genome.dormancy * starvation)
     + predationLoss, 0, 0.9);
   return { birthRate, deathRate, growthRate: birthRate - deathRate, score: birthRate - deathRate };
 }
@@ -153,7 +161,8 @@ function browsingProfile(genome, plantGenome, consumer, plant, habitat) {
   const pulling = woody && genome.biteForce > 0 ? ECOLOGY_RULES.pullingAccess * genome.branchPulling / 3
     * (0.5 + 0.5 * ratio) : 0;
   const extended = ECOLOGY_RULES.extendedAccess * genome.longReach / 3;
-  const alternative = Math.min(ECOLOGY_RULES.alternativeAccessCap, climbing + fallen + pulling + extended);
+  const adhesion = adaptationBrowsing(genome, plantGenome, habitat).access;
+  const alternative = Math.min(ECOLOGY_RULES.alternativeAccessCap, climbing + fallen + pulling + extended + adhesion);
   return {
     access: direct + (1 - direct) * alternative,
     efficiency: ECOLOGY_RULES.minimumBrowsingEfficiency + (1 - ECOLOGY_RULES.minimumBrowsingEfficiency)
@@ -164,18 +173,19 @@ function browsingProfile(genome, plantGenome, consumer, plant, habitat) {
 function defendedAccess(consumerGenome, plantGenome, plant, reachAccess) {
   if (!consumerGenome.plantFeeding || !plantGenome.photosynthesis) return 0;
   const poison = Math.max(0, plantGenome.poison - consumerGenome.detoxification);
-  const spines = Math.max(0, plantGenome.spines - 0.7 * consumerGenome.biteForce - 0.2 * consumerGenome.armor);
+  const piercing = 0.5 * consumerGenome.piercingMouthparts;
+  const spines = Math.max(0, plantGenome.spines - 0.7 * consumerGenome.biteForce - 0.2 * consumerGenome.armor - piercing);
   const warning = 0.12 * plantGenome.warningSignals * Math.min(2, poison + spines);
   // Leaves can offset tissue defenses, but cannot magnify the capped canopy routes.
   return reachAccess * Math.min(1, (1 + 0.05 * plantGenome.leafArea)
-    / (1 + 0.8 * poison + 0.6 * spines + 0.15 * plant.armorProtection + warning));
+    / (1 + 0.8 * poison + 0.6 * spines + 0.15 * Math.max(0, plant.armorProtection - piercing) + warning));
 }
 
 /** Paid aquatic collection specializations use the same prey and attempt pool.
  * Streamlining represents efficient sustained search by larger moving hunters;
  * it changes neither geographic movement nor an opponent's capture defenses.
  * Filtering rewards size difference only for existing small animal prey. */
-function huntingCollection(predatorGenome, preyGenome, habitat) {
+function huntingCollection(predatorGenome, preyGenome, habitat, speed) {
   const swimming = habitat === 'water' && predatorGenome.movement > 0;
   const streamlined = swimming ? 1 + ECOLOGY_RULES.streamlinedHunting
     * predatorGenome.streamlining * (predatorGenome.size - 1) / 9 : 1;
@@ -183,7 +193,7 @@ function huntingCollection(predatorGenome, preyGenome, habitat) {
     ? 1 + ECOLOGY_RULES.animalFilterCollection * predatorGenome.filterFeeding
       * (predatorGenome.size - preyGenome.size) / 9
     : 1 / (1 + ECOLOGY_RULES.animalFilterPenalty * predatorGenome.filterFeeding);
-  return streamlined * filtering;
+  return streamlined * filtering * adaptationHunting(predatorGenome, preyGenome, habitat, speed);
 }
 
 export function grazingAccess(consumerGenome, plantGenome, consumer = deriveGenome(consumerGenome), plant = deriveGenome(plantGenome), habitat = 'land') {
@@ -206,7 +216,11 @@ export function captureProbability(predatorGenome, preyGenome, predator = derive
     * (Math.min(2, Math.max(0, preyGenome.poison - predatorGenome.detoxification) + preyGenome.spines) - 0.5);
   const ambush = 0.11 * predatorGenome.ambush * (0.35 + prey.speed / (1 + prey.speed))
     * (1 + 0.1 * predatorGenome.camouflage) / (1 + 0.4 * predator.speed);
-  return clamp(ECOLOGY_RULES.captureBase + ECOLOGY_RULES.captureSpeed * (predator.speed - prey.speed) + 0.06 * (predator.senses - prey.senses)
+  const habitat = context.habitat ?? 'land';
+  const specialized = adaptationCapture(predatorGenome, preyGenome, predator, prey, { ...context, habitat });
+  return clamp(ECOLOGY_RULES.captureBase + ECOLOGY_RULES.captureSpeed
+    * (habitatSpeed(predatorGenome, predator, habitat) - habitatSpeed(preyGenome, prey, habitat))
+    + specialized + 0.06 * (predator.senses - prey.senses)
     + 0.07 * predator.handling - 0.07 * prey.defense
     - 0.07 * Math.max(0, preyGenome.poison - predatorGenome.detoxification)
     + 0.07 * (predator.flightEfficiency - prey.flightEfficiency)
@@ -227,7 +241,7 @@ export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
     const matches = (row.habitat ?? habitat) === habitat;
     const population = matches ? Math.max(0, row.population ?? row.count ?? 0) : 0;
     const derived = row.derived ?? deriveGenome(row.genome);
-    return { ...row, population, derived,
+    return { ...row, population, derived, habitat: row.habitat ?? habitat,
       environment: matches ? row.environment ?? environmentalPerformance(row.genome, hex, habitat, derived) : 0 };
   });
   const localSupport = new Map();
@@ -246,9 +260,12 @@ export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
   const grazingFood = rows.map(() => 0);
   const predationFood = rows.map(() => 0);
   const preyLoss = rows.map(() => 0);
-  const grazingDemand = rows.map(row => row.population * row.derived.cells * row.derived.grazingShare
-    * row.environment * activity(row) * 2.2 * (ECOLOGY_RULES.stationaryForaging
-      + ECOLOGY_RULES.movementForaging * row.derived.speed / (1 + row.derived.speed)));
+  const grazingDemand = rows.map(row => {
+    const speed = habitatSpeed(row.genome, row.derived, habitat);
+    return row.population * row.derived.cells * row.derived.grazingShare
+      * row.environment * activity(row) * 2.2 * (ECOLOGY_RULES.stationaryForaging
+        + ECOLOGY_RULES.movementForaging * speed / (1 + speed));
+  });
   const predationDemand = rows.map(row => row.population * row.derived.cells * row.derived.predationShare
     * row.environment * activity(row) * ECOLOGY_RULES.huntingEffort);
 
@@ -264,11 +281,12 @@ export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
       const filtering = habitat === 'water' && rows[source].genome.size <= 3
         ? 1 + 0.5 * consumer.genome.filterFeeding / (1 + 0.4 * consumer.derived.speed)
         : 1 / (1 + 0.25 * consumer.genome.filterFeeding);
-      const reach = profile.efficiency * filtering;
+      const specialized = adaptationBrowsing(consumer.genome, rows[source].genome, habitat);
+      const reach = profile.efficiency * filtering * specialized.collection;
       // Short browsers reach only part of a canopy per unit of foraging effort,
       // even when rare. Defenses still protect nested portions of that food.
       return { cap: grazingDemand[index] * reach,
-        weight: grazingDemand[index] * (access * filtering) ** ECOLOGY_RULES.competitionExponent, access, reach };
+        weight: grazingDemand[index] * (access * filtering * specialized.collection) ** ECOLOGY_RULES.competitionExponent, access, reach };
     });
     const eaten = allocateAccessible(demands, available);
     for (let consumer = 0; consumer < rows.length; consumer += 1) {
@@ -291,7 +309,8 @@ export function evaluateCommunity(hex, habitat, community = [], diagnostics) {
       if (!(predationDemand[index] > 0) || index === source || (predator.speciesId != null && predator.speciesId === prey.speciesId)) return { cap: 0, weight: 0, capture: 0 };
       const capture = captureProbability(predator.genome, prey.genome, predator.derived, prey.derived,
         { habitat, predatorSupport: predator.support, preySupport: prey.support });
-      const collection = huntingCollection(predator.genome, prey.genome, habitat);
+      const collection = huntingCollection(predator.genome, prey.genome, habitat,
+        habitatSpeed(predator.genome, predator.derived, habitat));
       // Successful effort is extensive in hunter population. A per-species
       // available*capture cap would create extra kills merely by adding names.
       return { cap: predationDemand[index] / tissue * capture * collection,
@@ -363,7 +382,7 @@ export function scoreSpecies(genome, hex, habitat, community = [], options = {})
     + ((row.habitat ?? habitat) === habitat ? Math.max(0, row.population ?? row.count ?? 0)
       * (row.derived ?? deriveGenome(row.genome)).cells : 0), 0);
   const openSpace = 1 / (1 + biomass / Math.max(1, result.resourceBudget));
-  return { ...result, ...demographicRates({ genome, derived, environment: result.environment,
+  return { ...result, ...demographicRates({ genome, derived, habitat, environment: result.environment,
     support: conspecificPopulation }, result.production + result.food, predationLoss, openSpace), predationLoss };
 }
 

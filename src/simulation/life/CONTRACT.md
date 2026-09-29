@@ -411,6 +411,8 @@ transport meaning while validating the model-specific version before replacement
 
 ## V5 aquatic hunting revision — 2026-09-27
 
+The revision-2 identity and gene count below are superseded by revision 3.
+
 The active model remains `v5`, with `rulesRevision: v5-populations-2` and the same
 checkpoint container format. Its 45-trait catalogue additionally describes
 `streamlining` at levels 0–3; filter feeding now also affects collection of small
@@ -419,3 +421,25 @@ carry these expressions through existing observation semantics. All 45 genes
 are mandatory in current, historical and candidate genomes. Revision-1 V5 saves
 are rejected, not padded or resumed with changed biology. Count meanings,
 commands, shared physical conditions, rendering and UI ownership do not change.
+
+
+## V5 90-gene revision and habitat motion — 2026-09-29
+
+V5 now identifies its rules as `v5-populations-3`, retaining the checkpoint
+container and common observation version. Every accepted, candidate and recorded
+historical genome requires 90 loci. Revision-1/2 saves are rejected without
+padding genomes or reinterpreting their random streams. All 45 added loci use
+integer expression levels 0–3 and the existing trait/history observation meaning.
+Their costs, conditional activity and interactions belong solely to V5; no
+shared physical or ecological rule is added.
+
+Display groups continue to supply their actual `habitat`, including separate
+land and water groups in a river hex. Rendering uses this descriptor for grounded
+land movement versus smooth aquatic motion. These paths are cosmetic, contained
+within the supplied hex, and unrelated to biological dispersal, simulated time
+or population changes. No private genomes cross the presentation boundary.
+
+The optional morphology `form` vocabulary additionally includes `succulent`,
+`ribbon`, `plated`, `tentacled`, `paddle` and `jet`. V5 chooses these illustrative
+forms from its phenotype; renderer geometry has no ecological feedback. Existing
+`pattern` and `social` values and display-group census meanings remain unchanged.

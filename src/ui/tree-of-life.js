@@ -159,7 +159,8 @@ export function createTreeOfLife({ onClose, onRequest }) {
   function renderTrace(container) {
     container.replaceChildren();
     if (!gene) { container.append(node('p', 'field-note', t('treeGeneHelp'))); return; }
-    container.append(node('h3', '', geneName(gene)), node('p', 'field-note', t(`treeGeneHelp_${gene}`)));
+    container.append(node('h3', '', geneName(gene)), node('p', 'field-note', t(`treeGeneHelp_${gene}`)),
+      node('p', 'field-note tree-gene-rules', t('treeGeneRules')));
     if (!trace) { container.append(node('p', 'field-note', t('treeLoading'))); return; }
     if (trace.error) { container.append(node('p', 'field-note', t('treeError'))); return; }
     if (!trace.complete || traceMode === 'all' && trace.branches.some(branch => !branch.complete)) {

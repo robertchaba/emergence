@@ -1,12 +1,16 @@
 # V5 representative genes and ecological costs
 
-V5 revision 2 has 45 heritable trait coordinates: V4's 40, four browsing loci
-and streamlining.
+V5 revision 3 has **90 heritable trait coordinates**: the 45 retained from
+revision 2 and 45 new reversible specializations. Revision 2 introduced
+streamlining after the four original V5 browsing loci. Historical equations
+below remain the zero-new-expression baseline; the revision 3 section explicitly
+extends them.
 One accepted genome describes each species; bounded evolutionary directions are
 hypotheses, not additional populations of genotype carriers. No trait grants
 free organisms, food, guaranteed survival or a scheduled species. The coefficients
 below are experimental simulation choices, not empirical biological constants.
-Implementation: [genome.js](../genome.js) and [ecology.js](../../ecology.js).
+Implementation: [genome.js](../genome.js), [adaptations.js](../adaptations.js),
+and [ecology.js](../../ecology.js).
 
 The 40 earlier loci retain V4 costs; revision 2 extends filter feeding to animal
 prey. Historical V3 revision references identify the inherited foundation; V5's browsing section supersedes
@@ -24,7 +28,9 @@ is `C × [0.42 + 0.016(s−1) + T]`. Construction cost is
 + 0.30max(0,n−1) + 0.30PG + 0.06deepRoots + 0.07propaguleDispersal
 + 0.14offspringInvestment + 0.04dormancy
 + 0.018treeClimbing + 0.010fallenForaging + 0.015branchPulling + 0.020longReach
-+ 0.025streamlining]`. Here `n` counts acquisition systems, and `P/G`
++ 0.025streamlining + revision3ExtraConstruction]`. The revision 3 table
+adds its upkeep contributions to `T` and its extra construction contributions
+to the final sum. Here `n` counts acquisition systems, and `P/G`
 indicate photosynthesis/plant feeding. As inherited from V3 revision 4, `paidMovement` is
 `max(0, movement−1)` for non-photosynthetic consumers, otherwise `movement`.
 This is an explicit basic-locomotion subsidy after losing photosynthesis; the
@@ -349,7 +355,10 @@ the combined cap is reached. Stronger size selection is an intended ecological
 pressure to validate; these limits do not guarantee a population or biomass
 ranking under every community and environmental condition.
 
-## Read-only morphology
+## Read-only morphology before revision 3
+
+The revision 3 priority extensions below supersede this form-selection list
+when their expression thresholds are met.
 
 The phenotype exposes `{ form, pattern, social }` as serializable semantic
 observations. Pure photosynthesizers select, in priority order, `floating`
@@ -396,3 +405,223 @@ The model-level persistence, replacement and speciation rules are described in
 [V5 rules](../../docs/RULES.md). See [V5 validation](../../docs/VALIDATION.md)
 for completed checks and balance evidence. Inherited V4 evidence alone does not
 establish V5 parameter balance or a universal successful transition.
+
+## Revision 3: 45 further evolutionary trade-offs
+
+Every new coordinate is an integer **0–3**, begins at zero, and uses reversible
+one-level edges. The table's costs are **per expression level**, even when the
+benefit is unavailable. `T` adds per-cell maintenance; extra construction is paid
+in addition to the ordinary `1.3T` construction charge. No gene adds a resource
+pool, an acquisition system, prey eligibility, invulnerability or a prescribed
+species. Existing poison, canopy access, capture, finite attempted effort and
+shared withdrawal limits continue to apply.
+
+These are deliberately varied ecological dilemmas: water-saving tissue versus
+productive surface, attachment versus dispersal, fast breeding versus repair,
+a lure that attracts food and enemies, and sensory investment useful only
+against particular opponents. Combinations can describe unfamiliar but physically
+plausible organisms, such as reflective succulents, anchored ribbon producers,
+electrically sensing mucus-net hunters or armored swimmers with costly land
+limbs. Such combinations are possibilities, never founder templates or promised
+outcomes. There are no separate oxygen, nectar, mucus, ink or stored-water
+accounts: these names describe aggregate rate and allocation approximations
+using the current climate, morphology and represented living food sources.
+
+### Catalogue
+
+In the descriptions, “producer” means any expressed photosynthesis unless pure
+photosynthesis is explicitly stated. “Consumer” means plant or animal feeding.
+Moving means `movement>0`, not browser animation. Warm and cold mean outside the
+organism's preferred thermal interval, not a new temperature classification.
+
+| Key | English name | `T/x` | Extra construction/x | Conditional benefit and competing burden |
+| --- | --- | --- | --- | --- |
+| `waterStorage` | Water storage | 0.009 | 0.025 | Reduces land moisture requirement; costs mass and maintenance where water is sufficient. No carried reserve is tracked. |
+| `stomatalControl` | Stomatal control | 0.006 | 0.012 | Producers reduce moisture demand; all producer light collection pays a gas-exchange penalty. |
+| `succulentTissue` | Succulent tissue | 0.008 | 0.035 | Producers withstand drier land; reduced photosynthetic area and expensive tissue. |
+| `antifreeze` | Antifreeze proteins | 0.009 | 0.014 | Reduces cold and partial-ice stress; slightly worsens heat stress, and cannot colonize permanent ice. |
+| `heatShockProteins` | Heat-shock proteins | 0.008 | 0.014 | Reduces heat stress; slightly worsens cold stress. |
+| `evaporativeCooling` | Evaporative cooling | 0.007 | 0.014 | Land heat protection scales with available humidity; increases moisture requirement. |
+| `countercurrentExchange` | Countercurrent exchange | 0.008 | 0.024 | Cold protection for moving consumers; no benefit for stationary organisms or within the thermal optimum. |
+| `pressureEqualization` | Pressure equalization | 0.008 | 0.022 | Reduces stress deeper than the preferred range; no benefit in shallow water or on land. |
+| `holdfast` | Holdfast | 0.007 | 0.025 | Nonmoving organisms tolerate reduced wet habitat through attachment; reduces geographic dispersal everywhere. |
+| `flexibleStem` | Flexible stem | 0.006 | 0.018 | Flexible trunk-bearing producers tolerate reduced wet habitat; weaker land light competition. |
+| `reflectiveFoliage` | Reflective foliage | 0.006 | 0.012 | Producer heat protection on land; reduced photosynthesis everywhere. |
+| `submergedLeaves` | Submerged leaves | 0.009 | 0.020 | Improves water photosynthetic collection; reduces land collection. |
+| `aerialRespiration` | Aerial respiration | 0.009 | 0.022 | Consumers reduce warm-water stress most near the surface; benefit fades continuously with depth. |
+| `oxygenBinding` | Oxygen-binding pigments | 0.010 | 0.020 | Consumers reduce warm-water stress and stress deeper than their preferred range; no land benefit. Oxygen availability is not separately simulated. |
+| `basking` | Basking | 0.005 | 0.010 | Moving land consumers reduce cold stress; exposing themselves also increases capture risk. |
+| `lowLightPigments` | Low-light pigments | 0.008 | 0.016 | Improves competition under crowding and collection/competition at water depth; lower baseline photosynthesis in bright open conditions. |
+| `sunTracking` | Sun tracking | 0.008 | 0.020 | Improves land collection; weaker competition as crowding rises. The shared light budget never increases. |
+| `canopySpread` | Canopy spread | 0.009 | 0.024 | Improves crowded-land light competition; increases moisture requirement. |
+| `lightFiltering` | Spectral filtering | 0.007 | 0.016 | Improves crowded-water light competition; lowers baseline photosynthesis. Spectral channels are an allocation approximation, not separate resources. |
+| `rapidGrowth` | Rapid growth | 0.006 | 0.016 | Improves recruitment into open space; increases baseline mortality as well as construction/maintenance. |
+| `webbing` | Webbed limbs | 0.008 | 0.018 | Faster local water pursuit, escape and grazing; slower on land. Requires movement. |
+| `articulatedLegs` | Articulated legs | 0.008 | 0.022 | Faster local land pursuit, escape and grazing; slower in water. Requires movement. |
+| `adhesivePads` | Adhesive pads | 0.006 | 0.015 | Moving land browsers recover some inaccessible trunk-borne production; slower movement everywhere. Shares the existing 25% bypass ceiling. |
+| `jetPropulsion` | Jet propulsion | 0.012 | 0.025 | Moving water hunters intercept moving prey; no benefit against immobile prey, on land or without movement. |
+| `undulation` | Undulation | 0.008 | 0.018 | Faster local water pursuit, escape and grazing; slower on land. Requires movement. |
+| `crushingJaws` | Crushing jaws | 0.009 | 0.025 | Helps capture armored animal prey; unnecessary against unarmored prey. Does not unlock oversized prey. |
+| `piercingMouthparts` | Piercing mouthparts | 0.007 | 0.018 | Counters plant spines/armor and improves collection from defended plants; slower collection from undefended plants. |
+| `fermentation` | Fermentation chambers | 0.010 | 0.030 | Better collection from woody plants; slower collection from soft plants. Withdraws the same plant production, not a new wood pool. |
+| `nectarExtraction` | Nectar extraction | 0.007 | 0.018 | Better collection from trunk-free plants that are small or leafy; slower otherwise. There is no unobserved nectar pool. |
+| `venomDelivery` | Venom delivery | 0.010 | 0.022 | Improves eligible-prey capture, especially against larger prey; prey detoxification counters it. Requires real animal food. |
+| `pursuitEndurance` | Pursuit endurance | 0.009 | 0.022 | Moving hunters benefit against mobile prey; none against immobile prey. |
+| `vibrationSensing` | Vibration sensing | 0.007 | 0.016 | Detects moving prey, more strongly on land than in water; no benefit without prey motion. |
+| `electricalSensing` | Electrical sensing | 0.010 | 0.025 | Detects moving water prey and counters deceptive visual markings; none on land. No electric attack or free energy. |
+| `lureDisplay` | Lure display | 0.008 | 0.018 | Slow hunters attract moving prey; the bearer also becomes easier to capture. |
+| `mucusNet` | Mucus nets | 0.009 | 0.022 | Slow water hunters collect smaller animal prey more efficiently; fast motion and unsuitable prey impose drag/handling penalties. No plant-feeding benefit. |
+| `autotomy` | Autotomy | 0.006 | 0.030 | Reduces capture most against equally sized or larger hunters; rebuilding lowers recruitment. Detached body parts are not food sources. |
+| `inkDefense` | Ink release | 0.008 | 0.018 | Reduces capture by visual water hunters; ineffective on land or against hunters without eyesight. |
+| `startleDisplay` | Startle display | 0.006 | 0.016 | Deters visual hunters, most at sparse predator density; no benefit against nonvisual hunters. |
+| `mimicry` | Deceptive markings | 0.007 | 0.016 | Deters visual hunters; nonvisual senses erode the deception. No model species or borrowed chemical defense is fabricated. |
+| `rollingDefense` | Rolling defense | 0.006 | 0.018 | Armored prey gain land capture protection; slower movement everywhere. |
+| `alarmCalls` | Alarm calls | 0.007 | 0.018 | Dense conspecific land groups reduce capture risk; hunters with alarms lose stealth. |
+| `nurseryShelter` | Nursery shelters | 0.007 | 0.025 | Dense land populations improve recruitment under environmental/predation stress; no bonus without stress or social support. |
+| `broodPouch` | Brood pouch | 0.007 | 0.030 | Improves water recruitment under environmental/predation stress; costly without stress and on land. |
+| `longevityRepair` | Cellular repair | 0.003 | 0.016 | Reduces background and starvation mortality; slows recruitment. Does not create food or reverse death. |
+| `reproductiveRestraint` | Reproductive restraint | 0.003 | 0.010 | Reduces starvation mortality under environmental/predation stress; lowers recruitment even when conditions improve. |
+
+### Exact rate extensions
+
+Write the expression of a locus as its key, `W` for water, `L` for land,
+`c=clamp(lightDemand/lightBudget−1,0,1)`, `d=waterDepth`, and
+`q(P)=max(0,P−1)/(max(0,P−1)+12)`. All formulas below multiply or extend the
+previous sections; with every new locus zero they are neutral.
+
+**Structure and environment.** Photosynthesis share divides by
+`1+0.05stomatalControl+0.05succulentTissue+0.04reflectiveFoliage
++0.025lowLightPigments+0.025lightFiltering`. Speed divides by
+`1+0.04adhesivePads+0.08rollingDefense`, land competition by
+`1+0.06flexibleStem`, and geographic dispersal by `1+0.18holdfast`.
+
+The denominator of the thermal exponential gains a protection factor. Below
+the preferred range it is
+`[1+0.40antifreeze+0.35countercurrentExchange×movingConsumer
++0.30basking×movingLandConsumer]/[1+0.04heatShockProteins]`.
+Above it the factor is
+`[1+0.40heatShockProteins+0.55evaporativeCooling×humidity×L
++0.40reflectiveFoliage×photosynthesis×L
++0.50aerialRespiration×consumer×W/(1+d/12)
++0.40oxygenBinding×consumer×W]/[1+0.04antifreeze]`.
+Humidity includes the existing runoff bonus and is capped at one.
+Inside the preferred interval, zero thermal distance gives no extra performance.
+Partial-ice penalty divides by `1+0.35antifreeze`; the permanent-ice rejection
+remains unchanged.
+
+Land moisture requirement multiplies by
+`[1+0.15evaporativeCooling+0.12canopySpread]/[1+0.30waterStorage
++(0.35stomatalControl+0.45succulentTissue)×photosynthesis]`.
+When water depth exceeds the preferred upper boundary, the depth exponential's
+denominator multiplies by `1+0.40pressureEqualization+0.22oxygenBinding×consumer`.
+It does not change the shallower-than-preferred penalty. The existing reduced-wet-habitat (`waterExposure`) penalty divides by
+`1+0.40holdfast×stationary+0.35flexibleStem×trunkBearingProducer`.
+Shared `waterExposure` records shrinking wet habitat during lake drawdown, not
+a wave/current field. Holdfast and flexible stem approximate retaining contact
+with damp substrate as the wet area contracts; this is tolerance, not creation
+of extra wet habitat. Every environmental factor remains in `[0,1]`; these extensions reduce losses,
+not generate independent energy.
+
+**Finite light.** Define `dim=max(c,d/(d+25))` in water and `dim=c` on land.
+Demand collection multiplies by `(1+0.13sunTracking)/(1+0.16submergedLeaves)`
+on land, or `1+0.14submergedLeaves+0.17lowLightPigments×d/(d+25)` in water.
+Competition merit multiplies by
+`[1+0.42lowLightPigments×dim+0.38canopySpread×c]/[1+0.13sunTracking×c]`
+on land, and `1+0.42lowLightPigments×dim+0.48lightFiltering×c` in water.
+The existing merit exponent, individual demand caps and total light budget
+still govern allocation. Extra demand cannot create extra light.
+
+**Movement and browsing.** Habitat-local speed multiplies structural speed by
+`(1+0.22webbing+0.18undulation)/(1+0.15articulatedLegs)` in water, or
+`(1+0.22articulatedLegs)/(1+0.15webbing+0.12undulation)` on land. Without
+movement it is zero. It changes the speed difference in capture and the grazing
+encounter factor; existing geographic migration uses structural speed and its
+ordinary route rules. Browser gait remains presentation only.
+
+Adhesion adds `0.18adhesivePads/3` to the existing alternative canopy access,
+only for moving land consumers and trunk-bearing sources; the combined ceiling
+stays 0.25. Piercing subtracts `0.50piercingMouthparts` from unmatched plant
+spines and plant armor protection, each floored at zero. Collection effort
+multiplies by these three independent factors:
+
+- Fermentation: `1+0.25fermentation` for woody sources, `1−0.12fermentation`
+  otherwise.
+- Piercing: `[1+0.12piercingMouthparts×min(3,plantSpines+plantArmor)]
+  /[1+0.08piercingMouthparts]`.
+- Extraction: `1+0.22nectarExtraction` for trunk-free sources with size at most
+  three or leaf area above zero, `1−0.12nectarExtraction` otherwise.
+
+These factors also enter source competition weights. Food still comes from
+withdrawn current production at the same 0.6 conversion; collection efficiency
+does not change assimilation or the source's accessible fraction.
+
+**Capture and animal collection.** Let `v=preyHabitatSpeed/(1+preyHabitatSpeed)`,
+`e=hunterEyesight/(1+hunterEyesight)`, `H=hunterHabitatSpeed`, and
+`r=max(0,preySize−hunterSize)/9`. Before the existing `[0.02,0.95]` capture clamp,
+add:
+
+- `0.09hunterCrushingJaws×min(2,preyArmorProtection)`;
+- `0.12hunterVenomDelivery×(0.25+r)/(1+preyDetoxification)`;
+- `0.12hunterPursuitEndurance×v` for moving hunters;
+- `0.15hunterJetPropulsion×v` for moving water hunters;
+- `0.10hunterVibrationSensing×v` on land, `0.035×...` in water;
+- `0.12hunterElectricalSensing×v` in water;
+- `0.14hunterLureDisplay×v/(1+H)`;
+- `0.025preyLureDisplay`, plus `0.025preyBasking` for moving land consumers.
+
+Subtract:
+
+- `0.08preyAutotomy×min(1,hunterSize/preySize)`;
+- `0.15preyInkDefense×e` in water;
+- `0.14preyStartleDisplay×e×[1−q(hunterSupport)]`;
+- `0.14preyMimicry×e/(1+hunterEcholocation+hunterThermalSensing
+  +hunterElectricalSensing×W)`;
+- `0.085preyRollingDefense×min(2,preyArmor)` on land;
+- `0.10preyAlarmCalls×q(preySupport)` on land;
+- `0.025hunterAlarmCalls` in both habitats.
+
+Mucus collection multiplies by
+`[1+0.35mucusNet/(1+H)]/[1+0.06mucusNet×H]` against smaller animal prey in water;
+otherwise by `1/(1+0.08mucusNet)`. Existing species distinction, animal-feeding
+requirement, prey-size eligibility, shared 12% prey withdrawal, failed-attempt
+spending, and 0.6 energy conversion all remain effective.
+
+**Demography.** Retain `stress=clamp(1−environment+predationLoss/0.12,0,1)`,
+`starvation=clamp(1−intake/upkeep,0,1)`, and the existing open-space proxy.
+Recruitment multiplies by
+`[1+0.24rapidGrowth×openSpace]
+×[1+0.50nurseryShelter×stress×q(support)×L+0.42broodPouch×stress×W]
+/[1+0.055autotomy+0.05longevityRepair+0.08reproductiveRestraint]`.
+Background mortality multiplies by
+`(1+0.08rapidGrowth)/(1+0.30longevityRepair)`; starvation mortality divides by
+`1+0.28longevityRepair×starvation+0.50reproductiveRestraint×stress`.
+Predation loss is still withdrawn once and is never reduced after allocation.
+Birth/death clamps remain 0.3/0.9. Repair and restraint can slow decline without
+food; they cannot make an empty habitat support positive growth.
+
+### Morphology and evidence boundaries
+
+The existing detached `{form, pattern, social}` shape descriptor is sufficient.
+Pure producers prefer `succulent` at succulent tissue ≥2, then `ribbon` at
+submerged leaves ≥2, before the earlier form rules. Consumers and mixed feeders
+prefer `plated` at rolling defense ≥2 with armor, then `tentacled` at mucus nets
+≥2, `paddle` at webbing ≥2, or `jet` at jet propulsion ≥2. Alarm calls also select
+`clustered`. Lower expression levels can have biological effects without a
+separate illustrative form. Renderer forms carry no biological feedback.
+
+Focused tests cover all 45 new loci's reversible edges, positive maintenance and
+construction, and a relevant one-level fitness improvement exceeding the normal
+0.005 selection threshold plus an unfavorable context. Some improvements slow
+an already declining population; they do **not** demonstrate persistence or
+successful founding. Maximal-expression mixtures retain finite environmental
+scores, rates, light and tissue conservation. Source-splitting checks retain a
+single effort budget. The larger mutation space is still explored through the
+same bounded search; these tests do not establish typical time to acquire all
+traits, global balance, universal biodiversity or cross-browser equivalence.
+
+Electrical sensing's energetic trade-off is inspired by
+[active-sensing trade-off research](https://pmc.ncbi.nlm.nih.gov/articles/PMC2865506/)
+and [measurements of electric signaling cost](https://pmc.ncbi.nlm.nih.gov/articles/PMC3866484/).
+Those sources motivate paying for information; they do not supply any numerical
+coefficient in this model. All coefficients above are explicit experimental
+simulation choices.
