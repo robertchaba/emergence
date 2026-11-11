@@ -4630,3 +4630,24 @@ of natural predator persistence, and catalogue changes alter random trajectories
 The [validation record](../src/simulation/life/v5/docs/VALIDATION.md) records
 commands, census details and interpretation. No universal biodiversity, stable
 coexistence or empirical biological accuracy is claimed.
+
+## 088 — Public showcase screenshots — 2026-11-11
+
+Publish two user-supplied, unedited PNG captures under `resources/showcase/` for
+the OpenAI Showcase submission. `emergence-cover.png` shows the English light-theme
+landing page at 1327 × 709; its title and illustration make it the recommended
+cover. `emergence-atlas.png` shows the running atlas and an expanded species record
+at 1896 × 1038, providing a supporting view of the simulation and Field Notebook.
+Both images preserve the supplied pixels and record an actual interface state.
+
+GitHub Pages serves these stable image paths from the repository root. They are
+promotional assets, not application imports, and are not included in Vite's
+`dist/` output. No engine, rendering, UI, dependency or build behavior changes.
+The atlas capture illustrates one run; it does not establish ecological accuracy
+or promise particular evolutionary outcomes.
+
+Validation: visually reviewed both supplied captures and confirmed each copied
+file is byte-for-byte identical to its original. `npm run build` and `npm test`
+passed: 246 headless/rendering checks and 161 Chromium checks, with the existing
+duplicate desktop touch check skipped. `git diff --check` passed. The changes
+contain only the two promotional PNGs and this decision record.
